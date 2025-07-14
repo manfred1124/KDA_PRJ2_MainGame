@@ -1,34 +1,27 @@
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import MetaData
 import os
+from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+from dotenv import load_dotenv
 
-# 데이터베이스 URL
-DATABASE_URL = "sqlite+aiosqlite:///./toot_game.db"
+load_dotenv()
 
-# 엔진 생성
-engine = create_async_engine(
-    DATABASE_URL,
-    echo=True,  # SQL 쿼리 로그 출력
-    future=True
-)
+# PostgreSQL 연결 정보는 .env 파일에서 관리
+POSTGRES_USER = os.getenv('POSTGRES_USER', 'postgres')
+POSTGRES_PASSWORD = os.getenv('POSTGRES_PASSWORD', 'password')
+POSTGRES_DB = os.getenv('POSTGRES_DB', 'toot_game')
+POSTGRES_HOST = os.getenv('POSTGRES_HOST', 'localhost')
+POSTGRES_PORT = os.getenv('POSTGRES_PORT', '5432')
 
-# 세션 팩토리 생성
-AsyncSessionLocal = async_sessionmaker(
-    engine,
-    class_=AsyncSession,
-    expire_on_commit=False
-)
+SQLALCHEMY_DATABASE_URL = f"postgresql+psycopg2://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
 
-# 베이스 클래스
+engine = create_engine(SQLALCHEMY_DATABASE_URL)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-# 메타데이터
-metadata = MetaData()
-
-async def get_db() -> AsyncSession:
+async def get_db():
     """데이터베이스 세션을 반환하는 의존성 함수"""
-    async with AsyncSessionLocal() as session:
+    async with SessionLocal() as session:
         try:
             yield session
         finally:
@@ -50,7 +43,7 @@ async def migrate_user_realized_profit():
     from models import User
     from sqlalchemy import text
     
-    async with AsyncSessionLocal() as session:
+    async with SessionLocal() as session:
         try:
             # SQLite에서 컬럼이 존재하는지 확인
             result = await session.execute(text("PRAGMA table_info(users)"))
@@ -72,7 +65,7 @@ async def insert_initial_data():
     from models import Stock, News, Quiz
     from services import stock_service, news_service, quiz_service
     
-    async with AsyncSessionLocal() as session:
+    async with SessionLocal() as session:
         # 주식 데이터 삽입
         await stock_service.insert_initial_stocks(session)
         
