@@ -9,15 +9,15 @@ from typing import List, Optional
 from sqlalchemy import select
 
 from database import get_db, init_db
-from models import User, Stock, Portfolio, Transaction, News, Quiz
+from models import User, Stock, Portfolio, Transaction, News
 from schemas import (
     UserCreate, UserLogin, UserResponse, 
     StockResponse, PortfolioResponse, TransactionCreate,
-    NewsResponse, QuizResponse, GameState, QuizAnswer
+    NewsResponse, GameState
 )
 from services import (
     auth_service, stock_service, portfolio_service,
-    news_service, quiz_service, game_service
+    news_service, game_service
 )
 
 app = FastAPI(title=" 주식 투자 시뮬레이션 게임", version="1.0.0")
@@ -68,13 +68,22 @@ async def get_me(credentials: HTTPAuthorizationCredentials = Depends(security), 
         "id": user.id,
         "username": user.username,
         "current_round": user.current_round,
-        "total_balance": user.total_balance
+        "total_balance": user.total_balance,
+        "realized_profit": user.realized_profit
     }
 
 # 주식 관련 엔드포인트
 @app.get("/stocks", response_model=List[StockResponse])
 async def get_stocks(db: AsyncSession = Depends(get_db)):
     return await stock_service.get_all_stocks(db)
+
+@app.get("/stocks/sector/{sector}", response_model=List[StockResponse])
+async def get_stocks_by_sector(sector: str, db: AsyncSession = Depends(get_db)):
+    return await stock_service.get_stocks_by_sector(db, sector)
+
+@app.get("/stocks/sectors", response_model=List[str])
+async def get_all_sectors(db: AsyncSession = Depends(get_db)):
+    return await stock_service.get_all_sectors(db)
 
 @app.get("/stocks/{stock_id}", response_model=StockResponse)
 async def get_stock(stock_id: int, db: AsyncSession = Depends(get_db)):
@@ -134,6 +143,24 @@ async def get_portfolio(credentials: HTTPAuthorizationCredentials = Depends(secu
         "items": item_list
     }
 
+@app.get("/portfolio/stock/{stock_id}")
+async def get_stock_quantity(
+    stock_id: int,
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: AsyncSession = Depends(get_db)
+):
+    """특정 주식의 보유 수량 조회"""
+    user_id = auth_service.verify_token(credentials.credentials)
+    portfolio_item = await db.execute(
+        select(Portfolio).where(Portfolio.user_id == user_id, Portfolio.stock_id == stock_id)
+    )
+    item = portfolio_item.scalar_one_or_none()
+    
+    return {
+        "quantity": item.quantity if item else 0,
+        "average_price": item.average_price if item else 0
+    }
+
 @app.post("/portfolio/buy")
 async def buy_stock(
     transaction: TransactionCreate,
@@ -157,19 +184,9 @@ async def sell_stock(
 async def get_news(db: AsyncSession = Depends(get_db)):
     return await news_service.get_current_news(db)
 
-# 퀴즈 관련 엔드포인트
-@app.get("/quiz", response_model=QuizResponse)
-async def get_daily_quiz(db: AsyncSession = Depends(get_db)):
-    return await quiz_service.get_daily_quiz(db)
-
-@app.post("/quiz/submit")
-async def submit_quiz_answer(
-    answer: QuizAnswer,
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: AsyncSession = Depends(get_db)
-):
-    user_id = auth_service.verify_token(credentials.credentials)
-    return await quiz_service.submit_answer(db, user_id, answer.answer)
+@app.get("/news/stock/{stock_name}", response_model=List[NewsResponse])
+async def get_news_by_stock(stock_name: str, db: AsyncSession = Depends(get_db)):
+    return await news_service.get_news_by_stock(db, stock_name)
 
 # 게임 상태 관련 엔드포인트
 @app.get("/game/state", response_model=GameState)
@@ -194,7 +211,22 @@ async def restart_game(
     db: AsyncSession = Depends(get_db)
 ):
     user_id = auth_service.verify_token(credentials.credentials)
-    return await game_service.restart_game(db, user_id)
+    result = await game_service.restart_game(db, user_id)
+    
+    # 재시작 후 사용자 정보 반환
+    user = await db.execute(select(User).where(User.id == user_id))
+    user = user.scalar_one_or_none()
+    
+    return {
+        **result,
+        "user": {
+            "id": user.id,
+            "username": user.username,
+            "current_round": user.current_round,
+            "total_balance": user.total_balance,
+            "realized_profit": user.realized_profit
+        }
+    }
 
 # 랭킹 관련 엔드포인트
 @app.get("/ranking")

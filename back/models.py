@@ -76,28 +76,4 @@ class News(Base):
     impact_type = Column(String(20), nullable=False)  # "positive", "negative", "neutral"
     affected_sectors = Column(String(200))  # 쉼표로 구분된 섹터들
     round_number = Column(Integer, nullable=False)
-    created_at = Column(DateTime, default=func.now())
-
-class Quiz(Base):
-    __tablename__ = "quizzes"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    question = Column(Text, nullable=False)
-    option_a = Column(String(200), nullable=False)
-    option_b = Column(String(200), nullable=False)
-    option_c = Column(String(200), nullable=False)
-    option_d = Column(String(200), nullable=False)
-    correct_answer = Column(Integer, nullable=False)  # 1, 2, 3, 4
-    explanation = Column(Text, nullable=False)
-    round_number = Column(Integer, nullable=False)
-    created_at = Column(DateTime, default=func.now())
-
-class UserQuiz(Base):
-    __tablename__ = "user_quizzes"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    quiz_id = Column(Integer, ForeignKey("quizzes.id"), nullable=False)
-    user_answer = Column(Integer, nullable=False)
-    is_correct = Column(Boolean, nullable=False)
-    answered_at = Column(DateTime, default=func.now()) 
+    created_at = Column(DateTime, default=func.now()) 

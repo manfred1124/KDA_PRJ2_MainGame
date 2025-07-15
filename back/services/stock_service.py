@@ -2,7 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import List, Optional
 import json
-import random
+# import random  # 실제 데이터 연결 전까지 비활성화
 from datetime import datetime
 
 from models import Stock
@@ -16,6 +16,18 @@ class StockService:
         stocks = result.scalars().all()
         return [StockResponse.from_orm(stock) for stock in stocks]
     
+    async def get_stocks_by_sector(self, db: AsyncSession, sector: str) -> List[StockResponse]:
+        """섹터별 주식 조회"""
+        result = await db.execute(select(Stock).where(Stock.sector == sector))
+        stocks = result.scalars().all()
+        return [StockResponse.from_orm(stock) for stock in stocks]
+    
+    async def get_all_sectors(self, db: AsyncSession) -> List[str]:
+        """모든 섹터 조회"""
+        result = await db.execute(select(Stock.sector).distinct())
+        sectors = result.scalars().all()
+        return list(sectors)
+    
     async def get_stock_by_id(self, db: AsyncSession, stock_id: int) -> StockResponse:
         """ID로 주식 조회"""
         result = await db.execute(select(Stock).where(Stock.id == stock_id))
@@ -28,37 +40,59 @@ class StockService:
         return StockResponse.from_orm(stock)
     
     async def update_stock_prices(self, db: AsyncSession, round_number: int):
-        """라운드별 주식 가격 업데이트"""
-        result = await db.execute(select(Stock))
-        stocks = result.scalars().all()
+        """라운드별 주식 가격 업데이트 (실제 데이터 연결 전까지 비활성화)"""
+        # 실제 주식 데이터 연결 전까지 가격 변동 비활성화
+        # result = await db.execute(select(Stock))
+        # stocks = result.scalars().all()
         
-        for stock in stocks:
-            # 가격 변동률 (-20% ~ +30%)
-            change_rate = random.uniform(-0.2, 0.3)
-            new_price = stock.current_price * (1 + change_rate)
+        # for stock in stocks:
+        #     # 섹터별 변동률 조정 (더 안정적으로)
+        #     base_change_rate = random.uniform(-0.08, 0.12)  # 기본 -8% ~ +12% (이전 -15% ~ +25%에서 축소)
             
-            # 최소 가격 보장 (100원)
-            new_price = max(new_price, 100)
+        #     # 섹터별 추가 변동 (축소)
+        #     sector_volatility = {
+        #         '전자': 0.05,      # 전자: 중간 변동성
+        #         'IT': 0.08,        # IT: 높은 변동성
+        #         '바이오': 0.06,    # 바이오: 중간 변동성
+        #         '화학': 0.04,      # 화학: 낮은 변동성
+        #         '금융': 0.03,      # 금융: 매우 낮은 변동성
+        #         '자동차': 0.04,    # 자동차: 낮은 변동성
+        #         '통신': 0.03,      # 통신: 매우 낮은 변동성
+        #         '식품': 0.02       # 식품: 매우 낮은 변동성
+        #     }
             
-            # 가격 이력 업데이트
-            price_history = []
-            if stock.price_history:
-                price_history = json.loads(stock.price_history)
+        #     volatility = sector_volatility.get(stock.sector, 0.04)
+        #     change_rate = base_change_rate * (1 + volatility)
             
-            price_history.append({
-                "round": round_number,
-                "price": new_price,
-                "timestamp": datetime.now().isoformat()
-            })
+        #     # 급격한 변동 방지 (한 번에 최대 ±15%)
+        #     change_rate = max(min(change_rate, 0.15), -0.15)
             
-            # 최근 10개만 유지
-            if len(price_history) > 10:
-                price_history = price_history[-10:]
+        #     # 가격 변동 적용
+        #     new_price = stock.current_price * (1 + change_rate)
             
-            stock.current_price = new_price
-            stock.price_history = json.dumps(price_history)
+        #     # 최소 가격 보장 (100원)
+        #     new_price = max(new_price, 100)
+            
+        #     # 가격 이력 업데이트
+        #     price_history = []
+        #     if stock.price_history:
+        #         price_history = json.loads(stock.price_history)
+            
+        #     price_history.append({
+        #         "round": round_number,
+        #         "price": new_price,
+        #         "timestamp": datetime.now().isoformat()
+        #     })
+            
+        #     # 최근 10개만 유지
+        #     if len(price_history) > 10:
+        #         price_history = price_history[-10:]
+            
+        #     stock.current_price = new_price
+        #     stock.price_history = json.dumps(price_history)
         
-        await db.commit()
+        # await db.commit()
+        pass
     
     async def insert_initial_stocks(self, db: AsyncSession):
         """초기 주식 데이터 삽입"""

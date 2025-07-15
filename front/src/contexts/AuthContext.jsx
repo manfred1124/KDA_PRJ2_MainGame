@@ -86,6 +86,7 @@ export const AuthProvider = ({ children }) => {
           const response = await axios.get('/api/auth/me')
           setUser(response.data)
         } catch (e) {
+          console.error('Token validation failed:', e)
           setUser(null)
           setToken(null)
           localStorage.removeItem('token')
@@ -97,6 +98,46 @@ export const AuthProvider = ({ children }) => {
       setLoading(false)
     }
   }, [token])
+
+  // 토큰 만료 시 자동 갱신 시도
+  useEffect(() => {
+    if (!token || !user) return
+
+    const checkTokenExpiry = async () => {
+      try {
+        await axios.get('/api/auth/me')
+      } catch (error) {
+        if (error.response?.status === 401) {
+          console.log('Token expired, attempting to refresh...')
+          // 토큰이 만료되면 사용자 정보를 다시 가져오기 시도
+          try {
+            const response = await axios.get('/api/auth/me')
+            setUser(response.data)
+          } catch (refreshError) {
+            console.error('Token refresh failed:', refreshError)
+            logout()
+          }
+        }
+      }
+    }
+
+    // 5분마다 토큰 유효성 확인
+    const interval = setInterval(checkTokenExpiry, 5 * 60 * 1000)
+    return () => clearInterval(interval)
+  }, [token, user])
+
+  // 사용자 정보 업데이트 이벤트 리스너
+  useEffect(() => {
+    const handleUserUpdate = (event) => {
+      console.log('사용자 정보 업데이트 이벤트 수신:', event.detail)
+      setUser(event.detail)
+    }
+
+    window.addEventListener('userUpdated', handleUserUpdate)
+    return () => {
+      window.removeEventListener('userUpdated', handleUserUpdate)
+    }
+  }, [])
 
   const value = {
     user,

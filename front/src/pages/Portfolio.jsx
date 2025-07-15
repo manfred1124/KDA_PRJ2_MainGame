@@ -179,7 +179,7 @@ const Portfolio = () => {
             <Package size={48} className="text-gray-400 mx-auto mb-4" />
             <p className="text-gray-500">아직 보유한 주식이 없습니다.</p>
             <p className="text-sm text-gray-400 mt-2">
-              주식 페이지에서 매수해보세요!
+              주식 페이지에서 구매하기해보세요!
             </p>
           </div>
         ) : (

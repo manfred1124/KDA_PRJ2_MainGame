@@ -97,17 +97,17 @@ const Stocks = () => {
             <div className="flex space-x-2">
               <button
                 onClick={() => openTransactionModal(stock, 'buy')}
-                className="btn-success flex-1 flex items-center justify-center space-x-2"
+                className="btn-danger flex-1 flex items-center justify-center space-x-2"
               >
                 <ShoppingCart size={16} />
-                <span>매수</span>
+                <span>구매하기</span>
               </button>
               <button
                 onClick={() => openTransactionModal(stock, 'sell')}
-                className="btn-danger flex-1 flex items-center justify-center space-x-2"
+                className="btn-success flex-1 flex items-center justify-center space-x-2"
               >
                 <Tag size={16} />
-                <span>매도</span>
+                <span>판매하기</span>
               </button>
             </div>
           </div>
@@ -119,7 +119,7 @@ const Stocks = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              {transactionType === 'buy' ? '매수' : '매도'} 거래
+              {transactionType === 'buy' ? '구매하기' : '판매하기'} 거래
             </h3>
             
             <div className="space-y-4">
@@ -161,6 +161,29 @@ const Stocks = () => {
               )}
             </div>
             
+            <div className="flex space-x-4">
+              <button
+                onClick={() => setTransactionType('buy')}
+                className={`px-4 py-2 rounded-lg font-medium ${
+                  transactionType === 'buy'
+                    ? 'bg-red-600 text-white'
+                    : 'bg-gray-200 text-gray-700'
+                }`}
+              >
+                구매하기
+              </button>
+              <button
+                onClick={() => setTransactionType('sell')}
+                className={`px-4 py-2 rounded-lg font-medium ${
+                  transactionType === 'sell'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-200 text-gray-700'
+                }`}
+              >
+                판매하기
+              </button>
+            </div>
+
             <div className="flex space-x-3 mt-6">
               <button
                 onClick={() => setShowModal(false)}
@@ -171,10 +194,10 @@ const Stocks = () => {
               <button
                 onClick={handleTransaction}
                 className={`flex-1 ${
-                  transactionType === 'buy' ? 'btn-success' : 'btn-danger'
+                  transactionType === 'buy' ? 'btn-danger' : 'btn-success'
                 }`}
               >
-                {transactionType === 'buy' ? '매수' : '매도'} 확인
+                {transactionType === 'buy' ? '구매하기' : '판매하기'} 확인
               </button>
             </div>
           </div>

@@ -87,22 +87,6 @@ class NewsResponse(BaseModel):
     class Config:
         from_attributes = True
 
-# Quiz 관련 스키마
-class QuizResponse(BaseModel):
-    id: int
-    question: str
-    option_a: str
-    option_b: str
-    option_c: str
-    option_d: str
-    round_number: int
-    
-    class Config:
-        from_attributes = True
-
-class QuizAnswer(BaseModel):
-    answer: int
-
 # Game State 관련 스키마
 class GameState(BaseModel):
     current_round: int
