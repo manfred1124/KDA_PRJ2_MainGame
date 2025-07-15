@@ -12,7 +12,7 @@ from fastapi import HTTPException, status
 # JWT 설정
 SECRET_KEY = "your-secret-key-here"  # 실제 운영에서는 환경변수로 관리
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 1440  # 24시간으로 연장
 
 # 비밀번호 해싱
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -126,6 +126,7 @@ class AuthService:
                 "id": user.id,
                 "username": user.username,
                 "current_round": user.current_round,
-                "total_balance": user.total_balance
+                "total_balance": user.total_balance,
+                "realized_profit": user.realized_profit
             }
         } 

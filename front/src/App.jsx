@@ -7,10 +7,12 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import Stocks from './pages/Stocks'
-import Portfolio from './pages/Portfolio'
 import News from './pages/News'
-import Quiz from './pages/Quiz'
 import Ranking from './pages/Ranking'
+import SelectSector from './pages/SelectSector'
+import MyPage from './pages/MyPage'
+import GameResult from './pages/GameResult'
+import ChatbotWidget from './components/ChatbotWidget'
 
 function App() {
   return (
@@ -25,7 +27,7 @@ function App() {
               path="/" 
               element={
                 <PrivateRoute>
-                  <Dashboard />
+                  <News />
                 </PrivateRoute>
               } 
             />
@@ -38,26 +40,10 @@ function App() {
               } 
             />
             <Route 
-              path="/portfolio" 
-              element={
-                <PrivateRoute>
-                  <Portfolio />
-                </PrivateRoute>
-              } 
-            />
-            <Route 
               path="/news" 
               element={
                 <PrivateRoute>
                   <News />
-                </PrivateRoute>
-              } 
-            />
-            <Route 
-              path="/quiz" 
-              element={
-                <PrivateRoute>
-                  <Quiz />
                 </PrivateRoute>
               } 
             />
@@ -69,8 +55,33 @@ function App() {
                 </PrivateRoute>
               } 
             />
+            <Route 
+              path="/select-sector" 
+              element={
+                <PrivateRoute>
+                  <SelectSector />
+                </PrivateRoute>
+              } 
+            />
+            <Route 
+              path="/my-page" 
+              element={
+                <PrivateRoute>
+                  <MyPage />
+                </PrivateRoute>
+              } 
+            />
+            <Route 
+              path="/game-result" 
+              element={
+                <PrivateRoute>
+                  <GameResult />
+                </PrivateRoute>
+              } 
+            />
           </Routes>
         </main>
+        <ChatbotWidget />
       </div>
     </AuthProvider>
   )

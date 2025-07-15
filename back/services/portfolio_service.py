@@ -8,7 +8,7 @@ from schemas import TransactionCreate
 
 class PortfolioService:
     async def buy_stock(self, db: AsyncSession, user_id: int, transaction: TransactionCreate):
-        """주식 매수"""
+        """주식 구매하기"""
         # 사용자 조회
         user_result = await db.execute(select(User).where(User.id == user_id))
         user = user_result.scalar_one_or_none()
@@ -21,7 +21,7 @@ class PortfolioService:
         if not stock:
             raise HTTPException(status_code=404, detail="Stock not found")
         
-        # 매수 금액 계산
+        # 구매하기 금액 계산
         total_cost = stock.current_price * transaction.quantity
         
         # 잔액 확인
@@ -41,7 +41,7 @@ class PortfolioService:
         portfolio_item = portfolio_result.scalar_one_or_none()
         
         if portfolio_item:
-            # 기존 보유량이 있는 경우 평균 매수가 계산
+            # 기존 보유량이 있는 경우 평균 구매하기가 계산
             total_quantity = portfolio_item.quantity + transaction.quantity
             total_investment = (portfolio_item.quantity * portfolio_item.average_price) + total_cost
             new_average_price = total_investment / total_quantity
@@ -84,7 +84,7 @@ class PortfolioService:
         }
     
     async def sell_stock(self, db: AsyncSession, user_id: int, transaction: TransactionCreate):
-        """주식 매도"""
+        """주식 판매하기"""
         # 사용자 조회
         user_result = await db.execute(select(User).where(User.id == user_id))
         user = user_result.scalar_one_or_none()
@@ -112,10 +112,10 @@ class PortfolioService:
                 detail="Insufficient stock quantity"
             )
         
-        # 매도 금액 계산
+        # 판매하기 금액 계산
         total_revenue = stock.current_price * transaction.quantity
         
-        # 실현 수익 계산 (매도가 - 평균매수가) * 매도수량
+        # 실현 수익 계산 (판매하기가 - 평균구매하기가) * 판매하기수량
         realized_profit = (stock.current_price - portfolio_item.average_price) * transaction.quantity
         
         # 포트폴리오 업데이트

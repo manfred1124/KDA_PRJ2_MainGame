@@ -6,6 +6,7 @@ from models import User, Stock, Portfolio, News
 from schemas import GameState, RankingItem
 from .stock_service import StockService
 from .news_service import NewsService
+from fastapi import HTTPException
 
 stock_service = StockService()
 news_service = NewsService()
@@ -69,45 +70,53 @@ class GameService:
         )
     
     async def advance_round(self, db: AsyncSession, user_id: int):
-        """다음 라운드로 진행"""
-        # 사용자 조회
-        user_result = await db.execute(select(User).where(User.id == user_id))
-        user = user_result.scalar_one_or_none()
+        """라운드 진행"""
+        user = await db.execute(select(User).where(User.id == user_id))
+        user = user.scalar_one_or_none()
+        
         if not user:
-            raise Exception("User not found")
+            raise HTTPException(status_code=404, detail="User not found")
         
         if user.current_round >= 10:
-            raise Exception("Game already completed")
+            raise HTTPException(status_code=400, detail="이미 마지막 라운드입니다.")
         
-        # 다음 라운드로 진행
-        user.current_round += 1
+        new_round = user.current_round + 1
+        user.current_round = new_round
         
-        # 주식 가격 업데이트
-        await stock_service.update_stock_prices(db, user.current_round)
+        # 새로운 뉴스 생성
+        await news_service.generate_round_news(db, new_round)
         
-        # 뉴스 영향 적용
-        news_result = await db.execute(
-            select(News).where(News.round_number == user.current_round)
-        )
-        current_news = news_result.scalars().all()
+        # 뉴스 영향으로 주식 가격 변동 (실제 데이터 연결 전까지 비활성화)
+        # await self.apply_news_impact_to_stocks(db, new_round)
         
-        for news in current_news:
-            if news.affected_sectors:
-                stock_result = await db.execute(select(Stock))
-                stocks = stock_result.scalars().all()
-                
-                for stock in stocks:
-                    stock_service.apply_news_impact(
-                        stock, news.impact_type, news.affected_sectors
-                    )
+        # 일반적인 주식 가격 변동 (실제 데이터 연결 전까지 비활성화)
+        # await stock_service.update_stock_prices(db, new_round)
         
         await db.commit()
         
         return {
-            "message": f"Advanced to round {user.current_round}",
-            "new_round": user.current_round,
-            "current_date": self.get_round_date(user.current_round)
+            "message": f"라운드 {new_round}로 진행되었습니다.",
+            "new_round": new_round
         }
+    
+    async def apply_news_impact_to_stocks(self, db: AsyncSession, round_number: int):
+        """뉴스 영향으로 주식 가격 변동 적용"""
+        # 현재 라운드의 뉴스 조회
+        result = await db.execute(select(News).where(News.round_number == round_number))
+        news_list = result.scalars().all()
+        
+        # 모든 주식 조회
+        stocks_result = await db.execute(select(Stock))
+        stocks = stocks_result.scalars().all()
+        
+        for news in news_list:
+            affected_sectors = news.affected_sectors.split(',') if news.affected_sectors else []
+            
+            for stock in stocks:
+                if stock.sector in affected_sectors:
+                    stock_service.apply_news_impact(stock, news.impact, news.affected_sectors)
+        
+        await db.commit()
     
     async def restart_game(self, db: AsyncSession, user_id: int):
         """게임 재시작"""

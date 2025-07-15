@@ -68,9 +68,9 @@ async def migrate_user_realized_profit():
             await session.rollback()
 
 async def insert_initial_data():
-    """초기 데이터 삽입 (주식, 뉴스, 퀴즈 등)"""
-    from models import Stock, News, Quiz
-    from services import stock_service, news_service, quiz_service
+    """초기 데이터 삽입 (주식, 뉴스 등)"""
+    from models import Stock, News
+    from services import stock_service, news_service
     
     async with AsyncSessionLocal() as session:
         # 주식 데이터 삽입
@@ -78,8 +78,5 @@ async def insert_initial_data():
         
         # 뉴스 데이터 삽입
         await news_service.insert_initial_news(session)
-        
-        # 퀴즈 데이터 삽입
-        await quiz_service.insert_initial_quizzes(session)
         
         await session.commit() 
