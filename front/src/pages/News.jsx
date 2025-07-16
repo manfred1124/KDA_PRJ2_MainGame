@@ -3,6 +3,7 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import BannerHeader from "../components/BannerHeader";
 
 const News = () => {
   const [news, setNews] = useState([]);
@@ -85,12 +86,7 @@ const News = () => {
 
   return (
     <div className="space-y-6">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">📰 시장 뉴스</h1>
-        <p className="text-gray-600">
-          최신 경제 뉴스와 시장 동향을 확인하세요!
-        </p>
-      </div>
+      <BannerHeader title="시장 뉴스" />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {news.map((item) => (
