@@ -4,7 +4,7 @@ from typing import List
 from datetime import datetime
 import random
 
-from models import News
+from models import News, Stock
 from schemas import NewsResponse
 
 class NewsService:
@@ -285,3 +285,16 @@ class NewsService:
             db.add(news)
         
         await db.commit() 
+
+    async def get_sector_trend_news(self, db: AsyncSession, sector: str, period: str):
+        """특정 섹터의 MarketTrend 뉴스만 반환 (ticker로 stocks.symbol과 조인, period도 필터)"""
+        from sqlalchemy import join
+        j = join(News, Stock, News.ticker == Stock.symbol)
+        result = await db.execute(
+            select(News)
+            .select_from(j)
+            .where(News.category == 'MarketTrend', Stock.sector == sector, News.period == period)
+            .order_by(News.date.desc())
+        )
+        news_list = result.scalars().all()
+        return [NewsResponse.from_orm(news) for news in news_list] 

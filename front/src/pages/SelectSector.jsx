@@ -19,6 +19,8 @@ const SelectSector = () => {
   const [priceUpdateTime, setPriceUpdateTime] = useState(null);
   const [newsModal, setNewsModal] = useState(false); // 뉴스 모달 상태 추가
   const [allNews, setAllNews] = useState([]); // 전체 뉴스 데이터 추가
+  const [sectorNews, setSectorNews] = useState([]);
+  const [allSectorNews, setAllSectorNews] = useState({}); // {섹터명: [뉴스, ...]}
   const userBalance = user?.total_balance || user?.balance || 0;
   const navigate = useNavigate();
   const [advancing, setAdvancing] = useState(false);
@@ -27,6 +29,18 @@ const SelectSector = () => {
     fetchSectors();
     fetchAllNews(); // 전체 뉴스 데이터 가져오기
   }, []);
+
+  useEffect(() => {
+    if (selected) {
+      fetchSectorNews(selected);
+    }
+  }, [selected]);
+
+  useEffect(() => {
+    if (!selected && sectors.length > 0 && user?.current_period) {
+      fetchAllSectorsNews();
+    }
+  }, [selected, sectors, user?.current_period]);
 
   // 선택된 섹터가 있으면 주기적으로 주식 정보 업데이트 (실제 데이터 연결 전까지 비활성화)
   // useEffect(() => {
@@ -107,6 +121,42 @@ const SelectSector = () => {
     }
   };
 
+  const fetchSectorNews = async (sector) => {
+    try {
+      const token = localStorage.getItem("token");
+      const period = user?.current_period;
+      const response = await axios.get(
+        `/api/news/sector/${sector}?period=${encodeURIComponent(period)}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setSectorNews(response.data);
+    } catch (error) {
+      setSectorNews([]);
+    }
+  };
+
+  const fetchAllSectorsNews = async () => {
+    const token = localStorage.getItem("token");
+    const period = user?.current_period;
+    const newsBySector = {};
+    for (const sector of sectors) {
+      try {
+        const response = await axios.get(
+          `/api/news/sector/${sector}?period=${encodeURIComponent(period)}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        newsBySector[sector] = response.data;
+      } catch {
+        newsBySector[sector] = [];
+      }
+    }
+    setAllSectorNews(newsBySector);
+  };
+
   // ESC 키로 모달 닫기
   useEffect(() => {
     const handleEscKey = (event) => {
@@ -138,6 +188,7 @@ const SelectSector = () => {
   const handleSectorSelect = async (sector) => {
     setSelected(sector);
     await fetchStocksBySector(sector);
+    await fetchSectorNews(sector);
   };
 
   const handleStockClick = async (stock) => {
@@ -281,27 +332,86 @@ const SelectSector = () => {
             <div className="lg:col-span-3">
               <div className="bg-white rounded-xl shadow-lg p-6">
                 <h2 className="text-xl font-bold text-gray-800 mb-4">
-                  {selected} 섹터
+                  {selected ? `${selected} 섹터` : "섹터별 뉴스"}
                 </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {stocks.map((stock) => (
-                    <div
-                      key={stock.id}
-                      onClick={() => handleStockClick(stock)}
-                      className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 cursor-pointer hover:shadow-lg transition-all duration-300 border-2 border-transparent hover:border-blue-300"
-                    >
-                      <div className="text-lg font-bold text-gray-800 mb-2">
-                        {stock.name}
+                {/* 섹터별 뉴스 섹션 */}
+                {!selected ? (
+                  <div>
+                    {sectors.map((sector) => (
+                      <div key={sector} className="mb-8">
+                        <h3 className="text-lg font-bold text-blue-700 mb-2">
+                          {sector} 섹터 뉴스
+                        </h3>
+                        <ul className="space-y-2">
+                          {(allSectorNews[sector] || []).map((news) => (
+                            <li
+                              key={news.id}
+                              className="bg-blue-50 rounded-lg p-4 shadow"
+                            >
+                              <div className="text-sm text-gray-500 mb-1">
+                                {news.date?.slice(0, 10)}
+                              </div>
+                              <div className="font-semibold text-gray-800">
+                                {news.title}
+                              </div>
+                              <div className="text-gray-600 text-sm">
+                                {news.summary}
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
                       </div>
-                      <div className="text-sm text-gray-600 mb-2">
-                        {stock.symbol}
-                      </div>
-                      <div className="text-xl font-bold text-blue-600">
-                        {stock.current_price.toLocaleString()}원
-                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  sectorNews.length > 0 && (
+                    <div className="mb-6">
+                      <h3 className="text-lg font-bold text-blue-700 mb-2">
+                        {selected} 섹터 뉴스
+                      </h3>
+                      <ul className="space-y-2">
+                        {sectorNews.map((news) => (
+                          <li
+                            key={news.id}
+                            className="bg-blue-50 rounded-lg p-4 shadow"
+                          >
+                            <div className="text-sm text-gray-500 mb-1">
+                              {news.date?.slice(0, 10)}
+                            </div>
+                            <div className="font-semibold text-gray-800">
+                              {news.title}
+                            </div>
+                            <div className="text-gray-600 text-sm">
+                              {news.summary}
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
-                  ))}
-                </div>
+                  )
+                )}
+                {/* 기존 주식 리스트 */}
+                {selected && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {stocks.map((stock) => (
+                      <div
+                        key={stock.id}
+                        onClick={() => handleStockClick(stock)}
+                        className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 cursor-pointer hover:shadow-lg transition-all duration-300 border-2 border-transparent hover:border-blue-300"
+                      >
+                        <div className="text-lg font-bold text-gray-800 mb-2">
+                          {stock.name}
+                        </div>
+                        <div className="text-sm text-gray-600 mb-2">
+                          {stock.symbol}
+                        </div>
+                        <div className="text-xl font-bold text-blue-600">
+                          {stock.current_price.toLocaleString()}원
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>

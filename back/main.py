@@ -10,7 +10,6 @@ from sqlalchemy import select
 import json
 import os
 from dotenv import load_dotenv
-load_dotenv()
 from langchain.chat_models import ChatOpenAI
 from langchain.schema import SystemMessage, HumanMessage
 
@@ -26,6 +25,8 @@ from services import (
     news_service, game_service
 )
 from services.game_service import period_to_date
+
+load_dotenv()
 
 app = FastAPI(title=" 주식 투자 시뮬레이션 게임", version="1.0.0")
 
@@ -247,6 +248,20 @@ async def get_news_by_stock(stock_name: str, db: AsyncSession = Depends(get_db))
 async def get_macro_news(period: str, db: AsyncSession = Depends(get_db)):
     """특정 period, Macro 카테고리 뉴스만 조회"""
     return await news_service.get_macro_news_by_period(db, period)
+
+@app.get("/news/sector/{sector}", response_model=List[NewsResponse])
+async def get_sector_trend_news(
+    sector: str,
+    period: str,
+    db: AsyncSession = Depends(get_db),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    user_id = auth_service.verify_token(credentials.credentials)
+    user = await db.execute(select(User).where(User.id == user_id))
+    user = user.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return await news_service.get_sector_trend_news(db, sector, period)
 
 # 게임 상태 관련 엔드포인트
 @app.get("/game/state", response_model=GameState)
