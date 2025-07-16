@@ -106,9 +106,14 @@ const SelectSector = () => {
     }
   };
 
-  const fetchStockNews = async (stockName) => {
+  const fetchStockNews = async (ticker) => {
     try {
-      const response = await axios.get(`/api/news/stock/${stockName}`);
+      const period = user?.current_period;
+      const response = await axios.get(
+        `/api/news/stock/by-ticker?ticker=${ticker}&period=${encodeURIComponent(
+          period
+        )}`
+      );
       setStockNews(response.data);
     } catch (error) {
       setStockNews([]);
@@ -220,7 +225,7 @@ const SelectSector = () => {
     setOrderModal({ stock: fixedStock, type: "buy" });
     setOrderType("buy");
     setOrderQty(1);
-    await fetchStockNews(stock.name);
+    await fetchStockNews(stock.symbol);
   };
 
   const handleOrder = async () => {
@@ -431,7 +436,7 @@ const SelectSector = () => {
                                       setOrderModal({ stock, type: "sell" });
                                       setOrderType("sell");
                                       setOrderQty(1);
-                                      fetchStockNews(stock.name);
+                                      fetchStockNews(stock.symbol);
                                     }}
                                     className="px-4 py-2 bg-[#7c5c2b] hover:bg-[#a67c3c] text-white rounded-lg font-bold border-2 border-[#e6d3a3]"
                                     style={{ fontFamily: "serif" }}

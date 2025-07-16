@@ -22,6 +22,7 @@ const Navbar = () => {
   const [newsList, setNewsList] = useState([]);
   const [newsIdx, setNewsIdx] = useState(0);
   const [userBalance, setUserBalance] = useState(0);
+  const [newsBanner, setNewsBanner] = useState("");
 
   useEffect(() => {
     axios
@@ -69,6 +70,28 @@ const Navbar = () => {
       );
     };
   }, []);
+
+  useEffect(() => {
+    if (user?.current_period) {
+      fetchBannerNews(user.current_period);
+    }
+  }, [user?.current_period]);
+
+  const fetchBannerNews = async (period) => {
+    try {
+      const response = await fetch(
+        `/api/news?period=${encodeURIComponent(period)}`
+      );
+      const newsList = await response.json();
+      if (newsList.length > 0) {
+        setNewsBanner(newsList[0].title);
+      } else {
+        setNewsBanner("");
+      }
+    } catch (e) {
+      setNewsBanner("");
+    }
+  };
 
   // 사용자 정보가 변경될 때마다 잔고 업데이트
   useEffect(() => {
@@ -204,9 +227,7 @@ const Navbar = () => {
             >
               <span className="mr-2 md:mr-3 text-lg md:text-xl">📰</span>
               <span className="truncate min-w-0">
-                {newsList.length > 0
-                  ? newsList[newsIdx]?.title
-                  : "최근 뉴스가 없습니다."}
+                {newsBanner || "최근 뉴스가 없습니다."}
               </span>
             </div>
           </div>

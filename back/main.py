@@ -12,6 +12,7 @@ import os
 from dotenv import load_dotenv
 from langchain.chat_models import ChatOpenAI
 from langchain.schema import SystemMessage, HumanMessage
+from sqlalchemy.orm import joinedload
 
 from database import get_db, init_db
 from models import User, Stock, Portfolio, Transaction, News
@@ -25,6 +26,7 @@ from services import (
     news_service, game_service
 )
 from services.game_service import period_to_date
+from services.period_utils import period_to_date
 
 load_dotenv()
 
@@ -237,12 +239,12 @@ async def sell_stock(
 
 # 뉴스 관련 엔드포인트
 @app.get("/news", response_model=List[NewsResponse])
-async def get_news(db: AsyncSession = Depends(get_db)):
-    return await news_service.get_current_news(db)
+async def get_news(period: str, db: AsyncSession = Depends(get_db)):
+    return await news_service.get_current_news(db, period)
 
-@app.get("/news/stock/{stock_name}", response_model=List[NewsResponse])
-async def get_news_by_stock(stock_name: str, db: AsyncSession = Depends(get_db)):
-    return await news_service.get_news_by_stock(db, stock_name)
+@app.get("/news/stock/by-ticker", response_model=List[NewsResponse])
+async def get_news_by_stock_by_ticker(ticker: str, period: str = None, db: AsyncSession = Depends(get_db)):
+    return await news_service.get_news_by_stock(db, stock_name=None, period=period, ticker=ticker)
 
 @app.get("/news/macro", response_model=List[NewsResponse])
 async def get_macro_news(period: str, db: AsyncSession = Depends(get_db)):
@@ -366,6 +368,69 @@ async def chatbot(
     answer = llm(messages).content
 
     return {"answer": answer}
+
+@app.get("/portfolio/transactions")
+async def get_transaction_history(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: AsyncSession = Depends(get_db)
+):
+    user_id = auth_service.verify_token(credentials.credentials)
+    # 유저의 period 리스트 가져오기
+    user = await db.execute(select(User).where(User.id == user_id))
+    user = user.scalar_one_or_none()
+    periods = json.loads(user.round_periods) if user and user.round_periods else []
+
+    # 거래내역 최신순
+    result = await db.execute(
+        select(Transaction)
+        .where(Transaction.user_id == user_id)
+        .order_by(Transaction.created_at.desc())
+        .options(joinedload(Transaction.stock))
+    )
+    transactions = result.scalars().all()
+
+    # 각 거래의 종목 현재가 조회
+    from models import StockPrice
+    tx_list = []
+    for tx in transactions:
+        # period 매핑 (1라운드 거래는 periods[0], 즉 round_number-1)
+        if tx.round_number > 0 and periods and tx.round_number <= len(periods):
+            period_str = periods[tx.round_number - 1]
+        else:
+            period_str = ""
+        # 해당 period의 마지막 날짜 구하기
+        period_start = period_to_date(period_str) if period_str else None
+        if period_str and period_str.endswith("H1"):
+            period_end = f"{period_str.split()[0]}-06-30"
+        elif period_str and period_str.endswith("H2"):
+            period_end = f"{period_str.split()[0]}-12-31"
+        else:
+            period_end = None
+        # 해당 period의 마지막 가격 조회
+        current_price = None
+        if period_end:
+            price_result = await db.execute(
+                select(StockPrice.close_price)
+                .where(StockPrice.stock_id == tx.stock_id)
+                .where(StockPrice.date <= period_end)
+                .order_by(StockPrice.date.desc())
+                .limit(1)
+            )
+            current_price = price_result.scalar_one_or_none()
+        tx_list.append({
+            "id": tx.id,
+            "stock_id": tx.stock_id,
+            "stock_name": tx.stock.name if tx.stock else "",
+            "stock_symbol": tx.stock.symbol if tx.stock else "",
+            "transaction_type": tx.transaction_type,
+            "quantity": tx.quantity,
+            "price": tx.price,
+            "total_amount": tx.total_amount,
+            "round_number": tx.round_number,
+            "period": period_str,  # 거래시점(라운드)
+            "current_price": current_price,
+        })
+    return tx_list
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True) 

@@ -80,7 +80,7 @@ class PortfolioService:
             price=current_price,
             transaction_type="buy",
             total_amount=total_cost,
-            round_number=user.current_round_idx
+            round_number=user.current_round_idx + 1
         )
         db.add(transaction_record)
         
@@ -163,7 +163,7 @@ class PortfolioService:
             price=current_price,
             transaction_type="sell",
             total_amount=total_revenue,
-            round_number=user.current_round_idx
+            round_number=user.current_round_idx + 1
         )
         db.add(transaction_record)
         

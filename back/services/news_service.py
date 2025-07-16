@@ -8,71 +8,34 @@ from models import News, Stock
 from schemas import NewsResponse
 
 class NewsService:
-    async def get_current_news(self, db: AsyncSession) -> List[NewsResponse]:
-        """현재 라운드의 뉴스 조회"""
-        result = await db.execute(select(News).order_by(News.date.desc()))
+    async def get_current_news(self, db: AsyncSession, period: str = None) -> List[NewsResponse]:
+        """현재 라운드의 Macro0 뉴스만 조회"""
+        if not period:
+            return []
+        result = await db.execute(
+            select(News)
+            .where(News.period == period, News.category == 'Macro0')
+            .order_by(News.date.desc())
+        )
         news_list = result.scalars().all()
         return [NewsResponse.from_orm(news) for news in news_list]
     
-    async def get_news_by_stock(self, db: AsyncSession, stock_name: str) -> List[NewsResponse]:
-        """종목별 뉴스 조회"""
-        # 종목명이 포함된 뉴스 검색
+    async def get_news_by_stock(self, db: AsyncSession, stock_name: str, period: str = None, ticker: str = None) -> List[NewsResponse]:
+        """특정 종목의 TickerNews만, 현재 라운드(period)와 ticker가 일치하는 뉴스만 반환"""
+        # ticker와 period가 명시적으로 들어오면 그걸 사용, 아니면 stock_name으로 ticker를 조회
+        if not ticker:
+            stock_result = await db.execute(select(Stock).where(Stock.name == stock_name))
+            stock = stock_result.scalar_one_or_none()
+            ticker = stock.symbol if stock else None
+        if not period:
+            # period가 없으면 아무 뉴스도 반환하지 않음
+            return []
         result = await db.execute(
-            select(News).where(News.title.contains(stock_name) | News.summary.contains(stock_name))
+            select(News)
+            .where(News.period == period, News.category == 'TickerNews', News.ticker == ticker)
+            .order_by(News.date.desc())
         )
         news_list = result.scalars().all()
-        
-        # 종목별 더미 뉴스 데이터 (실제로는 DB에서 관리해야 함)
-        dummy_news = {
-            '삼성전자': [
-                {'period': '2020 H1', 'category': '전자', 'title': '삼성전자, 2분기 실적 호조', 'date': datetime.now(), 'summary': '반도체 부문 호황으로 영업이익 급증.', 'ticker': '005930', 'sentiment': 'positive'},
-                {'period': '2020 H2', 'category': '전자', 'title': '삼성전자, 신제품 스마트폰 공개', 'date': datetime.now(), 'summary': '갤럭시 신제품 출시로 시장 기대감 상승.', 'ticker': '005930', 'sentiment': 'neutral'}
-            ],
-            'SK하이닉스': [
-                {'period': '2020 H1', 'category': '전자', 'title': 'SK하이닉스, D램 가격 반등', 'date': datetime.now(), 'summary': '메모리 반도체 시장 회복세.', 'ticker': '000660', 'sentiment': 'positive'}
-            ],
-            '셀트리온': [
-                {'period': '2020 H1', 'category': '바이오', 'title': '셀트리온, 신약 임상 성공', 'date': datetime.now(), 'summary': '바이오시밀러 신약 임상 3상 성공 소식.', 'ticker': '068270', 'sentiment': 'positive'}
-            ],
-            '삼성바이오로직스': [
-                {'period': '2020 H2', 'category': '바이오', 'title': '삼성바이오로직스, 대규모 수주', 'date': datetime.now(), 'summary': '글로벌 제약사와 대규모 위탁생산 계약 체결.', 'ticker': '207940', 'sentiment': 'positive'}
-            ],
-            'LG화학': [
-                {'period': '2020 H2', 'category': '화학', 'title': 'LG화학, 2차전지 투자 확대', 'date': datetime.now(), 'summary': '전기차 배터리 시장 선점 기대.', 'ticker': '051910', 'sentiment': 'positive'}
-            ],
-            '포스코퓨처엠': [
-                {'period': '2020 H2', 'category': '화학', 'title': '포스코퓨처엠, 신소재 개발', 'date': datetime.now(), 'summary': '미래소재 연구개발 성과 발표.', 'ticker': '003670', 'sentiment': 'neutral'}
-            ],
-            'KB금융': [
-                {'period': '2020 H2', 'category': '금융', 'title': 'KB금융, 분기 최대 실적', 'date': datetime.now(), 'summary': '이자이익 증가로 실적 호조.', 'ticker': '105560', 'sentiment': 'positive'}
-            ],
-            '신한지주': [
-                {'period': '2020 H2', 'category': '금융', 'title': '신한지주, 디지털 금융 강화', 'date': datetime.now(), 'summary': '핀테크 투자 확대.', 'ticker': '055550', 'sentiment': 'neutral'}
-            ],
-            '삼성물산': [
-                {'period': '2020 H2', 'category': '자동차', 'title': '삼성물산, 해외 수주 확대', 'date': datetime.now(), 'summary': '글로벌 건설 프로젝트 수주.', 'ticker': '028260', 'sentiment': 'positive'}
-            ],
-            '이마트': [
-                {'period': '2020 H2', 'category': '자동차', 'title': '이마트, 온라인 매출 성장', 'date': datetime.now(), 'summary': '이커머스 시장 점유율 확대.', 'ticker': '139480', 'sentiment': 'positive'}
-            ]
-        }
-        
-        # 더미 뉴스가 있으면 반환
-        if stock_name in dummy_news:
-            return [
-                NewsResponse(
-                    id=idx,
-                    period=news['period'],
-                    category=news['category'],
-                    title=news['title'],
-                    date=news['date'],
-                    summary=news['summary'],
-                    ticker=news.get('ticker'),
-                    sentiment=news.get('sentiment')
-                )
-                for idx, news in enumerate(dummy_news[stock_name], 1)
-            ]
-        
         return [NewsResponse.from_orm(news) for news in news_list]
     
     async def get_macro_news_by_period(self, db: AsyncSession, period: str) -> List[NewsResponse]:

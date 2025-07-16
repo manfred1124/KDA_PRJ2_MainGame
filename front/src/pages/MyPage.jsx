@@ -20,10 +20,12 @@ const MyPage = () => {
   const navigate = useNavigate();
   const [portfolio, setPortfolio] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [tradeHistory, setTradeHistory] = useState([]); // 거래내역
 
   useEffect(() => {
     fetchPortfolio();
     fetchUserInfo();
+    fetchTradeHistory();
   }, []);
 
   const fetchPortfolio = async () => {
@@ -43,6 +45,17 @@ const MyPage = () => {
       updateUser(response.data);
     } catch (error) {
       console.error("사용자 정보 업데이트 실패:", error);
+    }
+  };
+
+  // 거래내역 불러오기 (백엔드에 /api/portfolio/transactions 엔드포인트가 있다고 가정)
+  const fetchTradeHistory = async () => {
+    try {
+      const response = await axios.get("/api/portfolio/transactions");
+      setTradeHistory(response.data);
+    } catch (error) {
+      // 엔드포인트가 없으면 빈 배열 유지
+      setTradeHistory([]);
     }
   };
 
@@ -68,13 +81,6 @@ const MyPage = () => {
         >
           {(user?.current_round_idx ?? 0) + 1}라운드 요약
         </h2>
-        <button
-          onClick={() => navigate("/")}
-          className="bg-gradient-to-b from-[#bfa76a] to-[#7c5c2b] text-white font-bold py-3 px-10 rounded-full text-lg shadow border-4 border-[#e6d3a3] tracking-wider transition-all duration-200 hover:from-[#d6c08a] hover:to-[#a67c3c]"
-          style={{ fontFamily: "serif", letterSpacing: "0.05em" }}
-        >
-          계속 진행하기
-        </button>
       </div>
       {/* 사용자 정보 헤더 */}
       <div
@@ -423,6 +429,115 @@ const MyPage = () => {
             </table>
           </div>
         )}
+      </div>
+
+      {/* 매매 기록 테이블 */}
+      <div className="rounded-xl shadow-lg border border-[#e6d3a3] bg-[#f7e6b6] p-6 mt-8">
+        <h3
+          className="text-xl font-bold text-[#a67c3c] mb-4"
+          style={{ fontFamily: "serif" }}
+        >
+          매매 기록
+        </h3>
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm text-left">
+            <thead>
+              <tr className="border-b border-[#e6d3a3] bg-[#f3e7c4]">
+                <th className="py-3 px-4 font-semibold text-[#a67c3c]">종목</th>
+                <th className="py-3 px-4 font-semibold text-[#a67c3c]">유형</th>
+                <th className="py-3 px-4 font-semibold text-[#a67c3c]">수량</th>
+                <th className="py-3 px-4 font-semibold text-[#a67c3c]">
+                  거래가
+                </th>
+                <th className="py-3 px-4 font-semibold text-[#a67c3c]">
+                  라운드
+                </th>
+                <th className="py-3 px-4 font-semibold text-[#a67c3c]">
+                  거래시점
+                </th>
+                <th className="py-3 px-4 font-semibold text-[#a67c3c]">
+                  현재가
+                </th>
+                <th className="py-3 px-4 font-semibold text-[#a67c3c]">
+                  수익률
+                </th>
+                <th className="py-3 px-4 font-semibold text-[#a67c3c]">
+                  매도 후 현재가 대비(%)
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {tradeHistory.length === 0 ? (
+                <tr>
+                  <td colSpan={9} className="text-center py-8 text-[#a67c3c]">
+                    거래 내역이 없습니다.
+                  </td>
+                </tr>
+              ) : (
+                tradeHistory.map((tx, idx) => {
+                  // 현재가, 수익률, 기회비용(매도 후 현재가 대비) 계산 예시
+                  // 실제 데이터 구조에 맞게 수정 필요
+                  const currentPrice = tx.current_price ?? 0;
+                  const profitRate =
+                    tx.transaction_type === "buy"
+                      ? ((currentPrice - tx.price) / tx.price) * 100
+                      : ((tx.price - tx.sell_price) / tx.sell_price) * 100;
+                  const opportunityCost =
+                    tx.transaction_type === "sell" && currentPrice
+                      ? ((currentPrice - tx.price) / tx.price) * 100
+                      : null;
+                  return (
+                    <tr
+                      key={idx}
+                      className="border-b border-[#f3e7c4] hover:bg-[#f7f3e8] transition-colors"
+                    >
+                      <td className="py-3 px-4 font-semibold text-[#7c5c2b]">
+                        {tx.stock_name}
+                      </td>
+                      <td className="py-3 px-4 text-[#a67c3c]">
+                        {tx.transaction_type === "buy" ? "매수" : "매도"}
+                      </td>
+                      <td className="py-3 px-4 text-right">{tx.quantity}</td>
+                      <td className="py-3 px-4 text-right">
+                        {tx.price.toLocaleString()}원
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        {tx.round_number}
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        {tx.period || "-"}
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        {currentPrice
+                          ? currentPrice.toLocaleString() + "원"
+                          : "-"}
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        {profitRate ? profitRate.toFixed(2) + "%" : "-"}
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        {opportunityCost !== null
+                          ? opportunityCost.toFixed(2) + "%"
+                          : "-"}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* 계속 진행하기 버튼을 페이지 맨 아래로 이동 */}
+      <div className="flex justify-center mt-8 mb-4">
+        <button
+          onClick={() => navigate("/")}
+          className="bg-gradient-to-b from-[#bfa76a] to-[#7c5c2b] text-white font-bold py-3 px-10 rounded-full text-lg shadow border-4 border-[#e6d3a3] tracking-wider transition-all duration-200 hover:from-[#d6c08a] hover:to-[#a67c3c]"
+          style={{ fontFamily: "serif", letterSpacing: "0.05em" }}
+        >
+          계속 진행하기
+        </button>
       </div>
     </div>
   );

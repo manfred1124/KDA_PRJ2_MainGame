@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import BannerHeader from "../components/BannerHeader";
+import { useAuth } from "../contexts/AuthContext";
 
 const News = () => {
   const [news, setNews] = useState([]);
@@ -12,6 +13,7 @@ const News = () => {
   const [selectedNews, setSelectedNews] = useState(null);
   const [currentPeriod, setCurrentPeriod] = useState(null);
   const navigate = useNavigate(); // 추가
+  const { user } = useAuth();
 
   // ESC 키로 모달 닫기
   const handleKeyDown = useCallback((e) => {
@@ -36,16 +38,16 @@ const News = () => {
 
   // period가 준비되면 뉴스 불러오기
   useEffect(() => {
-    if (!currentPeriod) return;
-    fetchNews(currentPeriod);
-    // eslint-disable-next-line
-  }, [currentPeriod]);
+    if (user?.current_period) {
+      fetchNews(user.current_period);
+    }
+  }, [user?.current_period]);
 
   const fetchNews = async (period) => {
     setLoading(true);
     try {
       const response = await axios.get(
-        `/api/news/macro?period=${encodeURIComponent(period)}`
+        `/api/news?period=${encodeURIComponent(period)}`
       );
       setNews(response.data);
     } catch (error) {
