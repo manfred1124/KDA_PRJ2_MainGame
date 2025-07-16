@@ -481,12 +481,11 @@ const SelectSector = () => {
         </div>
         {/* 뉴스 버튼 - 왼쪽 하단 고정 */}
         <button
-          onClick={() => navigate("/")}
+          onClick={() => navigate(-1)}
           className="fixed bottom-16 left-20 bg-[#bfa76a] hover:bg-[#a67c3c] text-white px-6 py-4 rounded-full shadow-lg transition-all duration-300 z-40 flex items-center space-x-3 text-lg border-2 border-[#e6d3a3]"
           style={{ fontFamily: "serif" }}
         >
-          <span className="text-3xl">📰</span>
-          <span className="font-semibold text-xl">시장 뉴스</span>
+          <span className="text-3xl">←</span>
         </button>
         {/* 뉴스 모달 */}
         {newsModal && (
