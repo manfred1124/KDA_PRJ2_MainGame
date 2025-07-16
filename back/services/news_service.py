@@ -25,35 +25,35 @@ class NewsService:
         # 종목별 더미 뉴스 데이터 (실제로는 DB에서 관리해야 함)
         dummy_news = {
             '삼성전자': [
-                {'period': '2020 H1', 'category': '전자', 'title': '삼성전자, 2분기 실적 호조', 'date': datetime.now(), 'summary': '반도체 부문 호황으로 영업이익 급증.'},
-                {'period': '2020 H2', 'category': '전자', 'title': '삼성전자, 신제품 스마트폰 공개', 'date': datetime.now(), 'summary': '갤럭시 신제품 출시로 시장 기대감 상승.'}
+                {'period': '2020 H1', 'category': '전자', 'title': '삼성전자, 2분기 실적 호조', 'date': datetime.now(), 'summary': '반도체 부문 호황으로 영업이익 급증.', 'ticker': '005930', 'sentiment': 'positive'},
+                {'period': '2020 H2', 'category': '전자', 'title': '삼성전자, 신제품 스마트폰 공개', 'date': datetime.now(), 'summary': '갤럭시 신제품 출시로 시장 기대감 상승.', 'ticker': '005930', 'sentiment': 'neutral'}
             ],
             'SK하이닉스': [
-                {'period': '2020 H1', 'category': '전자', 'title': 'SK하이닉스, D램 가격 반등', 'date': datetime.now(), 'summary': '메모리 반도체 시장 회복세.'}
+                {'period': '2020 H1', 'category': '전자', 'title': 'SK하이닉스, D램 가격 반등', 'date': datetime.now(), 'summary': '메모리 반도체 시장 회복세.', 'ticker': '000660', 'sentiment': 'positive'}
             ],
             '셀트리온': [
-                {'period': '2020 H1', 'category': '바이오', 'title': '셀트리온, 신약 임상 성공', 'date': datetime.now(), 'summary': '바이오시밀러 신약 임상 3상 성공 소식.'}
+                {'period': '2020 H1', 'category': '바이오', 'title': '셀트리온, 신약 임상 성공', 'date': datetime.now(), 'summary': '바이오시밀러 신약 임상 3상 성공 소식.', 'ticker': '068270', 'sentiment': 'positive'}
             ],
             '삼성바이오로직스': [
-                {'period': '2020 H2', 'category': '바이오', 'title': '삼성바이오로직스, 대규모 수주', 'date': datetime.now(), 'summary': '글로벌 제약사와 대규모 위탁생산 계약 체결.'}
+                {'period': '2020 H2', 'category': '바이오', 'title': '삼성바이오로직스, 대규모 수주', 'date': datetime.now(), 'summary': '글로벌 제약사와 대규모 위탁생산 계약 체결.', 'ticker': '207940', 'sentiment': 'positive'}
             ],
             'LG화학': [
-                {'period': '2020 H2', 'category': '화학', 'title': 'LG화학, 2차전지 투자 확대', 'date': datetime.now(), 'summary': '전기차 배터리 시장 선점 기대.'}
+                {'period': '2020 H2', 'category': '화학', 'title': 'LG화학, 2차전지 투자 확대', 'date': datetime.now(), 'summary': '전기차 배터리 시장 선점 기대.', 'ticker': '051910', 'sentiment': 'positive'}
             ],
             '포스코퓨처엠': [
-                {'period': '2020 H2', 'category': '화학', 'title': '포스코퓨처엠, 신소재 개발', 'date': datetime.now(), 'summary': '미래소재 연구개발 성과 발표.'}
+                {'period': '2020 H2', 'category': '화학', 'title': '포스코퓨처엠, 신소재 개발', 'date': datetime.now(), 'summary': '미래소재 연구개발 성과 발표.', 'ticker': '003670', 'sentiment': 'neutral'}
             ],
             'KB금융': [
-                {'period': '2020 H2', 'category': '금융', 'title': 'KB금융, 분기 최대 실적', 'date': datetime.now(), 'summary': '이자이익 증가로 실적 호조.'}
+                {'period': '2020 H2', 'category': '금융', 'title': 'KB금융, 분기 최대 실적', 'date': datetime.now(), 'summary': '이자이익 증가로 실적 호조.', 'ticker': '105560', 'sentiment': 'positive'}
             ],
             '신한지주': [
-                {'period': '2020 H2', 'category': '금융', 'title': '신한지주, 디지털 금융 강화', 'date': datetime.now(), 'summary': '핀테크 투자 확대.'}
+                {'period': '2020 H2', 'category': '금융', 'title': '신한지주, 디지털 금융 강화', 'date': datetime.now(), 'summary': '핀테크 투자 확대.', 'ticker': '055550', 'sentiment': 'neutral'}
             ],
             '삼성물산': [
-                {'period': '2020 H2', 'category': '자동차', 'title': '삼성물산, 해외 수주 확대', 'date': datetime.now(), 'summary': '글로벌 건설 프로젝트 수주.'}
+                {'period': '2020 H2', 'category': '자동차', 'title': '삼성물산, 해외 수주 확대', 'date': datetime.now(), 'summary': '글로벌 건설 프로젝트 수주.', 'ticker': '028260', 'sentiment': 'positive'}
             ],
             '이마트': [
-                {'period': '2020 H2', 'category': '자동차', 'title': '이마트, 온라인 매출 성장', 'date': datetime.now(), 'summary': '이커머스 시장 점유율 확대.'}
+                {'period': '2020 H2', 'category': '자동차', 'title': '이마트, 온라인 매출 성장', 'date': datetime.now(), 'summary': '이커머스 시장 점유율 확대.', 'ticker': '139480', 'sentiment': 'positive'}
             ]
         }
         
@@ -66,7 +66,9 @@ class NewsService:
                     category=news['category'],
                     title=news['title'],
                     date=news['date'],
-                    summary=news['summary']
+                    summary=news['summary'],
+                    ticker=news.get('ticker'),
+                    sentiment=news.get('sentiment')
                 )
                 for idx, news in enumerate(dummy_news[stock_name], 1)
             ]
@@ -89,35 +91,45 @@ class NewsService:
                 "category": "전자",
                 "title": "삼성전자, 새로운 AI 칩 개발 발표",
                 "date": datetime.now(),
-                "summary": "삼성전자가 차세대 AI 반도체 개발에 성공했다고 발표했습니다. 이는 AI 시장에서의 경쟁력을 크게 높일 것으로 예상됩니다."
+                "summary": "삼성전자가 차세대 AI 반도체 개발에 성공했다고 발표했습니다. 이는 AI 시장에서의 경쟁력을 크게 높일 것으로 예상됩니다.",
+                "ticker": "005930",
+                "sentiment": "positive"
             },
             {
                 "period": "2020 H1",
                 "category": "금융",
                 "title": "글로벌 경제 불안으로 주식시장 하락",
                 "date": datetime.now(),
-                "summary": "글로벌 경제 불안감이 확산되면서 국내 주식시장이 전반적으로 하락세를 보이고 있습니다."
+                "summary": "글로벌 경제 불안감이 확산되면서 국내 주식시장이 전반적으로 하락세를 보이고 있습니다.",
+                "ticker": None,
+                "sentiment": "negative"
             },
             {
                 "period": "2020 H2",
                 "category": "IT",
                 "title": "카카오, 새로운 모바일 서비스 출시",
                 "date": datetime.now(),
-                "summary": "카카오가 혁신적인 모바일 결제 서비스를 출시했습니다. 사용자 편의성이 크게 향상될 것으로 기대됩니다."
+                "summary": "카카오가 혁신적인 모바일 결제 서비스를 출시했습니다. 사용자 편의성이 크게 향상될 것으로 기대됩니다.",
+                "ticker": "035720",
+                "sentiment": "positive"
             },
             {
                 "period": "2020 H2",
                 "category": "바이오",
                 "title": "바이오 기술 혁신으로 의료산업 성장",
                 "date": datetime.now(),
-                "summary": "최신 바이오 기술 개발로 인해 의료산업이 급성장하고 있습니다. 관련 기업들의 실적이 크게 개선될 전망입니다."
+                "summary": "최신 바이오 기술 개발로 인해 의료산업이 급성장하고 있습니다. 관련 기업들의 실적이 크게 개선될 전망입니다.",
+                "ticker": None,
+                "sentiment": "positive"
             },
             {
                 "period": "2020 H2",
                 "category": "자동차",
                 "title": "자동차 산업의 전기차 전환 가속화",
                 "date": datetime.now(),
-                "summary": "환경 규제 강화로 인해 자동차 업계의 전기차 전환이 가속화되고 있습니다. 전통 자동차 업체들이 새로운 도전에 직면하고 있습니다."
+                "summary": "환경 규제 강화로 인해 자동차 업계의 전기차 전환이 가속화되고 있습니다. 전통 자동차 업체들이 새로운 도전에 직면하고 있습니다.",
+                "ticker": None,
+                "sentiment": "neutral"
             }
         ]
         
@@ -136,28 +148,36 @@ class NewsService:
                 "category": "전자",
                 "title": "삼성전자, AI 반도체 시장 선점",
                 "date": datetime.now(),
-                "summary": "삼성전자가 차세대 AI 반도체 개발에 성공하여 시장에서의 경쟁력이 크게 향상될 것으로 예상됩니다."
+                "summary": "삼성전자가 차세대 AI 반도체 개발에 성공하여 시장에서의 경쟁력이 크게 향상될 것으로 예상됩니다.",
+                "ticker": "005930",
+                "sentiment": "positive"
             },
             {
                 "period": "2020 H1",
                 "category": "전자",
                 "title": "SK하이닉스, 메모리 가격 상승세",
                 "date": datetime.now(),
-                "summary": "글로벌 메모리 반도체 수요 증가로 SK하이닉스의 실적이 크게 개선될 전망입니다."
+                "summary": "글로벌 메모리 반도체 수요 증가로 SK하이닉스의 실적이 크게 개선될 전망입니다.",
+                "ticker": "000660",
+                "sentiment": "positive"
             },
             {
                 "period": "2020 H2",
                 "category": "IT",
                 "title": "NAVER, AI 기술 혁신 발표",
                 "date": datetime.now(),
-                "summary": "NAVER가 혁신적인 AI 기술을 발표하여 IT 업계의 새로운 표준이 될 것으로 기대됩니다."
+                "summary": "NAVER가 혁신적인 AI 기술을 발표하여 IT 업계의 새로운 표준이 될 것으로 기대됩니다.",
+                "ticker": "035420",
+                "sentiment": "positive"
             },
             {
                 "period": "2020 H2",
                 "category": "IT",
                 "title": "카카오, 모바일 결제 시장 확장",
                 "date": datetime.now(),
-                "summary": "카카오가 모바일 결제 서비스를 대폭 확장하여 사용자 편의성이 크게 향상될 것으로 예상됩니다."
+                "summary": "카카오가 모바일 결제 서비스를 대폭 확장하여 사용자 편의성이 크게 향상될 것으로 예상됩니다.",
+                "ticker": "035720",
+                "sentiment": "positive"
             },
             
             # 바이오 섹터 뉴스
@@ -166,14 +186,18 @@ class NewsService:
                 "category": "바이오",
                 "title": "셀트리온, 신약 임상 성공",
                 "date": datetime.now(),
-                "summary": "셀트리온의 바이오시밀러 신약이 임상 3상에 성공하여 의료계의 주목을 받고 있습니다."
+                "summary": "셀트리온의 바이오시밀러 신약이 임상 3상에 성공하여 의료계의 주목을 받고 있습니다.",
+                "ticker": "068270",
+                "sentiment": "positive"
             },
             {
                 "period": "2020 H2",
                 "category": "바이오",
                 "title": "삼성바이오로직스, 대규모 수주",
                 "date": datetime.now(),
-                "summary": "글로벌 제약사와 대규모 위탁생산 계약을 체결하여 실적이 크게 개선될 전망입니다."
+                "summary": "글로벌 제약사와 대규모 위탁생산 계약을 체결하여 실적이 크게 개선될 전망입니다.",
+                "ticker": "207940",
+                "sentiment": "positive"
             },
             
             # 화학/2차전지 섹터 뉴스
@@ -182,14 +206,18 @@ class NewsService:
                 "category": "화학",
                 "title": "LG화학, 전기차 배터리 투자 확대",
                 "date": datetime.now(),
-                "summary": "전기차 시장 성장에 맞춰 LG화학이 배터리 생산 시설을 대폭 확장할 계획입니다."
+                "summary": "전기차 시장 성장에 맞춰 LG화학이 배터리 생산 시설을 대폭 확장할 계획입니다.",
+                "ticker": "051910",
+                "sentiment": "positive"
             },
             {
                 "period": "2020 H2",
                 "category": "전자",
                 "title": "삼성SDI, 신기술 개발 성공",
                 "date": datetime.now(),
-                "summary": "삼성SDI가 차세대 배터리 기술 개발에 성공하여 시장에서의 경쟁력이 크게 향상될 것으로 예상됩니다."
+                "summary": "삼성SDI가 차세대 배터리 기술 개발에 성공하여 시장에서의 경쟁력이 크게 향상될 것으로 예상됩니다.",
+                "ticker": "006400",
+                "sentiment": "positive"
             },
             
             # 금융 섹터 뉴스
@@ -198,53 +226,18 @@ class NewsService:
                 "category": "금융",
                 "title": "카카오뱅크, 디지털 금융 혁신",
                 "date": datetime.now(),
-                "summary": "카카오뱅크가 혁신적인 디지털 금융 서비스를 출시하여 금융업계의 새로운 트렌드를 제시합니다."
-            },
-            {
-                "period": "2020 H2",
-                "category": "금융",
-                "title": "하나금융지주, 실적 호조",
-                "date": datetime.now(),
-                "summary": "이자이익 증가와 수수료 수익 개선으로 하나금융지주의 실적이 시장 예상치를 상회할 것으로 예상됩니다."
-            },
-            
-            # 자동차 섹터 뉴스
-            {
-                "period": "2020 H2",
-                "category": "자동차",
-                "title": "현대차, 전기차 시장 공략",
-                "date": datetime.now(),
-                "summary": "현대차가 전기차 시장 공략을 위해 대규모 투자를 계획하여 자동차 업계의 변화를 가속화할 것으로 예상됩니다."
-            },
-            {
-                "period": "2020 H2",
-                "category": "자동차",
-                "title": "기아, 신차 출시 성공",
-                "date": datetime.now(),
-                "summary": "기아의 새로운 모델 출시가 시장에서 큰 호응을 얻어 실적 개선에 기여할 것으로 예상됩니다."
-            },
-            
-            # 부정적 뉴스
-            {
-                "period": "2020 H2",
-                "category": "금융",
-                "title": "글로벌 경제 불안 확산",
-                "date": datetime.now(),
-                "summary": "글로벌 경제 불안감이 확산되면서 국내 주식시장이 전반적으로 하락세를 보이고 있습니다."
-            },
-            {
-                "period": "2020 H2",
-                "category": "화학",
-                "title": "원자재 가격 상승으로 인한 비용 증가",
-                "date": datetime.now(),
-                "summary": "원자재 가격 상승으로 인해 화학 업계의 원가 부담이 커지고 있습니다."
+                "summary": "카카오뱅크가 혁신적인 디지털 금융 서비스를 출시하여 금융업계의 새로운 트렌드를 제시합니다.",
+                "ticker": "323410",
+                "sentiment": "positive"
             },
             {
                 "period": "2020 H2",
                 "category": "금융",
                 "title": "규제 강화로 인한 업계 부담",
                 "date": datetime.now(),
-                "summary": "금융권에 대한 규제가 강화되면서 금융주들의 실적에 부정적 영향을 미칠 것으로 예상됩니다."
+                "summary": "금융권에 대한 규제가 강화되면서 금융주들의 실적에 부정적 영향을 미칠 것으로 예상됩니다.",
+                "ticker": None,
+                "sentiment": "negative"
             },
             
             # 중립적 뉴스
@@ -253,14 +246,18 @@ class NewsService:
                 "category": "통신",
                 "title": "통신 업계의 5G 서비스 확산",
                 "date": datetime.now(),
-                "summary": "5G 서비스가 확산되면서 통신 업계의 변화가 가속화되고 있습니다."
+                "summary": "5G 서비스가 확산되면서 통신 업계의 변화가 가속화되고 있습니다.",
+                "ticker": "017670",
+                "sentiment": "neutral"
             },
             {
                 "period": "2020 H2",
                 "category": "식품",
                 "title": "식품 업계의 새로운 트렌드",
                 "date": datetime.now(),
-                "summary": "건강식품에 대한 관심 증가로 식품 업계에 새로운 변화가 일어나고 있습니다."
+                "summary": "건강식품에 대한 관심 증가로 식품 업계에 새로운 변화가 일어나고 있습니다.",
+                "ticker": "006980",
+                "sentiment": "neutral"
             }
         ]
         

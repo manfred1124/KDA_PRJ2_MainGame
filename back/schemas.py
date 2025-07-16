@@ -83,6 +83,8 @@ class NewsResponse(BaseModel):
     title: str
     date: datetime
     summary: str
+    ticker: str | None = None
+    sentiment: str | None = None
 
     class Config:
         from_attributes = True

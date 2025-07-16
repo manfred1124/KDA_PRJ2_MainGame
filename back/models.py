@@ -82,8 +82,10 @@ class News(Base):
     __tablename__ = "news"
 
     id = Column(Integer, primary_key=True, index=True)
-    period = Column(String(20), nullable=True)  # 예: '2020 H1'
-    category = Column(String(50), nullable=True)  # 예: 'Macro'
-    title = Column(String(200), nullable=False)
-    date = Column(DateTime, default=func.now())
-    summary = Column(Text, nullable=False) 
+    period = Column(String, nullable=True)  # 예: '2020 H1'
+    category = Column(String, nullable=True)  # 예: 'Macro'
+    title = Column(String, nullable=False)
+    date = Column(DateTime, nullable=False)
+    summary = Column(String, nullable=True)
+    ticker = Column(String, nullable=True)      # 추가
+    sentiment = Column(String, nullable=True)   # 추가 
