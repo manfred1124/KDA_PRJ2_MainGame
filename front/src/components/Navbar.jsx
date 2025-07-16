@@ -98,13 +98,17 @@ const Navbar = () => {
       const response = await fetch(
         `/api/news?period=${encodeURIComponent(period)}`
       );
-      const newsList = await response.json();
-      if (newsList.length > 0) {
-        setNewsBanner(newsList[0].title);
+      const newsData = await response.json();
+      if (newsData.length > 0) {
+        setNewsList(newsData);
+        setNewsIdx(0);
+        setNewsBanner(newsData[0].title);
       } else {
+        setNewsList([]);
         setNewsBanner("");
       }
     } catch (e) {
+      setNewsList([]);
       setNewsBanner("");
     }
   };
@@ -135,7 +139,11 @@ const Navbar = () => {
   useEffect(() => {
     if (newsList.length <= 1) return;
     const timer = setInterval(() => {
-      setNewsIdx((idx) => (idx + 1) % newsList.length);
+      setNewsIdx((idx) => {
+        const newIdx = (idx + 1) % newsList.length;
+        setNewsBanner(newsList[newIdx].title);
+        return newIdx;
+      });
     }, 10000);
     return () => clearInterval(timer);
   }, [newsList]);
@@ -232,9 +240,14 @@ const Navbar = () => {
             <div className="bg-white rounded-2xl shadow-md px-6 py-4 max-w-2xl mx-auto">
               <div className="flex items-center space-x-3">
                 <span className="text-2xl">📰</span>
-                <span className="text-[#7c5c2b] font-semibold text-lg truncate">
-                  {newsBanner || "최근 뉴스가 없습니다."}
-                </span>
+                <div className="overflow-hidden">
+                  <span 
+                    key={newsIdx} 
+                    className="text-[#7c5c2b] font-semibold text-lg truncate block animate-fade-in"
+                  >
+                    {newsBanner || "최근 뉴스가 없습니다."}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
