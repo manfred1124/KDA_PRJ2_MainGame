@@ -18,13 +18,15 @@ import GameIntro from "./components/GameIntro";
 
 function App() {
   const [showLoading, setShowLoading] = useState(true);
-  const [showIntro, setShowIntro] = useState(false);
+  const [showIntro, setShowIntro] = useState(() => {
+    // 최초 마운트 시 localStorage에서 introShown 확인
+    return !localStorage.getItem("introShown");
+  });
   const navigate = useNavigate();
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setShowLoading(false);
-      setShowIntro(true);
     }, 2000);
     return () => clearTimeout(timer);
   }, []);
@@ -34,10 +36,15 @@ function App() {
   }
 
   if (showIntro) {
-    return <GameIntro onStart={() => {
-      setShowIntro(false);
-      navigate("/login");
-    }} />;
+    return (
+      <GameIntro
+        onStart={() => {
+          setShowIntro(false);
+          localStorage.setItem("introShown", "true");
+          navigate("/login");
+        }}
+      />
+    );
   }
 
   return (
