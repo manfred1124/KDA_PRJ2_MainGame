@@ -131,9 +131,9 @@ const News = () => {
 
       {/* next 버튼 */}
       <button
-        className="fixed bottom-10 right-10 bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-16 rounded-full text-xl shadow-lg transition-all duration-200 z-50"
+        className="fixed bottom-10 right-10 bg-[#7c5c2b] hover:bg-[#a67c3c] text-white font-bold py-4 px-16 rounded-full text-xl shadow-lg transition-all duration-200 z-50 border-4 border-[#e6d3a3]"
         onClick={() => navigate("/select-sector")}
-        style={{ minWidth: "200px" }}
+        style={{ minWidth: "200px", fontFamily: "serif" }}
       >
         주식 하러가기
       </button>

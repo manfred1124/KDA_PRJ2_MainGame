@@ -50,7 +50,7 @@ const ChatbotWidget = () => {
       {/* 챗봇 플로팅 버튼 */}
       {!showChatbot && (
         <button
-          className="fixed bottom-32 right-10 bg-blue-500 hover:bg-blue-600 text-white rounded-full shadow-lg p-5 z-50 flex items-center justify-center text-3xl"
+          className="fixed bottom-32 right-10 bg-[#7c5c2b] hover:bg-[#a67c3c] text-white rounded-full shadow-lg p-5 z-50 flex items-center justify-center text-3xl"
           onClick={() => setShowChatbot(true)}
           aria-label="챗봇 열기"
         >
