@@ -222,9 +222,10 @@ const Navbar = () => {
   const balance = user.total_balance || user.balance || 0;
 
   return (
-    <nav className="py-4 relative bg-gradient-to-r from-[#f7e6b6] to-[#f3e7c4] shadow-lg" style={{ fontFamily: "serif" }}>
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="flex flex-col lg:flex-row items-center gap-4 lg:gap-6">
+    <nav className="py-2 lg:py-4 relative bg-gradient-to-r from-[#f7e6b6] to-[#f3e7c4] shadow-lg" style={{ fontFamily: "serif" }}>
+      <div className="max-w-7xl mx-auto px-3 lg:px-4">
+        {/* 데스크톱 레이아웃 */}
+        <div className="hidden lg:flex items-center gap-6">
           {/* 왼쪽: 홈 버튼 */}
           <div className="flex-shrink-0">
             <Link
@@ -315,6 +316,104 @@ const Navbar = () => {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+
+        {/* 모바일 레이아웃 */}
+        <div className="lg:hidden space-y-3">
+          {/* 상단: 홈 + 뉴스 */}
+          <div className="flex items-center gap-3">
+            <Link
+              to="/"
+              className="flex items-center justify-center w-12 h-12 bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 flex-shrink-0"
+            >
+              <span className="text-2xl">🏠</span>
+            </Link>
+            
+            <div className="flex-1 min-w-0">
+              <div className="bg-white rounded-xl shadow-md px-4 py-3">
+                <div className="flex items-center space-x-2">
+                  <span className="text-lg">📰</span>
+                  <div className="overflow-hidden">
+                    <span 
+                      key={newsIdx} 
+                      className="text-[#7c5c2b] font-semibold text-sm truncate block animate-fade-in"
+                    >
+                      {newsBanner || "최근 뉴스가 없습니다."}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 하단: 라운드 + 잔고 + 유저 */}
+          <div className="flex items-center gap-2">
+            {/* 라운드 정보 */}
+            <div className="flex-1">
+              <div className="bg-white rounded-xl shadow-md px-3 py-2">
+                <div className="flex items-center justify-center space-x-1">
+                  <span className="text-xs text-[#a67c3c] font-medium">라운드</span>
+                  <span className="text-lg font-bold text-[#7c5c2b]">
+                    {(user?.current_round_idx ?? 0) + 1}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* 잔고 정보 */}
+            <div className="flex-1">
+              <div className="bg-white rounded-xl shadow-md px-3 py-2">
+                <div className="flex items-center justify-center space-x-1">
+                  <span className="text-xs text-[#a67c3c] font-medium">잔고</span>
+                  <span className="text-sm font-bold text-[#7c5c2b] truncate">
+                    {userBalance.toLocaleString()}원
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* 유저 드롭다운 */}
+            <div className="flex-shrink-0 relative dropdown-container">
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="flex items-center justify-center w-12 h-12 bg-white hover:bg-gray-50 text-[#7c5c2b] rounded-xl shadow-md hover:shadow-lg transition-all duration-300"
+                style={{ fontFamily: "serif" }}
+              >
+                <User className="w-5 h-5" />
+              </button>
+              
+              {/* 드롭다운 메뉴 */}
+              {isDropdownOpen && (
+                <div className="absolute top-full right-0 mt-2 w-40 bg-white rounded-xl shadow-lg border border-gray-100 z-50">
+                  <div className="py-2">
+                    <div className="px-3 py-2 text-sm text-[#7c5c2b] font-semibold border-b border-gray-100">
+                      {user.username}
+                    </div>
+                    <Link
+                      to="/my-page"
+                      onClick={() => setIsDropdownOpen(false)}
+                      className="flex items-center space-x-2 px-3 py-2 text-[#7c5c2b] hover:bg-[#f7e6b6] transition-colors duration-200"
+                      style={{ fontFamily: "serif" }}
+                    >
+                      <User className="w-4 h-4" />
+                      <span className="text-sm font-semibold">마이페이지</span>
+                    </Link>
+                    <button
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        handleLogout();
+                      }}
+                      className="flex items-center space-x-2 px-3 py-2 text-red-600 hover:bg-red-50 transition-colors duration-200 w-full text-left"
+                      style={{ fontFamily: "serif" }}
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span className="text-sm font-semibold">로그아웃</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
