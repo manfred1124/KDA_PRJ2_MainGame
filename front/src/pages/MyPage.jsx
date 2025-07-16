@@ -441,7 +441,9 @@ const MyPage = () => {
         >
           매매 기록
         </h3>
-        <div className="overflow-x-auto">
+        
+        {/* 데스크톱 테이블 뷰 */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="min-w-full text-sm text-left">
             <thead>
               <tr className="border-b border-[#e6d3a3] bg-[#f3e7c4]">
@@ -528,6 +530,93 @@ const MyPage = () => {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* 모바일 카드 뷰 */}
+        <div className="md:hidden space-y-4">
+          {tradeHistory.length === 0 ? (
+            <div className="text-center py-8 text-[#a67c3c]" style={{ fontFamily: "Jua, sans-serif" }}>
+              거래 내역이 없습니다.
+            </div>
+          ) : (
+            tradeHistory.map((tx, idx) => {
+              // 현재가, 수익률, 기회비용(매도 후 현재가 대비) 계산 예시
+              // 실제 데이터 구조에 맞게 수정 필요
+              const currentPrice = tx.current_price ?? 0;
+              const profitRate =
+                tx.transaction_type === "buy"
+                  ? ((currentPrice - tx.price) / tx.price) * 100
+                  : ((tx.price - tx.sell_price) / tx.sell_price) * 100;
+              const opportunityCost =
+                tx.transaction_type === "sell" && currentPrice
+                  ? ((currentPrice - tx.price) / tx.price) * 100
+                  : null;
+              return (
+                <div
+                  key={idx}
+                  className="bg-[#f3e7c4] rounded-lg p-4 border border-[#e6d3a3]"
+                  style={{ fontFamily: "Jua, sans-serif" }}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-bold text-[#7c5c2b] text-lg">
+                      {tx.stock_name}
+                    </h4>
+                    <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                      tx.transaction_type === "buy" 
+                        ? "bg-red-100 text-red-700" 
+                        : "bg-blue-100 text-blue-700"
+                    }`}>
+                      {tx.transaction_type === "buy" ? "매수" : "매도"}
+                    </span>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <span className="text-[#a67c3c] font-medium">수량:</span>
+                      <span className="text-[#7c5c2b] ml-2">{tx.quantity}주</span>
+                    </div>
+                    <div>
+                      <span className="text-[#a67c3c] font-medium">거래가:</span>
+                      <span className="text-[#7c5c2b] ml-2">{tx.price.toLocaleString()}원</span>
+                    </div>
+                    <div>
+                      <span className="text-[#a67c3c] font-medium">라운드:</span>
+                      <span className="text-[#7c5c2b] ml-2">{tx.round_number}</span>
+                    </div>
+                    <div>
+                      <span className="text-[#a67c3c] font-medium">거래시점:</span>
+                      <span className="text-[#7c5c2b] ml-2">{tx.period || "-"}</span>
+                    </div>
+                    <div>
+                      <span className="text-[#a67c3c] font-medium">현재가:</span>
+                      <span className="text-[#7c5c2b] ml-2">
+                        {currentPrice ? currentPrice.toLocaleString() + "원" : "-"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[#a67c3c] font-medium">수익률:</span>
+                      <span className={`ml-2 font-semibold ${
+                        profitRate >= 0 ? "text-[#3b7c2b]" : "text-[#a63c2b]"
+                      }`}>
+                        {profitRate ? (profitRate >= 0 ? "+" : "") + profitRate.toFixed(2) + "%" : "-"}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {opportunityCost !== null && (
+                    <div className="mt-3 pt-3 border-t border-[#e6d3a3]">
+                      <span className="text-[#a67c3c] font-medium">매도 후 현재가 대비:</span>
+                      <span className={`ml-2 font-semibold ${
+                        opportunityCost >= 0 ? "text-[#3b7c2b]" : "text-[#a63c2b]"
+                      }`}>
+                        {(opportunityCost >= 0 ? "+" : "") + opportunityCost.toFixed(2)}%
+                      </span>
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
 
