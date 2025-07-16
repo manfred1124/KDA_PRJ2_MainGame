@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { Eye, EyeOff, UserPlus } from "lucide-react";
@@ -15,8 +15,14 @@ const Register = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const { register } = useAuth();
+  const { register, user } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user) {
+      navigate("/news", { replace: true });
+    }
+  }, [user, navigate]);
 
   const handleChange = (e) => {
     setFormData({

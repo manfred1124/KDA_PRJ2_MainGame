@@ -1,5 +1,5 @@
-import React from "react";
-import { Routes, Route } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Routes, Route, useNavigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import PrivateRoute from "./components/PrivateRoute";
 import Navbar from "./components/Navbar";
@@ -13,8 +13,33 @@ import SelectSector from "./pages/SelectSector";
 import MyPage from "./pages/MyPage";
 import GameResult from "./pages/GameResult";
 import ChatbotWidget from "./components/ChatbotWidget";
+import LoadingScreen from "./components/LoadingScreen";
+import GameIntro from "./components/GameIntro";
 
 function App() {
+  const [showLoading, setShowLoading] = useState(true);
+  const [showIntro, setShowIntro] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowLoading(false);
+      setShowIntro(true);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (showLoading) {
+    return <LoadingScreen />;
+  }
+
+  if (showIntro) {
+    return <GameIntro onStart={() => {
+      setShowIntro(false);
+      navigate("/login");
+    }} />;
+  }
+
   return (
     <AuthProvider>
       <div className="min-h-screen bg-[url('/bg.jpg')] bg-cover bg-center bg-no-repeat bg-fixed">
