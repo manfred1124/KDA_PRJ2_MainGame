@@ -72,12 +72,12 @@ const MyPage = () => {
   }
 
   return (
-    <div className="space-y-6 min-h-screen pb-12">
+    <div className="space-y-6 min-h-screen pb-12" style={{ fontFamily: "Jua, sans-serif" }}>
       {/* 라운드 요약 제목 및 계속 진행하기 버튼 */}
       <div className="flex flex-col items-center gap-4 mt-4 mb-2">
         <h2
           className="text-3xl font-bold text-[#7c5c2b] drop-shadow"
-          style={{ fontFamily: "serif" }}
+          style={{ fontFamily: "Jua, sans-serif" }}
         >
           {(user?.current_round_idx ?? 0) + 1}라운드 요약
         </h2>
@@ -97,28 +97,28 @@ const MyPage = () => {
           <div>
             <h1
               className="text-3xl font-bold text-[#7c5c2b]"
-              style={{ fontFamily: "serif" }}
+              style={{ fontFamily: "Jua, sans-serif" }}
             >
               {user?.username}
             </h1>
-            <p className="text-[#a67c3c]">모험가</p>
+            <p className="text-[#a67c3c]" style={{ fontFamily: "Jua, sans-serif" }}>모험가</p>
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="flex items-center space-x-2 text-[#7c5c2b]">
             <Calendar size={20} />
-            <span>현재 라운드: {(user?.current_round_idx ?? 0) + 1}</span>
+            <span style={{ fontFamily: "Jua, sans-serif" }}>현재 라운드: {(user?.current_round_idx ?? 0) + 1}</span>
           </div>
           <div className="flex items-center space-x-2 text-[#7c5c2b]">
             <Trophy size={20} />
-            <span>
+            <span style={{ fontFamily: "Jua, sans-serif" }}>
               총 수익률: {portfolio.total_profit_percentage >= 0 ? "+" : ""}
               {portfolio.total_profit_percentage.toFixed(2)}%
             </span>
           </div>
           <div className="flex items-center space-x-2 text-[#7c5c2b]">
             <DollarSign size={20} />
-            <span>
+            <span style={{ fontFamily: "Jua, sans-serif" }}>
               총 자산:{" "}
               {(
                 portfolio.total_balance + portfolio.total_portfolio_value
@@ -132,7 +132,7 @@ const MyPage = () => {
       <div className="rounded-xl shadow-lg border border-[#e6d3a3] p-6 bg-[#f3e7c4]">
         <h3
           className="text-lg font-bold text-[#a67c3c] mb-4"
-          style={{ fontFamily: "serif" }}
+          style={{ fontFamily: "Jua, sans-serif" }}
         >
           빠른 이동
         </h3>
@@ -140,26 +140,28 @@ const MyPage = () => {
           <button
             onClick={() => navigate("/select-sector")}
             className="flex flex-col items-center p-4 bg-gradient-to-br from-[#f7e6b6] to-[#e6d3a3] rounded-lg hover:from-[#f3e7c4] hover:to-[#e6d3a3] transition-all duration-200 border border-[#bfa76a] hover:border-[#a67c3c]"
-            style={{ fontFamily: "serif" }}
+            style={{ fontFamily: "Jua, sans-serif" }}
           >
             <StockIcon className="text-[#a67c3c] mb-2" size={24} />
-            <span className="text-sm font-semibold text-[#7c5c2b]">
+            <span className="text-sm font-semibold text-[#7c5c2b]" style={{ fontFamily: "Jua, sans-serif" }}>
               주식 매매하기
             </span>
           </button>
           <button
             onClick={() => navigate("/news")}
             className="flex flex-col items-center p-4 bg-gradient-to-br from-[#f7e6b6] to-[#e6d3a3] rounded-lg hover:from-[#f3e7c4] hover:to-[#e6d3a3] transition-all duration-200 border border-[#bfa76a] hover:border-[#a67c3c]"
+            style={{ fontFamily: "Jua, sans-serif" }}
           >
             <Newspaper className="text-[#a67c3c] mb-2" size={24} />
-            <span className="text-sm font-semibold text-[#7c5c2b]">뉴스</span>
+            <span className="text-sm font-semibold text-[#7c5c2b]" style={{ fontFamily: "Jua, sans-serif" }}>뉴스</span>
           </button>
           <button
             onClick={() => navigate("/ranking")}
             className="flex flex-col items-center p-4 bg-gradient-to-br from-[#f7e6b6] to-[#e6d3a3] rounded-lg hover:from-[#f3e7c4] hover:to-[#e6d3a3] transition-all duration-200 border border-[#bfa76a] hover:border-[#a67c3c]"
+            style={{ fontFamily: "Jua, sans-serif" }}
           >
             <Trophy className="text-[#a67c3c] mb-2" size={24} />
-            <span className="text-sm font-semibold text-[#7c5c2b]">랭킹</span>
+            <span className="text-sm font-semibold text-[#7c5c2b]" style={{ fontFamily: "Jua, sans-serif" }}>랭킹</span>
           </button>
         </div>
       </div>
@@ -334,7 +336,7 @@ const MyPage = () => {
         <div className="p-6 border-b border-[#e6d3a3]">
           <h3
             className="text-xl font-bold text-[#a67c3c]"
-            style={{ fontFamily: "serif" }}
+            style={{ fontFamily: "Jua, sans-serif" }}
           >
             보유 주식 ({portfolio.items.length}종목)
           </h3>
@@ -342,14 +344,14 @@ const MyPage = () => {
         {portfolio.items.length === 0 ? (
           <div className="text-center py-12">
             <Package size={64} className="text-[#d6c08a] mx-auto mb-4" />
-            <p className="text-[#a67c3c] text-lg mb-2">
+            <p className="text-[#a67c3c] text-lg mb-2" style={{ fontFamily: "Jua, sans-serif" }}>
               아직 보유한 주식이 없습니다.
             </p>
-            <p className="text-sm text-[#bfa76a]">주식 투자를 시작해보세요!</p>
+            <p className="text-sm text-[#bfa76a]" style={{ fontFamily: "Jua, sans-serif" }}>주식 투자를 시작해보세요!</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full" style={{ fontFamily: "serif" }}>
+            <table className="w-full" style={{ fontFamily: "Jua, sans-serif" }}>
               <thead>
                 <tr className="border-b border-[#e6d3a3] bg-[#f7e6b6]">
                   <th className="text-left py-4 px-6 font-semibold text-[#a67c3c]">
@@ -435,7 +437,7 @@ const MyPage = () => {
       <div className="rounded-xl shadow-lg border border-[#e6d3a3] bg-[#f7e6b6] p-6 mt-8">
         <h3
           className="text-xl font-bold text-[#a67c3c] mb-4"
-          style={{ fontFamily: "serif" }}
+          style={{ fontFamily: "Jua, sans-serif" }}
         >
           매매 기록
         </h3>
@@ -469,7 +471,7 @@ const MyPage = () => {
             <tbody>
               {tradeHistory.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="text-center py-8 text-[#a67c3c]">
+                  <td colSpan={9} className="text-center py-8 text-[#a67c3c]" style={{ fontFamily: "Jua, sans-serif" }}>
                     거래 내역이 없습니다.
                   </td>
                 </tr>
@@ -534,7 +536,7 @@ const MyPage = () => {
         <button
           onClick={() => navigate("/")}
           className="bg-gradient-to-b from-[#bfa76a] to-[#7c5c2b] text-white font-bold py-3 px-10 rounded-full text-lg shadow border-4 border-[#e6d3a3] tracking-wider transition-all duration-200 hover:from-[#d6c08a] hover:to-[#a67c3c]"
-          style={{ fontFamily: "serif", letterSpacing: "0.05em" }}
+          style={{ fontFamily: "Jua, sans-serif", letterSpacing: "0.05em" }}
         >
           계속 진행하기
         </button>
