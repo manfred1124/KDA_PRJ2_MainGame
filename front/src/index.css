@@ -10,6 +10,67 @@
     background-position: center;
     background-repeat: no-repeat;
   }
+  
+  /* 로그인/회원가입 페이지 폰트 적용 */
+  .auth-page {
+    font-family: 'Jua', sans-serif;
+  }
+  
+  .auth-page h2 {
+    font-family: 'Jua', sans-serif;
+    font-size: 2.5rem;
+    line-height: 1.2;
+  }
+  
+  .auth-page p {
+    font-family: 'Jua', sans-serif;
+    font-size: 1.2rem;
+  }
+  
+  .auth-page label {
+    font-family: 'Jua', sans-serif;
+    font-size: 1.1rem;
+  }
+  
+  .auth-page .text-sm {
+    font-family: 'Jua', sans-serif;
+    font-size: 1rem;
+  }
+  
+  /* 뉴스 페이지 폰트 적용 (나눔명조체) */
+  .news-page {
+    font-family: 'Nanum Myeongjo', serif;
+  }
+  
+  .news-page h2 {
+    font-family: 'Nanum Myeongjo', serif;
+    font-size: 2.5rem;
+    line-height: 1.2;
+  }
+  
+  .news-page h3 {
+    font-family: 'Nanum Myeongjo', serif;
+    font-size: 1.3rem;
+  }
+  
+  .news-page p {
+    font-family: 'Nanum Myeongjo', serif;
+    font-size: 1.1rem;
+  }
+  
+  .news-page button {
+    font-family: 'Nanum Myeongjo', serif;
+  }
+  
+  .news-page .text-sm {
+    font-family: 'Nanum Myeongjo', serif;
+    font-size: 1rem;
+  }
+  
+  .news-page .text-lg {
+    font-family: 'Nanum Myeongjo', serif;
+    font-size: 1.2rem;
+  }
 }
 
 @layer components {
