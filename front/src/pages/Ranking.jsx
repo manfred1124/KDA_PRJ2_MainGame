@@ -70,8 +70,8 @@ const Ranking = () => {
   return (
     <div className="space-y-6" style={{ fontFamily: "Jua, sans-serif" }}>
       <div className="text-center">
-        <h1 className="text-4xl font-bold text-[#7c5c2b] mb-2" style={{ fontFamily: "Jua, sans-serif" }}>🏆 투자 랭킹</h1>
-        <p className="text-[#a67c3c]" style={{ fontFamily: "Jua, sans-serif" }}>
+        <h1 className="text-4xl font-bold text-gray-900 mb-2" style={{ fontFamily: "Jua, sans-serif" }}>🏆 투자 랭킹</h1>
+        <p className="text-gray-700" style={{ fontFamily: "Jua, sans-serif" }}>
           다른 플레이어들과 경쟁하며 실력을 확인하세요!
         </p>
       </div>
