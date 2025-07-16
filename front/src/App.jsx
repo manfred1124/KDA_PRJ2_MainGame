@@ -22,6 +22,8 @@ function App() {
     // 최초 마운트 시 localStorage에서 introShown 확인
     return !localStorage.getItem("introShown");
   });
+  // 로그인 여부 확인하기 - 토큰으로
+  const isLoggedIn = !!localStorage.getItem("token");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -113,7 +115,7 @@ function App() {
             />
           </Routes>
         </main>
-        <ChatbotWidget />
+        {isLoggedIn && <ChatbotWidget />}
       </div>
     </AuthProvider>
   );
