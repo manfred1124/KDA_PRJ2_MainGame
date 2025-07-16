@@ -11,6 +11,7 @@ const News = () => {
   // 모달 상태 추가
   const [selectedNews, setSelectedNews] = useState(null);
   const [currentPeriod, setCurrentPeriod] = useState(null);
+  const navigate = useNavigate(); // 추가
 
   // ESC 키로 모달 닫기
   const handleKeyDown = useCallback((e) => {
@@ -129,9 +130,7 @@ const News = () => {
       {/* next 버튼 */}
       <button
         className="fixed bottom-10 right-10 bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-16 rounded-full text-xl shadow-lg transition-all duration-200 z-50"
-        onClick={() => {
-          window.location.href = "/select-sector";
-        }}
+        onClick={() => navigate("/select-sector")}
         style={{ minWidth: "200px" }}
       >
         주식 하러가기
