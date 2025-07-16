@@ -75,6 +75,22 @@ class NewsService:
         
         return [NewsResponse.from_orm(news) for news in news_list]
     
+    async def get_macro_news_by_period(self, db: AsyncSession, period: str) -> List[NewsResponse]:
+        """특정 period, Macro 카테고리 뉴스만 조회"""
+        result = await db.execute(
+            select(News).where(News.period == period, News.category == 'Macro').order_by(News.date.asc())
+        )
+        news_list = result.scalars().all()
+        return [NewsResponse.from_orm(news) for news in news_list]
+    
+    async def get_news_until_period(self, db: AsyncSession, period: str):
+        """주어진 period까지의 모든 뉴스 데이터 반환"""
+        # period는 'YYYY H1' 또는 'YYYY H2' 형식이므로, 문자열 정렬로 비교 가능
+        result = await db.execute(
+            select(News).where(News.period <= period).order_by(News.period, News.date)
+        )
+        return result.scalars().all()
+    
     async def insert_initial_news(self, db: AsyncSession):
         """초기 뉴스 데이터 삽입"""
         # 기존 데이터 확인

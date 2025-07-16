@@ -19,11 +19,11 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 1440  # 24시간으로 연장
 # 비밀번호 해싱
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-def generate_random_periods():
+def generate_sequential_periods():
     years = [2020, 2021, 2022, 2023, 2024]
     halfs = ["H1", "H2"]
     all_periods = [f"{y} {h}" for y in years for h in halfs]
-    return random.sample(all_periods, 10)
+    return all_periods  # 순서대로 반환
 
 class AuthService:
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:
@@ -85,7 +85,7 @@ class AuthService:
         
         # 새 사용자 생성
         hashed_password = self.get_password_hash(user_data.password)
-        periods = generate_random_periods()
+        periods = generate_sequential_periods()
         db_user = User(
             username=user_data.username,
             hashed_password=hashed_password,

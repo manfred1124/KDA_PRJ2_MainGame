@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends, status
+from fastapi import FastAPI, HTTPException, Depends, status, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -238,6 +238,11 @@ async def get_news(db: AsyncSession = Depends(get_db)):
 async def get_news_by_stock(stock_name: str, db: AsyncSession = Depends(get_db)):
     return await news_service.get_news_by_stock(db, stock_name)
 
+@app.get("/news/macro", response_model=List[NewsResponse])
+async def get_macro_news(period: str, db: AsyncSession = Depends(get_db)):
+    """특정 period, Macro 카테고리 뉴스만 조회"""
+    return await news_service.get_macro_news_by_period(db, period)
+
 # 게임 상태 관련 엔드포인트
 @app.get("/game/state", response_model=GameState)
 async def get_game_state(
@@ -300,6 +305,37 @@ async def restart_game(
 @app.get("/ranking")
 async def get_ranking(db: AsyncSession = Depends(get_db)):
     return await game_service.get_ranking(db)
+
+@app.post("/chatbot")
+async def chatbot(
+    message: str = Body(..., embed=True),
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: AsyncSession = Depends(get_db)
+):
+    user_id = auth_service.verify_token(credentials.credentials)
+    user = await db.execute(select(User).where(User.id == user_id))
+    user = user.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    periods = json.loads(user.round_periods)
+    current_period = periods[user.current_round_idx]
+
+    # 해당 period까지의 데이터만 조회
+    prices = await stock_service.get_prices_until_period(db, current_period)
+    news = await news_service.get_news_until_period(db, current_period)
+
+    # MVP: 단순 룰기반 답변 (뉴스/주가 요약)
+    if "뉴스" in message:
+        news_titles = [n.title for n in news]
+        answer = f"[{current_period}]까지의 주요 뉴스: " + ", ".join(news_titles[-5:])
+    elif "주가" in message:
+        price_info = {}
+        for p in prices:
+            price_info.setdefault(p.stock_id, []).append(p.close_price)
+        answer = f"[{current_period}]까지의 주가 데이터가 {len(prices)}건 있습니다."
+    else:
+        answer = f"[{current_period}]까지의 뉴스와 주가 데이터만 답변할 수 있습니다. '뉴스' 또는 '주가'를 포함해 질문해보세요."
+    return {"answer": answer}
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True) 

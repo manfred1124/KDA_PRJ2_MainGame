@@ -9,16 +9,10 @@ from .news_service import NewsService
 from fastapi import HTTPException
 from models import StockPrice
 import json
+from services.period_utils import period_to_date
 
 stock_service = StockService()
 news_service = NewsService()
-
-def period_to_date(period: str) -> str:
-    year, half = period.split()
-    if half == "H1":
-        return f"{year}-01-01"
-    else:
-        return f"{year}-07-01"
 
 class GameService:
     def get_round_date(self, round_number: int) -> str:
@@ -130,12 +124,11 @@ class GameService:
         
         # 사용자 정보 초기화
         user.current_round_idx = 0  # 라운드 인덱스 초기화
-        import random, json
+        import json
         years = [2020, 2021, 2022, 2023, 2024]
         halfs = ["H1", "H2"]
         all_periods = [f"{y} {h}" for y in years for h in halfs]
-        random.shuffle(all_periods)
-        user.round_periods = json.dumps(all_periods[:10])  # 순서를 랜덤하게 섞어서 10개 선택
+        user.round_periods = json.dumps(all_periods)  # 순서대로 10개
         user.total_balance = 10000000  # 1천만원으로 초기화
         user.realized_profit = 0  # 실현 수익 초기화
         

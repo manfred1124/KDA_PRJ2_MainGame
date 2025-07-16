@@ -9,6 +9,7 @@ const News = () => {
   const [loading, setLoading] = useState(true);
   // 모달 상태 추가
   const [selectedNews, setSelectedNews] = useState(null);
+  const [currentPeriod, setCurrentPeriod] = useState(null);
 
   // ESC 키로 모달 닫기
   const handleKeyDown = useCallback((e) => {
@@ -17,20 +18,33 @@ const News = () => {
     }
   }, []);
 
+  // 현재 라운드의 period 가져오기
   useEffect(() => {
-    if (selectedNews) {
-      window.addEventListener("keydown", handleKeyDown);
-      return () => window.removeEventListener("keydown", handleKeyDown);
-    }
-  }, [selectedNews, handleKeyDown]);
-
-  useEffect(() => {
-    fetchNews();
+    const fetchPeriod = async () => {
+      try {
+        const res = await axios.get("/api/auth/me");
+        setCurrentPeriod(res.data.current_period);
+      } catch (error) {
+        toast.error("라운드 정보를 불러오지 못했습니다.");
+        setLoading(false);
+      }
+    };
+    fetchPeriod();
   }, []);
 
-  const fetchNews = async () => {
+  // period가 준비되면 뉴스 불러오기
+  useEffect(() => {
+    if (!currentPeriod) return;
+    fetchNews(currentPeriod);
+    // eslint-disable-next-line
+  }, [currentPeriod]);
+
+  const fetchNews = async (period) => {
+    setLoading(true);
     try {
-      const response = await axios.get("/api/news");
+      const response = await axios.get(
+        `/api/news/macro?period=${encodeURIComponent(period)}`
+      );
       setNews(response.data);
     } catch (error) {
       toast.error("뉴스를 불러오는데 실패했습니다.");

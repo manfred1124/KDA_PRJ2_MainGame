@@ -8,6 +8,7 @@ from datetime import datetime
 from models import Stock, StockPrice
 from schemas import StockResponse
 from fastapi import HTTPException, status
+from services.period_utils import period_to_date
 
 class StockService:
     async def get_all_stocks(self, db: AsyncSession, date: datetime) -> List[StockResponse]:
@@ -231,3 +232,11 @@ class StockService:
                 }])
         
         await db.commit() 
+
+    async def get_prices_until_period(self, db: AsyncSession, period: str):
+        """주어진 period까지의 모든 주가 데이터 반환"""
+        date_limit = period_to_date(period)
+        result = await db.execute(
+            select(StockPrice).where(StockPrice.date <= date_limit)
+        )
+        return result.scalars().all() 
