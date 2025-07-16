@@ -8,6 +8,11 @@ import jwt
 from typing import List, Optional
 from sqlalchemy import select
 import json
+import os
+from dotenv import load_dotenv
+load_dotenv()
+from langchain.chat_models import ChatOpenAI
+from langchain.schema import SystemMessage, HumanMessage
 
 from database import get_db, init_db
 from models import User, Stock, Portfolio, Transaction, News
@@ -324,17 +329,27 @@ async def chatbot(
     prices = await stock_service.get_prices_until_period(db, current_period)
     news = await news_service.get_news_until_period(db, current_period)
 
-    # MVP: 단순 룰기반 답변 (뉴스/주가 요약)
-    if "뉴스" in message:
-        news_titles = [n.title for n in news]
-        answer = f"[{current_period}]까지의 주요 뉴스: " + ", ".join(news_titles[-5:])
-    elif "주가" in message:
-        price_info = {}
-        for p in prices:
-            price_info.setdefault(p.stock_id, []).append(p.close_price)
-        answer = f"[{current_period}]까지의 주가 데이터가 {len(prices)}건 있습니다."
-    else:
-        answer = f"[{current_period}]까지의 뉴스와 주가 데이터만 답변할 수 있습니다. '뉴스' 또는 '주가'를 포함해 질문해보세요."
+    # context 요약 (뉴스 5개, 주가 5개)
+    news_titles = [n.title for n in news][-5:]
+    price_summaries = []
+    for p in prices[-5:]:
+        price_summaries.append(f"{p.stock_id} {p.date}: {p.close_price}")
+    context = f"현재 라운드: {current_period}\n최근 뉴스: {', '.join(news_titles)}\n최근 주가: {', '.join(price_summaries)}\n"
+
+    # LangChain LLM 호출
+    llm = ChatOpenAI(temperature=0.2, model_name="gpt-3.5-turbo")
+    system_prompt = (
+        """너는 주식 투자 시뮬레이션 게임의 챗봇이야.\n"
+        "아래 context(주가/뉴스) 정보까지만 참고해서 답변해.\n"
+        "미래 데이터는 절대 알려주지 마.\n"
+        """
+    )
+    messages = [
+        SystemMessage(content=system_prompt + "\n" + context),
+        HumanMessage(content=message)
+    ]
+    answer = llm(messages).content
+
     return {"answer": answer}
 
 if __name__ == "__main__":

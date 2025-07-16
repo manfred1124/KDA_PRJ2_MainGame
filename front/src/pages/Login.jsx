@@ -1,41 +1,44 @@
-import React, { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
-import { Eye, EyeOff, LogIn } from 'lucide-react'
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import { Eye, EyeOff, LogIn } from "lucide-react";
 
 const Login = () => {
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-  const [loading, setLoading] = useState(false)
-  
-  const { login } = useAuth()
-  const navigate = useNavigate()
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    
-    const success = await login(username, password)
+    e.preventDefault();
+    setLoading(true);
+
+    const success = await login(username, password);
     if (success) {
-      navigate('/')
+      navigate("/");
     }
-    setLoading(false)
-  }
+    setLoading(false);
+  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen flex items-center justify-center">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <div className="text-6xl mb-4 animate-float">🎮</div>
           <h2 className="text-3xl font-bold text-gray-900">환영합니다!</h2>
           <p className="mt-2 text-gray-600">주식 투자 시뮬레이션 게임</p>
         </div>
-        
+
         <div className="card">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="username"
+                className="block text-sm font-medium text-gray-700"
+              >
                 사용자명
               </label>
               <input
@@ -48,15 +51,18 @@ const Login = () => {
                 placeholder="사용자명을 입력하세요"
               />
             </div>
-            
+
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700"
+              >
                 비밀번호
               </label>
               <div className="relative mt-1">
                 <input
                   id="password"
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -72,7 +78,7 @@ const Login = () => {
                 </button>
               </div>
             </div>
-            
+
             <button
               type="submit"
               disabled={loading}
@@ -88,17 +94,20 @@ const Login = () => {
               )}
             </button>
           </form>
-          
+
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
-              계정이 없으신가요?{' '}
-              <Link to="/register" className="text-primary-600 hover:text-primary-700 font-medium">
+              계정이 없으신가요?{" "}
+              <Link
+                to="/register"
+                className="text-primary-600 hover:text-primary-700 font-medium"
+              >
                 회원가입
               </Link>
             </p>
           </div>
         </div>
-        
+
         <div className="text-center text-sm text-gray-500">
           <p>🎯 2020년부터 2024년까지의 주식 시장을 시뮬레이션</p>
           <p>📈 실제 주식 데이터 기반의 교육용 게임</p>
@@ -106,7 +115,7 @@ const Login = () => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Login 
+export default Login;
