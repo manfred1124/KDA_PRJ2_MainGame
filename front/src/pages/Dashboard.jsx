@@ -1,90 +1,105 @@
-import React, { useState, useEffect } from 'react'
-import { useAuth } from '../contexts/AuthContext'
-import axios from 'axios'
-import toast from 'react-hot-toast'
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  DollarSign, 
+import React, { useState, useEffect } from "react";
+import { useAuth } from "../contexts/AuthContext";
+import axios from "axios";
+import toast from "react-hot-toast";
+import {
+  TrendingUp,
+  TrendingDown,
+  DollarSign,
   Calendar,
   ArrowRight,
-  RefreshCw
-} from 'lucide-react'
+  RefreshCw,
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
-  const { user } = useAuth()
-  const [gameState, setGameState] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [advancing, setAdvancing] = useState(false)
-  const [restarting, setRestarting] = useState(false)
+  const { user } = useAuth();
+  const [gameState, setGameState] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [advancing, setAdvancing] = useState(false);
+  const [restarting, setRestarting] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    fetchGameState()
-  }, [])
+    fetchGameState();
+  }, []);
 
   const fetchGameState = async () => {
     try {
-      const response = await axios.get('/api/game/state')
-      setGameState(response.data)
+      const response = await axios.get("/api/game/state");
+      setGameState(response.data);
     } catch (error) {
-      toast.error('게임 상태를 불러오는데 실패했습니다.')
+      toast.error("게임 상태를 불러오는데 실패했습니다.");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const advanceRound = async () => {
-    setAdvancing(true)
+    setAdvancing(true);
     try {
-      const response = await axios.post('/api/game/next-round')
-      toast.success(`라운드 ${response.data.new_round}로 진행되었습니다!`)
-      fetchGameState()
+      const response = await axios.post("/api/game/next-round");
+      toast.success(`라운드 ${response.data.new_round}로 진행되었습니다!`);
+      fetchGameState();
     } catch (error) {
-      toast.error('라운드 진행에 실패했습니다.')
+      if (
+        error.response &&
+        error.response.status === 400 &&
+        error.response.data?.detail === "이미 마지막 라운드입니다."
+      ) {
+        toast.success("마지막 라운드입니다. 결과 페이지로 이동합니다.");
+        navigate("/game-result");
+      } else {
+        toast.error("라운드 진행에 실패했습니다.");
+      }
     } finally {
-      setAdvancing(false)
+      setAdvancing(false);
     }
-  }
+  };
 
   const restartGame = async () => {
-    if (!window.confirm('정말로 게임을 다시 시작하시겠습니까?\n모든 진행 상황이 초기화됩니다.')) {
-      return
+    if (
+      !window.confirm(
+        "정말로 게임을 다시 시작하시겠습니까?\n모든 진행 상황이 초기화됩니다."
+      )
+    ) {
+      return;
     }
-    
-    setRestarting(true)
+
+    setRestarting(true);
     try {
-      const response = await axios.post('/api/game/restart')
-      toast.success('게임이 성공적으로 재시작되었습니다!')
-      fetchGameState()
+      const response = await axios.post("/api/game/restart");
+      toast.success("게임이 성공적으로 재시작되었습니다!");
+      fetchGameState();
     } catch (error) {
-      toast.error('게임 재시작에 실패했습니다.')
+      toast.error("게임 재시작에 실패했습니다.");
     } finally {
-      setRestarting(false)
+      setRestarting(false);
     }
-  }
+  };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
       </div>
-    )
+    );
   }
 
   if (!gameState) {
-    return <div>게임 상태를 불러올 수 없습니다.</div>
+    return <div>게임 상태를 불러올 수 없습니다.</div>;
   }
 
-  const profitLossColor = gameState.total_profit_loss >= 0 ? 'text-success-600' : 'text-danger-600'
-  const profitLossIcon = gameState.total_profit_loss >= 0 ? <TrendingUp /> : <TrendingDown />
+  const profitLossColor =
+    gameState.total_profit_loss >= 0 ? "text-success-600" : "text-danger-600";
+  const profitLossIcon =
+    gameState.total_profit_loss >= 0 ? <TrendingUp /> : <TrendingDown />;
 
   return (
     <div className="space-y-6">
       {/* 헤더 */}
       <div className="text-center">
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">
-          🎮 대시보드
-        </h1>
+        <h1 className="text-4xl font-bold text-gray-900 mb-2">🎮 대시보드</h1>
         <p className="text-gray-600">
           {user.username}님, 주식 투자 시뮬레이션을 즐겨보세요!
         </p>
@@ -97,7 +112,8 @@ const Dashboard = () => {
             <div>
               <p className="text-sm font-medium text-gray-600">현재 라운드</p>
               <p className="text-2xl font-bold text-gray-900">
-                {gameState.current_round} / {gameState.total_rounds}
+                {(gameState.current_round_idx ?? 0) + 1} /{" "}
+                {gameState.total_rounds}
               </p>
             </div>
             <div className="p-3 bg-blue-100 rounded-full">
@@ -124,7 +140,9 @@ const Dashboard = () => {
         <div className="card">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">포트폴리오 가치</p>
+              <p className="text-sm font-medium text-gray-600">
+                포트폴리오 가치
+              </p>
               <p className="text-2xl font-bold text-gray-900">
                 {gameState.total_portfolio_value.toLocaleString()}원
               </p>
@@ -140,20 +158,22 @@ const Dashboard = () => {
             <div>
               <p className="text-sm font-medium text-gray-600">총 손익</p>
               <p className={`text-2xl font-bold ${profitLossColor}`}>
-                {gameState.total_profit_loss >= 0 ? '+' : ''}
+                {gameState.total_profit_loss >= 0 ? "+" : ""}
                 {gameState.total_profit_loss.toLocaleString()}원
               </p>
               <p className={`text-sm ${profitLossColor}`}>
-                ({gameState.total_profit_loss_percentage >= 0 ? '+' : ''}
+                ({gameState.total_profit_loss_percentage >= 0 ? "+" : ""}
                 {gameState.total_profit_loss_percentage.toFixed(2)}%)
               </p>
             </div>
-            <div className={`p-3 rounded-full ${
-              gameState.total_profit_loss >= 0 ? 'bg-success-100' : 'bg-danger-100'
-            }`}>
-              <div className={profitLossColor}>
-                {profitLossIcon}
-              </div>
+            <div
+              className={`p-3 rounded-full ${
+                gameState.total_profit_loss >= 0
+                  ? "bg-success-100"
+                  : "bg-danger-100"
+              }`}
+            >
+              <div className={profitLossColor}>{profitLossIcon}</div>
             </div>
           </div>
         </div>
@@ -283,7 +303,7 @@ const Dashboard = () => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Dashboard 
+export default Dashboard;

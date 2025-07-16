@@ -7,9 +7,18 @@ from schemas import GameState, RankingItem
 from .stock_service import StockService
 from .news_service import NewsService
 from fastapi import HTTPException
+from models import StockPrice
+import json
 
 stock_service = StockService()
 news_service = NewsService()
+
+def period_to_date(period: str) -> str:
+    year, half = period.split()
+    if half == "H1":
+        return f"{year}-01-01"
+    else:
+        return f"{year}-07-01"
 
 class GameService:
     def get_round_date(self, round_number: int) -> str:
@@ -44,7 +53,15 @@ class GameService:
                 )
                 stock = stock_result.scalar_one_or_none()
                 if stock:
-                    total_portfolio_value += item.quantity * stock.current_price
+                    # 최신 가격 조회
+                    price_result = await db.execute(
+                        select(StockPrice.close_price)
+                        .where(StockPrice.stock_id == stock.id)
+                        .order_by(StockPrice.date.desc())
+                        .limit(1)
+                    )
+                    current_price = price_result.scalar_one_or_none() or 0
+                    total_portfolio_value += item.quantity * current_price
                     total_investment += item.quantity * item.average_price
         
         total_profit_loss = total_portfolio_value - total_investment
@@ -55,9 +72,9 @@ class GameService:
         total_profit_percentage = (total_profit / (total_investment + user.realized_profit)) * 100 if (total_investment + user.realized_profit) > 0 else 0
         
         return GameState(
-            current_round=user.current_round,
+            current_round=user.current_round_idx + 1,
             total_rounds=10,
-            current_date=self.get_round_date(user.current_round),
+            current_date=self.get_round_date(user.current_round_idx + 1),
             total_balance=user.total_balance,
             total_portfolio_value=total_portfolio_value,
             total_profit_loss=total_profit_loss,
@@ -65,58 +82,34 @@ class GameService:
             realized_profit=user.realized_profit,
             total_profit=total_profit,
             total_profit_percentage=total_profit_percentage,
-            can_advance_round=user.current_round < 10,
-            is_game_completed=user.current_round >= 10
+            can_advance_round=(user.current_round_idx + 1) < 10,
+            is_game_completed=(user.current_round_idx + 1) >= 10
         )
     
-    async def advance_round(self, db: AsyncSession, user_id: int):
-        """라운드 진행"""
+    async def advance_round(self, db: AsyncSession, user_id: int, current_period: str):
         user = await db.execute(select(User).where(User.id == user_id))
         user = user.scalar_one_or_none()
-        
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
-        
-        if user.current_round >= 10:
+        import json
+        periods = json.loads(user.round_periods)
+        if user.current_round_idx >= len(periods) - 1:
             raise HTTPException(status_code=400, detail="이미 마지막 라운드입니다.")
-        
-        new_round = user.current_round + 1
-        user.current_round = new_round
-        
-        # 새로운 뉴스 생성
-        await news_service.generate_round_news(db, new_round)
-        
-        # 뉴스 영향으로 주식 가격 변동 (실제 데이터 연결 전까지 비활성화)
-        # await self.apply_news_impact_to_stocks(db, new_round)
-        
-        # 일반적인 주식 가격 변동 (실제 데이터 연결 전까지 비활성화)
-        # await stock_service.update_stock_prices(db, new_round)
-        
+        user.current_round_idx += 1
+        new_period = periods[user.current_round_idx]
+        # 새로운 뉴스 생성 등 필요한 로직에서 new_period 사용
+        # await news_service.generate_round_news(db, user.current_round_idx) 등
         await db.commit()
-        
         return {
-            "message": f"라운드 {new_round}로 진행되었습니다.",
-            "new_round": new_round
+            "message": f"라운드 {user.current_round_idx + 1}로 진행되었습니다.",
+            "new_round_idx": user.current_round_idx,
+            "current_period": new_period
         }
     
     async def apply_news_impact_to_stocks(self, db: AsyncSession, round_number: int):
-        """뉴스 영향으로 주식 가격 변동 적용"""
-        # 현재 라운드의 뉴스 조회
-        result = await db.execute(select(News).where(News.round_number == round_number))
-        news_list = result.scalars().all()
-        
-        # 모든 주식 조회
-        stocks_result = await db.execute(select(Stock))
-        stocks = stocks_result.scalars().all()
-        
-        for news in news_list:
-            affected_sectors = news.affected_sectors.split(',') if news.affected_sectors else []
-            
-            for stock in stocks:
-                if stock.sector in affected_sectors:
-                    stock_service.apply_news_impact(stock, news.impact, news.affected_sectors)
-        
-        await db.commit()
+        """뉴스 영향으로 주식 가격 변동 적용 (비활성화됨)"""
+        # 구조 변경으로 인해 영향 적용 로직은 비활성화
+        pass
     
     async def restart_game(self, db: AsyncSession, user_id: int):
         """게임 재시작"""
@@ -136,7 +129,13 @@ class GameService:
             await db.delete(item)
         
         # 사용자 정보 초기화
-        user.current_round = 1
+        user.current_round_idx = 0  # 라운드 인덱스 초기화
+        import random, json
+        years = [2020, 2021, 2022, 2023, 2024]
+        halfs = ["H1", "H2"]
+        all_periods = [f"{y} {h}" for y in years for h in halfs]
+        random.shuffle(all_periods)
+        user.round_periods = json.dumps(all_periods[:10])  # 순서를 랜덤하게 섞어서 10개 선택
         user.total_balance = 10000000  # 1천만원으로 초기화
         user.realized_profit = 0  # 실현 수익 초기화
         
@@ -153,8 +152,8 @@ class GameService:
         
         return {
             "message": "Game restarted successfully",
-            "new_round": user.current_round,
-            "current_date": self.get_round_date(user.current_round)
+            "new_round": user.current_round_idx + 1,
+            "current_date": self.get_round_date(user.current_round_idx + 1)
         }
     
     async def get_ranking(self, db: AsyncSession) -> List[RankingItem]:
@@ -182,7 +181,15 @@ class GameService:
                     )
                     stock = stock_result.scalar_one_or_none()
                     if stock:
-                        total_portfolio_value += item.quantity * stock.current_price
+                        # 동일하게 get_ranking 내에서도 각 stock.current_price 대신 위와 같이 최신 가격을 조회해서 사용
+                        price_result = await db.execute(
+                            select(StockPrice.close_price)
+                            .where(StockPrice.stock_id == stock.id)
+                            .order_by(StockPrice.date.desc())
+                            .limit(1)
+                        )
+                        current_price = price_result.scalar_one_or_none() or 0
+                        total_portfolio_value += item.quantity * current_price
                         total_investment += item.quantity * item.average_price
             
             total_profit_loss = total_portfolio_value - total_investment

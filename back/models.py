@@ -11,7 +11,8 @@ class User(Base):
     username = Column(String(50), unique=True, index=True, nullable=False)
     hashed_password = Column(String(255), nullable=False)
     created_at = Column(DateTime, default=func.now())
-    current_round = Column(Integer, default=1)
+    round_periods = Column(Text, nullable=True)  # JSON 직렬화된 10개 period 리스트
+    current_round_idx = Column(Integer, default=0)
     total_balance = Column(Float, default=10000000)  # 1천만원 시작
     realized_profit = Column(Float, default=0)  # 실현 수익
     is_active = Column(Boolean, default=True)
@@ -27,13 +28,23 @@ class Stock(Base):
     symbol = Column(String(10), unique=True, index=True, nullable=False)
     name = Column(String(100), nullable=False)
     sector = Column(String(50), nullable=False)
-    current_price = Column(Float, nullable=False)
-    price_history = Column(Text)  # JSON 형태로 가격 이력 저장
-    created_at = Column(DateTime, default=func.now())
     
     # 관계
     portfolio_items = relationship("Portfolio", back_populates="stock")
     transactions = relationship("Transaction", back_populates="stock")
+    prices = relationship("StockPrice", back_populates="stock")
+
+class StockPrice(Base):
+    __tablename__ = "stock_prices"
+    id = Column(Integer, primary_key=True, index=True)
+    stock_id = Column(Integer, ForeignKey("stocks.id"), nullable=False)
+    date = Column(DateTime, nullable=False)
+    close_price = Column(Float, nullable=False)
+    open_price = Column(Float)
+    high = Column(Float)
+    low = Column(Float)
+    volume = Column(Integer)
+    stock = relationship("Stock", back_populates="prices")
 
 class Portfolio(Base):
     __tablename__ = "portfolios"
@@ -69,11 +80,10 @@ class Transaction(Base):
 
 class News(Base):
     __tablename__ = "news"
-    
+
     id = Column(Integer, primary_key=True, index=True)
+    period = Column(String(20), nullable=True)  # 예: '2020 H1'
+    category = Column(String(50), nullable=True)  # 예: 'Macro'
     title = Column(String(200), nullable=False)
-    content = Column(Text, nullable=False)
-    impact_type = Column(String(20), nullable=False)  # "positive", "negative", "neutral"
-    affected_sectors = Column(String(200))  # 쉼표로 구분된 섹터들
-    round_number = Column(Integer, nullable=False)
-    created_at = Column(DateTime, default=func.now()) 
+    date = Column(DateTime, default=func.now())
+    summary = Column(Text, nullable=False) 

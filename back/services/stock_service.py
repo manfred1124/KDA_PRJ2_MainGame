@@ -5,22 +5,58 @@ import json
 # import random  # 실제 데이터 연결 전까지 비활성화
 from datetime import datetime
 
-from models import Stock
+from models import Stock, StockPrice
 from schemas import StockResponse
 from fastapi import HTTPException, status
 
 class StockService:
-    async def get_all_stocks(self, db: AsyncSession) -> List[StockResponse]:
+    async def get_all_stocks(self, db: AsyncSession, date: datetime) -> List[StockResponse]:
         """모든 주식 조회"""
         result = await db.execute(select(Stock))
         stocks = result.scalars().all()
-        return [StockResponse.from_orm(stock) for stock in stocks]
+        stock_list = []
+        for stock in stocks:
+            price_result = await db.execute(
+                select(StockPrice.close_price)
+                .where(StockPrice.stock_id == stock.id)
+                .where(StockPrice.date >= date)
+                .order_by(StockPrice.date.asc())
+                .limit(1)
+            )
+            current_price = price_result.scalar_one_or_none()
+            stock_dict = {
+                'id': stock.id,
+                'symbol': stock.symbol,
+                'name': stock.name,
+                'sector': stock.sector,
+                'current_price': float(current_price) if current_price is not None else 0.0
+            }
+            stock_list.append(StockResponse(**stock_dict))
+        return stock_list
     
-    async def get_stocks_by_sector(self, db: AsyncSession, sector: str) -> List[StockResponse]:
+    async def get_stocks_by_sector(self, db: AsyncSession, sector: str, date: datetime) -> List[StockResponse]:
         """섹터별 주식 조회"""
         result = await db.execute(select(Stock).where(Stock.sector == sector))
         stocks = result.scalars().all()
-        return [StockResponse.from_orm(stock) for stock in stocks]
+        stock_list = []
+        for stock in stocks:
+            price_result = await db.execute(
+                select(StockPrice.close_price)
+                .where(StockPrice.stock_id == stock.id)
+                .where(StockPrice.date >= date)
+                .order_by(StockPrice.date.asc())
+                .limit(1)
+            )
+            current_price = price_result.scalar_one_or_none()
+            stock_dict = {
+                'id': stock.id,
+                'symbol': stock.symbol,
+                'name': stock.name,
+                'sector': stock.sector,
+                'current_price': float(current_price) if current_price is not None else 0.0
+            }
+            stock_list.append(StockResponse(**stock_dict))
+        return stock_list
     
     async def get_all_sectors(self, db: AsyncSession) -> List[str]:
         """모든 섹터 조회"""
@@ -28,7 +64,7 @@ class StockService:
         sectors = result.scalars().all()
         return list(sectors)
     
-    async def get_stock_by_id(self, db: AsyncSession, stock_id: int) -> StockResponse:
+    async def get_stock_by_id(self, db: AsyncSession, stock_id: int, date: datetime) -> StockResponse:
         """ID로 주식 조회"""
         result = await db.execute(select(Stock).where(Stock.id == stock_id))
         stock = result.scalar_one_or_none()
@@ -37,7 +73,22 @@ class StockService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Stock not found"
             )
-        return StockResponse.from_orm(stock)
+        price_result = await db.execute(
+            select(StockPrice.close_price)
+            .where(StockPrice.stock_id == stock.id)
+            .where(StockPrice.date >= date)
+            .order_by(StockPrice.date.asc())
+            .limit(1)
+        )
+        current_price = price_result.scalar_one_or_none()
+        stock_dict = {
+            'id': stock.id,
+            'symbol': stock.symbol,
+            'name': stock.name,
+            'sector': stock.sector,
+            'current_price': float(current_price) if current_price is not None else 0.0
+        }
+        return StockResponse(**stock_dict)
     
     async def update_stock_prices(self, db: AsyncSession, round_number: int):
         """라운드별 주식 가격 업데이트 (실제 데이터 연결 전까지 비활성화)"""

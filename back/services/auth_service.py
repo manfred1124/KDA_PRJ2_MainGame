@@ -4,6 +4,8 @@ from passlib.context import CryptContext
 from datetime import datetime, timedelta
 import jwt
 from typing import Optional
+import json
+import random
 
 from models import User
 from schemas import UserCreate, UserLogin, Token
@@ -16,6 +18,12 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 1440  # 24시간으로 연장
 
 # 비밀번호 해싱
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def generate_random_periods():
+    years = [2020, 2021, 2022, 2023, 2024]
+    halfs = ["H1", "H2"]
+    all_periods = [f"{y} {h}" for y in years for h in halfs]
+    return random.sample(all_periods, 10)
 
 class AuthService:
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:
@@ -77,9 +85,12 @@ class AuthService:
         
         # 새 사용자 생성
         hashed_password = self.get_password_hash(user_data.password)
+        periods = generate_random_periods()
         db_user = User(
             username=user_data.username,
-            hashed_password=hashed_password
+            hashed_password=hashed_password,
+            round_periods=json.dumps(periods),
+            current_round_idx=0
         )
         
         db.add(db_user)
@@ -118,15 +129,18 @@ class AuthService:
         access_token = self.create_access_token(
             data={"sub": str(user.id)}, expires_delta=access_token_expires
         )
-        
+        periods = json.loads(user.round_periods)
+        current_period = periods[user.current_round_idx]
         return {
             "access_token": access_token,
             "token_type": "bearer",
             "user": {
                 "id": user.id,
                 "username": user.username,
-                "current_round": user.current_round,
+                "current_round_idx": user.current_round_idx,
+                "current_period": current_period,
                 "total_balance": user.total_balance,
-                "realized_profit": user.realized_profit
+                "realized_profit": user.realized_profit,
+                "created_at": user.created_at,
             }
         } 

@@ -67,6 +67,23 @@ async def migrate_user_realized_profit():
             print(f"Migration error: {e}")
             await session.rollback()
 
+async def migrate_user_round_periods():
+    """기존 사용자들에게 round_periods, current_round_idx 필드 추가"""
+    from sqlalchemy import text
+    async with AsyncSessionLocal() as session:
+        try:
+            result = await session.execute(text("PRAGMA table_info(users)"))
+            columns = [row[1] for row in result.fetchall()]
+            if 'round_periods' not in columns:
+                await session.execute(text("ALTER TABLE users ADD COLUMN round_periods TEXT"))
+            if 'current_round_idx' not in columns:
+                await session.execute(text("ALTER TABLE users ADD COLUMN current_round_idx INTEGER DEFAULT 0"))
+            await session.commit()
+            print("Added round_periods, current_round_idx columns to users table (if needed)")
+        except Exception as e:
+            print(f"Migration error: {e}")
+            await session.rollback()
+
 async def insert_initial_data():
     """초기 데이터 삽입 (주식, 뉴스 등)"""
     from models import Stock, News

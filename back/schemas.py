@@ -14,9 +14,10 @@ class UserLogin(BaseModel):
     username: str
     password: str
 
-class UserResponse(UserBase):
+class UserResponse(BaseModel):
     id: int
-    current_round: int
+    current_round_idx: int  # 0-based, display as current_round_idx+1 in UI
+    current_period: str
     total_balance: float
     created_at: datetime
     
@@ -77,13 +78,12 @@ class TransactionResponse(BaseModel):
 # News 관련 스키마
 class NewsResponse(BaseModel):
     id: int
+    period: str | None = None
+    category: str | None = None
     title: str
-    content: str
-    impact_type: str
-    affected_sectors: Optional[str]
-    round_number: int
-    created_at: datetime
-    
+    date: datetime
+    summary: str
+
     class Config:
         from_attributes = True
 
