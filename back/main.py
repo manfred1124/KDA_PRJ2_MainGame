@@ -15,7 +15,7 @@ from langchain.schema import SystemMessage, HumanMessage
 from sqlalchemy.orm import joinedload
 
 from database import get_db, init_db
-from models import User, Stock, Portfolio, Transaction, News
+from models import User, Stock, Portfolio, Transaction, News, RoundReview
 from schemas import (
     UserCreate, UserLogin, UserResponse, 
     StockResponse, PortfolioResponse, TransactionCreate,
@@ -358,6 +358,9 @@ async def chatbot(
     llm = ChatOpenAI(temperature=0.2, model_name="gpt-3.5-turbo")
     system_prompt = (
         """너는 주식 투자 시뮬레이션 게임의 챗봇이야.\n"
+        "너는 주식 투자 게임을 통해 모험을 떠나는 용사를 위해 조언을 해주는 조언 용사야.\n"
+        "너의 말투는 '허허, ','~이런 소식들이 있었네, ~ 이러한 시장의 흐름을 잘 읽고, 어떤 산업이 유망할지 신중하게 판단해서 투자해보게나.'와 같은 구수하고 친근한 말투로 말해.\n"
+        "마치 세종대왕 같은 말투를 사용해.\n"
         "아래 context(주가/뉴스) 정보까지만 참고해서 답변해.\n"
         "미래 데이터는 절대 알려주지 마.\n"
         """
@@ -432,6 +435,110 @@ async def get_transaction_history(
             "current_price": current_price,
         })
     return tx_list
+
+# 라운드 리뷰 관련 엔드포인트
+@app.post("/game/round-review")
+async def generate_round_review(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: AsyncSession = Depends(get_db)
+):
+    """현재 라운드의 리뷰 생성 또는 조회"""
+    user_id = auth_service.verify_token(credentials.credentials)
+    user = await db.execute(select(User).where(User.id == user_id))
+    user = user.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # 현재 period 가져오기
+    periods = json.loads(user.round_periods)
+    current_period = periods[user.current_round_idx]
+    
+    # 이미 생성된 리뷰가 있는지 확인
+    existing_review = await db.execute(
+        select(RoundReview)
+        .where(RoundReview.period == current_period)
+    )
+    existing_review = existing_review.scalar_one_or_none()
+    
+    if existing_review:
+        return {
+            "message": "Review already exists",
+            "review": {
+                "period": existing_review.period,
+                "macro_review": existing_review.macro_review,
+                "sector_reviews": existing_review.sector_reviews,
+                "stocks_review": existing_review.stocks_review,
+                "final_review": existing_review.final_review
+            }
+        }
+    
+    # 새 리뷰 생성
+    review_data = await game_service.generate_round_review(db, user_id, current_period)
+    
+    # 리뷰 저장
+    new_review = RoundReview(
+        period=current_period,
+        macro_review=review_data["macro_review"],
+        sector_reviews=review_data["sector_reviews"],
+        stocks_review=review_data["stocks_review"],
+        final_review=review_data["final_review"]
+    )
+    db.add(new_review)
+    await db.commit()
+    await db.refresh(new_review)
+    
+    return {
+        "message": "Review generated successfully",
+        "review": review_data
+    }
+
+@app.get("/game/round-review/by-period/{period}")
+async def get_round_review_by_period(
+    period: str,
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: AsyncSession = Depends(get_db)
+):
+    """특정 기간의 리뷰 조회"""
+    auth_service.verify_token(credentials.credentials)  # 인증만 확인
+    
+    review = await db.execute(
+        select(RoundReview)
+        .where(RoundReview.period == period)
+    )
+    review = review.scalar_one_or_none()
+    
+    if not review:
+        raise HTTPException(status_code=404, detail="Review not found")
+    
+    return {
+        "period": review.period,
+        "macro_review": review.macro_review,
+        "sector_reviews": review.sector_reviews,
+        "stocks_review": review.stocks_review,
+        "final_review": review.final_review
+    }
+
+@app.get("/game/round-reviews")
+async def get_all_round_reviews(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: AsyncSession = Depends(get_db)
+):
+    """모든 기간의 리뷰 조회"""
+    auth_service.verify_token(credentials.credentials)  # 인증만 확인
+    
+    reviews = await db.execute(
+        select(RoundReview)
+        .order_by(RoundReview.period)
+    )
+    reviews = reviews.scalars().all()
+    
+    return [{
+        "period": review.period,
+        "macro_review": review.macro_review,
+        "sector_reviews": review.sector_reviews,
+        "stocks_review": review.stocks_review,
+        "final_review": review.final_review
+    } for review in reviews]
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True) 

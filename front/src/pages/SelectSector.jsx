@@ -45,10 +45,14 @@ function getSectorGuide(sector) {
 }
 
 const ROUND_TREND_GUIDE = {
-  "2020Q1": "2020년 1분기에는 코로나19의 영향으로 세계 증시가 큰 충격을 받았네.",
-  "2020Q2": "2020년 2분기에는 여러 나라의 경기 부양책 덕분에 시장이 다시 살아나기 시작했지.",
-  "2021Q1": "2021년 1분기에는 백신이 퍼지면서 경기가 좋아질 거라는 기대감이 커졌네.",
-  "2023H1": "2023년 상반기에는 중국 경제가 다시 문을 열면서 세계가 성장할 거라는 기대감이 부풀었지.",
+  "2020Q1":
+    "2020년 1분기에는 코로나19의 영향으로 세계 증시가 큰 충격을 받았네.",
+  "2020Q2":
+    "2020년 2분기에는 여러 나라의 경기 부양책 덕분에 시장이 다시 살아나기 시작했지.",
+  "2021Q1":
+    "2021년 1분기에는 백신이 퍼지면서 경기가 좋아질 거라는 기대감이 커졌네.",
+  "2023H1":
+    "2023년 상반기에는 중국 경제가 다시 문을 열면서 세계가 성장할 거라는 기대감이 부풀었지.",
   // 필요에 따라 실제 period 값에 맞게 추가
 };
 
@@ -359,10 +363,7 @@ const SelectSector = () => {
   const handleNextRound = async () => {
     setAdvancing(true);
     try {
-      await axios.post("/api/game/next-round");
       navigate("/my-page");
-    } catch (error) {
-      toast.error("다음 라운드 진행에 실패했습니다.");
     } finally {
       setAdvancing(false);
     }
@@ -784,29 +785,17 @@ const SelectSector = () => {
         {/* 우하단 고정 '다음 라운드' 버튼 */}
         <div className="relative w-full h-full">
           <button
-            className={`fixed z-30 ${
-              user?.current_round_idx + 1 === 10
-                ? "bg-[#bfa76a] hover:bg-[#a67c3c]"
-                : "bg-[#7c5c2b] hover:bg-[#a67c3c]"
-            } text-white font-bold py-4 px-12 rounded-full text-xl shadow-lg transition-all duration-200 border-4 border-[#e6d3a3]`}
+            className={`fixed z-30 bg-[#7c5c2b] hover:bg-[#a67c3c] text-white font-bold py-4 px-12 rounded-full text-xl shadow-lg transition-all duration-200 border-4 border-[#e6d3a3]`}
             style={{
               right: "calc(50vw - 640px/2 + 2rem)", // 640px = max-w-5xl, 2rem = 네모박스 padding
               bottom: "2rem",
               minWidth: "180px",
               fontFamily: "serif",
             }}
-            onClick={
-              user?.current_round_idx + 1 === 10
-                ? () => navigate("/game-result")
-                : handleNextRound
-            }
+            onClick={handleNextRound}
             disabled={advancing}
           >
-            {advancing
-              ? "진행 중..."
-              : user?.current_round_idx + 1 === 10
-              ? "결과 보기"
-              : "다음 라운드"}
+            {advancing ? "진행 중..." : "다음 라운드"}
           </button>
         </div>
 

@@ -3,6 +3,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import toast from "react-hot-toast";
+import RoundReview from "../components/RoundReview";
 import {
   TrendingUp,
   TrendingDown,
@@ -21,6 +22,7 @@ const MyPage = () => {
   const [portfolio, setPortfolio] = useState(null);
   const [loading, setLoading] = useState(true);
   const [tradeHistory, setTradeHistory] = useState([]); // 거래내역
+  const [showReview, setShowReview] = useState(false);
 
   useEffect(() => {
     fetchPortfolio();
@@ -59,6 +61,67 @@ const MyPage = () => {
     }
   };
 
+  const handleRestartGame = async () => {
+    try {
+      const response = await axios.post("/api/game/restart");
+      console.log("게임 재시작 응답:", response.data);
+      toast.success("게임이 재시작되었습니다!");
+
+      // API 응답에서 사용자 정보 업데이트
+      if (response.data.user) {
+        console.log("게임 재시작 후 사용자 정보:", response.data.user);
+
+        // AuthContext의 사용자 정보 업데이트
+        window.dispatchEvent(
+          new CustomEvent("userUpdated", {
+            detail: response.data.user,
+          })
+        );
+
+        // 네비게이션 바 업데이트를 위한 이벤트 발생
+        window.dispatchEvent(new Event("transactionComplete"));
+
+        navigate("/");
+      } else {
+        // 백업: 사용자 정보 직접 조회
+        try {
+          const userResponse = await axios.get("/api/auth/me");
+          console.log("게임 재시작 후 사용자 정보 (백업):", userResponse.data);
+
+          window.dispatchEvent(
+            new CustomEvent("userUpdated", {
+              detail: userResponse.data,
+            })
+          );
+
+          window.dispatchEvent(new Event("transactionComplete"));
+
+          navigate("/");
+        } catch (userError) {
+          console.error("사용자 정보 업데이트 실패:", userError);
+          window.location.reload();
+        }
+      }
+    } catch (error) {
+      console.error("게임 재시작 실패:", error);
+      toast.error("게임 재시작에 실패했습니다.");
+    }
+  };
+
+  const handleNextRound = async () => {
+    try {
+      const response = await axios.post("/api/game/next-round");
+      updateUser((prev) => ({
+        ...prev,
+        current_round_idx: response.data.new_round_idx,
+        current_period: response.data.current_period,
+      }));
+      navigate("/news");
+    } catch (error) {
+      toast.error("라운드 진행에 실패했습니다.");
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -70,6 +133,8 @@ const MyPage = () => {
   if (!portfolio) {
     return <div>포트폴리오를 불러올 수 없습니다.</div>;
   }
+
+  const isLastRound = (user?.current_round_idx ?? 0) === 9;
 
   return (
     <div
@@ -138,56 +203,7 @@ const MyPage = () => {
           </div>
         </div>
       </div>
-      {/* 빠른 이동 버튼 */}
-      <div className="rounded-xl shadow-lg border border-[#e6d3a3] p-6 bg-[#f3e7c4]">
-        <h3
-          className="text-lg font-bold text-[#a67c3c] mb-4"
-          style={{ fontFamily: "Jua, sans-serif" }}
-        >
-          빠른 이동
-        </h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          <button
-            onClick={() => navigate("/select-sector")}
-            className="flex flex-col items-center p-4 bg-gradient-to-br from-[#f7e6b6] to-[#e6d3a3] rounded-lg hover:from-[#f3e7c4] hover:to-[#e6d3a3] transition-all duration-200 border border-[#bfa76a] hover:border-[#a67c3c]"
-            style={{ fontFamily: "Jua, sans-serif" }}
-          >
-            <StockIcon className="text-[#a67c3c] mb-2" size={24} />
-            <span
-              className="text-sm font-semibold text-[#7c5c2b]"
-              style={{ fontFamily: "Jua, sans-serif" }}
-            >
-              주식 매매하기
-            </span>
-          </button>
-          <button
-            onClick={() => navigate("/news")}
-            className="flex flex-col items-center p-4 bg-gradient-to-br from-[#f7e6b6] to-[#e6d3a3] rounded-lg hover:from-[#f3e7c4] hover:to-[#e6d3a3] transition-all duration-200 border border-[#bfa76a] hover:border-[#a67c3c]"
-            style={{ fontFamily: "Jua, sans-serif" }}
-          >
-            <Newspaper className="text-[#a67c3c] mb-2" size={24} />
-            <span
-              className="text-sm font-semibold text-[#7c5c2b]"
-              style={{ fontFamily: "Jua, sans-serif" }}
-            >
-              뉴스
-            </span>
-          </button>
-          <button
-            onClick={() => navigate("/ranking")}
-            className="flex flex-col items-center p-4 bg-gradient-to-br from-[#f7e6b6] to-[#e6d3a3] rounded-lg hover:from-[#f3e7c4] hover:to-[#e6d3a3] transition-all duration-200 border border-[#bfa76a] hover:border-[#a67c3c]"
-            style={{ fontFamily: "Jua, sans-serif" }}
-          >
-            <Trophy className="text-[#a67c3c] mb-2" size={24} />
-            <span
-              className="text-sm font-semibold text-[#7c5c2b]"
-              style={{ fontFamily: "Jua, sans-serif" }}
-            >
-              랭킹
-            </span>
-          </button>
-        </div>
-      </div>
+
       {/* 포트폴리오 요약 */}
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {/** 카드 반복: 각 카드에 RPG풍 스타일 적용 **/}
@@ -201,9 +217,6 @@ const MyPage = () => {
               <p className="text-xl font-bold text-[#7c5c2b]">
                 {portfolio.total_balance.toLocaleString()}원
               </p>
-            </div>
-            <div className="p-3 bg-[#e6d3a3] rounded-full border-2 border-[#bfa76a]">
-              <DollarSign className="text-[#a67c3c]" size={20} />
             </div>
           </div>
         </div>
@@ -219,9 +232,6 @@ const MyPage = () => {
               <p className="text-xl font-bold text-[#7c5c2b]">
                 {portfolio.total_portfolio_value.toLocaleString()}원
               </p>
-            </div>
-            <div className="p-3 bg-[#e6d3a3] rounded-full border-2 border-[#bfa76a]">
-              <Package className="text-[#a67c3c]" size={20} />
             </div>
           </div>
         </div>
@@ -243,19 +253,6 @@ const MyPage = () => {
                 {portfolio.total_profit_loss.toLocaleString()}원
               </p>
             </div>
-            <div
-              className={`p-3 rounded-full ${
-                portfolio.total_profit_loss >= 0
-                  ? "bg-[#e6f3d3]"
-                  : "bg-[#f3d3d3]"
-              } border-2 border-[#bfa76a]`}
-            >
-              {portfolio.total_profit_loss >= 0 ? (
-                <TrendingUp className="text-[#3b7c2b]" size={20} />
-              ) : (
-                <TrendingDown className="text-[#a63c2b]" size={20} />
-              )}
-            </div>
           </div>
         </div>
         <div
@@ -275,17 +272,6 @@ const MyPage = () => {
                 {portfolio.realized_profit >= 0 ? "+" : ""}
                 {portfolio.realized_profit.toLocaleString()}원
               </p>
-            </div>
-            <div
-              className={`p-3 rounded-full ${
-                portfolio.realized_profit >= 0 ? "bg-[#e6f3d3]" : "bg-[#f3d3d3]"
-              } border-2 border-[#bfa76a]`}
-            >
-              {portfolio.realized_profit >= 0 ? (
-                <TrendingUp className="text-[#3b7c2b]" size={20} />
-              ) : (
-                <TrendingDown className="text-[#a63c2b]" size={20} />
-              )}
             </div>
           </div>
         </div>
@@ -307,17 +293,6 @@ const MyPage = () => {
                 {portfolio.total_profit.toLocaleString()}원
               </p>
             </div>
-            <div
-              className={`p-3 rounded-full ${
-                portfolio.total_profit >= 0 ? "bg-[#e6f3d3]" : "bg-[#f3d3d3]"
-              } border-2 border-[#bfa76a]`}
-            >
-              {portfolio.total_profit >= 0 ? (
-                <TrendingUp className="text-[#3b7c2b]" size={20} />
-              ) : (
-                <TrendingDown className="text-[#a63c2b]" size={20} />
-              )}
-            </div>
           </div>
         </div>
         <div
@@ -338,20 +313,56 @@ const MyPage = () => {
                 {portfolio.total_profit_percentage.toFixed(2)}%
               </p>
             </div>
-            <div
-              className={`p-3 rounded-full ${
-                portfolio.total_profit_percentage >= 0
-                  ? "bg-[#e6f3d3]"
-                  : "bg-[#f3d3d3]"
-              } border-2 border-[#bfa76a]`}
-            >
-              {portfolio.total_profit_percentage >= 0 ? (
-                <TrendingUp className="text-[#3b7c2b]" size={20} />
-              ) : (
-                <TrendingDown className="text-[#a63c2b]" size={20} />
-              )}
-            </div>
           </div>
+        </div>
+      </div>
+      {/* 라운드 리뷰 */}
+      <div className="rounded-xl shadow-lg border border-[#e6d3a3] bg-[#fffbe6] p-6 mb-6 flex items-center gap-4">
+        <div className="flex-shrink-0">
+          <Calendar size={36} className="text-[#bfa76a]" />
+        </div>
+        <div>
+          <h3
+            className="text-xl font-bold text-[#a67c3c] mb-1"
+            style={{ fontFamily: "Jua, sans-serif" }}
+          >
+            라운드 리뷰
+          </h3>
+          <p
+            className="text-[#7c5c2b] text-base"
+            style={{ fontFamily: "Jua, sans-serif" }}
+          >
+            {/* 간단한 라운드 요약. 필요시 더 상세하게 수정 가능 */}
+            {(() => {
+              const period = user?.current_period;
+              if (!period) return "이번 라운드의 시장 동향을 잘 살펴보세요!";
+              // 간단한 getRoundTrendGuide 로직 (2020Q1, 2020Q2 등)
+              const guides = {
+                "2020Q1":
+                  "2020년 1분기, 코로나19의 영향으로 글로벌 증시가 큰 충격을 받았네.",
+                "2020Q2":
+                  "2020년 2분기, 각국의 경기부양책으로 시장이 반등하기 시작했지.",
+                "2021Q1":
+                  "2021년 1분기, 백신 보급과 함께 경기 회복 기대감이 커졌네.",
+                "2023H1":
+                  "2023년 상반기, 글로벌 경제가 점차 안정을 찾아가고 있네. 상반기에는 경기 회복 기대감이 컸지.",
+                "2023H2":
+                  "2023년 하반기, 금리 인상과 인플레이션 이슈가 완화되며 시장이 점진적으로 회복되고 있네.",
+              };
+              if (guides[period]) return guides[period];
+              if (period.includes("H1"))
+                return `${period.slice(
+                  0,
+                  4
+                )}년 상반기, 글로벌 경제와 산업의 주요 변화를 주목해보게!`;
+              if (period.includes("H2"))
+                return `${period.slice(
+                  0,
+                  4
+                )}년 하반기, 하반기 시장의 주요 이슈와 트렌드를 살펴보게!`;
+              return "현재 시점의 시장 동향을 잘 살펴 투자 전략을 세워보게!";
+            })()}
+          </p>
         </div>
       </div>
       {/* 보유 주식 목록 */}
@@ -381,14 +392,14 @@ const MyPage = () => {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto max-h-96 game-scrollbar">
             <table className="w-full" style={{ fontFamily: "Jua, sans-serif" }}>
-              <thead>
-                <tr className="border-b border-[#e6d3a3] bg-[#f7e6b6]">
-                  <th className="text-left py-4 px-6 font-semibold text-[#a67c3c]">
+              <thead className="sticky top-0 bg-[#f3e7c4] z-10">
+                <tr className="border-b border-[#e6d3a3]">
+                  <th className="text-center py-4 px-6 font-semibold text-[#a67c3c]">
                     종목
                   </th>
-                  <th className="text-right py-4 px-6 font-semibold text-[#a67c3c]">
+                  <th className="text-center py-4 px-6 font-semibold text-[#a67c3c]">
                     보유수량
                   </th>
                   <th className="text-right py-4 px-6 font-semibold text-[#a67c3c]">
@@ -414,7 +425,7 @@ const MyPage = () => {
                     key={item.stock_id}
                     className="border-b border-[#f3e7c4] hover:bg-[#f7f3e8] transition-colors"
                   >
-                    <td className="py-4 px-6">
+                    <td className="py-4 px-6 text-center">
                       <div>
                         <p className="font-semibold text-[#7c5c2b]">
                           {item.stock_name}
@@ -424,7 +435,7 @@ const MyPage = () => {
                         </p>
                       </div>
                     </td>
-                    <td className="text-right py-4 px-6 font-semibold text-[#7c5c2b]">
+                    <td className="text-center py-4 px-6 font-semibold text-[#7c5c2b]">
                       {(item.quantity ?? 0).toLocaleString()}주
                     </td>
                     <td className="text-right py-4 px-6 text-[#a67c3c]">
@@ -465,7 +476,7 @@ const MyPage = () => {
       </div>
 
       {/* 매매 기록 테이블 */}
-      <div className="rounded-xl shadow-lg border border-[#e6d3a3] bg-[#f7e6b6] p-6 mt-8">
+      <div className="rounded-xl shadow-lg border border-[#e6d3a3] bg-[#f3e7c4] p-6 mt-8">
         <h3
           className="text-xl font-bold text-[#a67c3c] mb-4"
           style={{ fontFamily: "Jua, sans-serif" }}
@@ -474,29 +485,38 @@ const MyPage = () => {
         </h3>
 
         {/* 데스크톱 테이블 뷰 */}
-        <div className="hidden md:block overflow-x-auto">
-          <table className="min-w-full text-sm text-left">
-            <thead>
-              <tr className="border-b border-[#e6d3a3] bg-[#f3e7c4]">
-                <th className="py-3 px-4 font-semibold text-[#a67c3c]">종목</th>
-                <th className="py-3 px-4 font-semibold text-[#a67c3c]">유형</th>
-                <th className="py-3 px-4 font-semibold text-[#a67c3c]">수량</th>
-                <th className="py-3 px-4 font-semibold text-[#a67c3c]">
+        <div className="hidden md:block overflow-x-auto max-h-96 game-scrollbar">
+          <table
+            className="min-w-full text-sm text-center"
+            style={{ tableLayout: "fixed" }}
+          >
+            <thead className="sticky top-0 bg-[#f3e7c4] z-10">
+              <tr className="border-b border-[#e6d3a3]">
+                <th className="py-3 px-4 font-semibold text-[#a67c3c] w-24">
+                  종목
+                </th>
+                <th className="py-3 px-4 font-semibold text-[#a67c3c] w-16">
+                  유형
+                </th>
+                <th className="py-3 px-4 font-semibold text-[#a67c3c] w-16">
+                  수량
+                </th>
+                <th className="py-3 px-4 font-semibold text-[#a67c3c] w-24">
                   거래가
                 </th>
-                <th className="py-3 px-4 font-semibold text-[#a67c3c]">
+                <th className="py-3 px-4 font-semibold text-[#a67c3c] w-16">
                   라운드
                 </th>
-                <th className="py-3 px-4 font-semibold text-[#a67c3c]">
+                <th className="py-3 px-4 font-semibold text-[#a67c3c] w-24">
                   거래시점
                 </th>
-                <th className="py-3 px-4 font-semibold text-[#a67c3c]">
+                <th className="py-3 px-4 font-semibold text-[#a67c3c] w-24">
                   현재가
                 </th>
-                <th className="py-3 px-4 font-semibold text-[#a67c3c]">
+                <th className="py-3 px-4 font-semibold text-[#a67c3c] w-20">
                   수익률
                 </th>
-                <th className="py-3 px-4 font-semibold text-[#a67c3c]">
+                <th className="py-3 px-4 font-semibold text-[#a67c3c] w-32">
                   매도 후 현재가 대비(%)
                 </th>
               </tr>
@@ -536,27 +556,41 @@ const MyPage = () => {
                       <td className="py-3 px-4 text-[#a67c3c]">
                         {tx.transaction_type === "buy" ? "매수" : "매도"}
                       </td>
-                      <td className="py-3 px-4 text-right">{tx.quantity}</td>
-                      <td className="py-3 px-4 text-right">
+                      <td className="py-3 px-4">{tx.quantity}</td>
+                      <td className="py-3 px-4">
                         {tx.price.toLocaleString()}원
                       </td>
-                      <td className="py-3 px-4 text-right">
-                        {tx.round_number}
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        {tx.period || "-"}
-                      </td>
-                      <td className="py-3 px-4 text-right">
+                      <td className="py-3 px-4">{tx.round_number}</td>
+                      <td className="py-3 px-4">{tx.period || "-"}</td>
+                      <td className="py-3 px-4">
                         {currentPrice
                           ? currentPrice.toLocaleString() + "원"
                           : "-"}
                       </td>
-                      <td className="py-3 px-4 text-right">
-                        {profitRate ? profitRate.toFixed(2) + "%" : "-"}
+                      <td
+                        className={`py-3 px-4 ${
+                          profitRate >= 0 ? "text-[#3b7c2b]" : "text-[#a63c2b]"
+                        }`}
+                      >
+                        {profitRate
+                          ? (profitRate >= 0 ? "+" : "") +
+                            profitRate.toFixed(2) +
+                            "%"
+                          : "-"}
                       </td>
-                      <td className="py-3 px-4 text-right">
+                      <td
+                        className={`py-3 px-4 ${
+                          opportunityCost !== null
+                            ? opportunityCost >= 0
+                              ? "text-[#3b7c2b]"
+                              : "text-[#a63c2b]"
+                            : ""
+                        }`}
+                      >
                         {opportunityCost !== null
-                          ? opportunityCost.toFixed(2) + "%"
+                          ? (opportunityCost >= 0 ? "+" : "") +
+                            opportunityCost.toFixed(2) +
+                            "%"
                           : "-"}
                       </td>
                     </tr>
@@ -695,19 +729,71 @@ const MyPage = () => {
       </div>
 
       {/* 계속 진행하기 버튼을 페이지 맨 아래로 이동 */}
-      <button
-        onClick={() => navigate("/")}
-        className="fixed z-30 bg-gradient-to-b from-[#bfa76a] to-[#7c5c2b] text-white font-bold py-3 px-10 rounded-full text-lg shadow border-4 border-[#e6d3a3] tracking-wider transition-all duration-200 hover:from-[#d6c08a] hover:to-[#a67c3c]"
-        style={{
-          right: "calc(50vw - 640px/2 + 2rem)",
-          bottom: "2rem",
-          fontFamily: "Jua, sans-serif",
-          letterSpacing: "0.05em",
-          minWidth: "180px",
-        }}
-      >
-        계속 진행하기
-      </button>
+      {isLastRound ? (
+        <button
+          onClick={handleRestartGame}
+          className="fixed z-30 bg-gradient-to-b from-[#bfa76a] to-[#7c5c2b] text-white font-bold py-3 px-10 rounded-full text-lg shadow border-4 border-[#e6d3a3] tracking-wider transition-all duration-200 hover:from-[#d6c08a] hover:to-[#a67c3c]"
+          style={{
+            right: "calc(50vw - 640px/2 + 2rem)",
+            bottom: "2rem",
+            fontFamily: "Jua, sans-serif",
+            letterSpacing: "0.05em",
+            minWidth: "180px",
+          }}
+        >
+          새 게임 시작
+        </button>
+      ) : (
+        <button
+          onClick={handleNextRound}
+          className="fixed z-30 bg-gradient-to-b from-[#bfa76a] to-[#7c5c2b] text-white font-bold py-3 px-10 rounded-full text-lg shadow border-4 border-[#e6d3a3] tracking-wider transition-all duration-200 hover:from-[#d6c08a] hover:to-[#a67c3c]"
+          style={{
+            right: "calc(50vw - 640px/2 + 2rem)",
+            bottom: "2rem",
+            fontFamily: "Jua, sans-serif",
+            letterSpacing: "0.05em",
+            minWidth: "180px",
+          }}
+        >
+          계속 진행하기
+        </button>
+      )}
+
+      {/* 라운드 리뷰 버튼 */}
+      <div className="flex justify-center space-x-4">
+        <button
+          onClick={() => setShowReview(true)}
+          className="bg-[#7c5c2b] hover:bg-[#a67c3c] text-white font-bold py-4 px-12 rounded-full text-xl shadow-lg transition-all duration-200 border-4 border-[#e6d3a3]"
+          style={{ minWidth: "180px", fontFamily: "serif" }}
+        >
+          라운드 리뷰
+        </button>
+        {isLastRound ? (
+          <button
+            onClick={() => navigate("/game-result")}
+            className="bg-[#7c5c2b] hover:bg-[#a67c3c] text-white font-bold py-4 px-12 rounded-full text-xl shadow-lg transition-all duration-200 border-4 border-[#e6d3a3]"
+            style={{ minWidth: "180px", fontFamily: "serif" }}
+          >
+            결과 보기
+          </button>
+        ) : (
+          <button
+            onClick={handleNextRound}
+            className="bg-[#7c5c2b] hover:bg-[#a67c3c] text-white font-bold py-4 px-12 rounded-full text-xl shadow-lg transition-all duration-200 border-4 border-[#e6d3a3]"
+            style={{ minWidth: "180px", fontFamily: "serif" }}
+          >
+            계속 진행하기
+          </button>
+        )}
+      </div>
+
+      {/* 라운드 리뷰 모달 */}
+      {showReview && (
+        <RoundReview
+          period={user?.current_period}
+          onClose={() => setShowReview(false)}
+        />
+      )}
     </div>
   );
 };
