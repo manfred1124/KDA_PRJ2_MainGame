@@ -81,7 +81,7 @@ class NewsResponse(BaseModel):
     period: str | None = None
     category: str | None = None
     title: str
-    date: datetime
+    date: Optional[datetime] = None
     summary: str
     ticker: str | None = None
     sentiment: str | None = None

@@ -24,10 +24,14 @@ const SelectSector = () => {
   const userBalance = user?.total_balance || user?.balance || 0;
   const navigate = useNavigate();
   const [advancing, setAdvancing] = useState(false);
+  const [sectorViewTab, setSectorViewTab] = useState({}); // {섹터명: 'news' | 'stocks'}
+  const [portfolio, setPortfolio] = useState(null);
+  const [portfolioOpen, setPortfolioOpen] = useState(false);
 
   useEffect(() => {
     fetchSectors();
     fetchAllNews(); // 전체 뉴스 데이터 가져오기
+    fetchPortfolio();
   }, []);
 
   useEffect(() => {
@@ -102,9 +106,14 @@ const SelectSector = () => {
     }
   };
 
-  const fetchStockNews = async (stockName) => {
+  const fetchStockNews = async (ticker) => {
     try {
-      const response = await axios.get(`/api/news/stock/${stockName}`);
+      const period = user?.current_period;
+      const response = await axios.get(
+        `/api/news/stock/by-ticker?ticker=${ticker}&period=${encodeURIComponent(
+          period
+        )}`
+      );
       setStockNews(response.data);
     } catch (error) {
       setStockNews([]);
@@ -157,6 +166,15 @@ const SelectSector = () => {
     setAllSectorNews(newsBySector);
   };
 
+  const fetchPortfolio = async () => {
+    try {
+      const response = await axios.get("/api/portfolio");
+      setPortfolio(response.data);
+    } catch (error) {
+      // 에러 무시(없어도 동작)
+    }
+  };
+
   // ESC 키로 모달 닫기
   useEffect(() => {
     const handleEscKey = (event) => {
@@ -186,7 +204,14 @@ const SelectSector = () => {
   };
 
   const handleSectorSelect = async (sector) => {
+    if (selected === sector) {
+      setSelected(null);
+      // 탭도 닫기
+      setSectorViewTab((prev) => ({ ...prev, [sector]: undefined }));
+      return;
+    }
     setSelected(sector);
+    setSectorViewTab((prev) => ({ ...prev, [sector]: prev[sector] || "news" }));
     await fetchStocksBySector(sector);
     await fetchSectorNews(sector);
   };
@@ -200,7 +225,7 @@ const SelectSector = () => {
     setOrderModal({ stock: fixedStock, type: "buy" });
     setOrderType("buy");
     setOrderQty(1);
-    await fetchStockNews(stock.name);
+    await fetchStockNews(stock.symbol);
   };
 
   const handleOrder = async () => {
@@ -284,148 +309,184 @@ const SelectSector = () => {
   }
 
   return (
-    <div className="min-h-screen p-6 relative">
-      <BannerHeader title="섹터별 주식 투자" />
-      <div className="max-w-7xl mx-auto">
-        {!selected ? (
-          // 섹터 선택 화면
-          <div className="flex flex-wrap justify-center gap-6">
-            {sectors.map((sector) => (
-              <button
-                key={sector}
-                onClick={() => handleSectorSelect(sector)}
-                className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-8 text-center min-w-[200px] border-2 border-transparent hover:border-blue-300"
-              >
-                <div className="text-2xl font-bold text-gray-800 mb-2">
-                  {sector}
-                </div>
-                <div className="text-gray-600">주식 보기</div>
-              </button>
-            ))}
-          </div>
-        ) : (
-          // 주식 리스트 화면
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            {/* 섹터 리스트 */}
-            <div className="lg:col-span-1">
-              <div className="bg-white rounded-xl shadow-lg p-6">
-                <h2 className="text-xl font-bold text-gray-800 mb-4">섹터</h2>
-                <div className="space-y-2">
-                  {sectors.map((sector) => (
-                    <button
-                      key={sector}
-                      onClick={() => handleSectorSelect(sector)}
-                      className={`w-full text-left p-3 rounded-lg transition-colors ${
-                        selected === sector
-                          ? "bg-blue-100 text-blue-700 font-semibold"
-                          : "hover:bg-gray-100 text-gray-700"
-                      }`}
-                    >
-                      {sector}
-                    </button>
-                  ))}
-                </div>
+    <div
+      className="min-h-screen p-6 relative flex flex-row"
+      style={{ fontFamily: "serif" }}
+    >
+      {/* 메인 컨텐츠 */}
+      <div className="flex-1">
+        <BannerHeader
+          title={
+            <span
+              className="text-[#7c5c2b] font-bold drop-shadow"
+              style={{ fontFamily: "serif" }}
+            >
+              섹터별 주식 투자
+            </span>
+          }
+        />
+        <div className="max-w-7xl mx-auto">
+          <div className="flex gap-8 p-8">
+            {/* 왼쪽 섹터 버튼 영역 */}
+            <div className="w-80 flex-shrink-0">
+              <div className="space-y-4">
+                {sectors.map((sector) => (
+                  <button
+                    key={sector}
+                    onClick={() => handleSectorSelect(sector)}
+                    className={`w-full h-32 rounded-xl shadow-md transition-all duration-300 p-8 text-left bg-gradient-to-br ${
+                      selected === sector
+                        ? "from-[#f7e6b6] to-[#f3e7c4] border-4 border-[#bfa76a] shadow-lg"
+                        : "from-[#f9f6ef] to-[#f3e7c4] hover:from-[#f7e6b6] hover:to-[#f3e7c4]"
+                    } font-bold text-2xl text-[#7c5c2b] tracking-wide hover:shadow-xl`}
+                    style={{ fontFamily: "serif" }}
+                  >
+                    {sector}
+                    <div className="text-[#a67c3c] text-base mt-2 font-normal">
+                      주식 보기
+                    </div>
+                  </button>
+                ))}
               </div>
             </div>
-
-            {/* 주식 리스트 */}
-            <div className="lg:col-span-3">
-              <div className="bg-white rounded-xl shadow-lg p-6">
-                <h2 className="text-xl font-bold text-gray-800 mb-4">
-                  {selected ? `${selected} 섹터` : "섹터별 뉴스"}
-                </h2>
-                {/* 섹터별 뉴스 섹션 */}
-                {!selected ? (
-                  <div>
-                    {sectors.map((sector) => (
-                      <div key={sector} className="mb-8">
-                        <h3 className="text-lg font-bold text-blue-700 mb-2">
-                          {sector} 섹터 뉴스
-                        </h3>
-                        <ul className="space-y-2">
-                          {(allSectorNews[sector] || []).map((news) => (
+            
+            {/* 오른쪽 뉴스/종목 정보 영역 */}
+            <div className="flex-1 min-w-0">
+              {selected ? (
+                <div className="bg-[#f7e6b6] rounded-xl p-6 shadow-lg border-2 border-[#e6d3a3] min-h-[400px]">
+                  <h3 className="text-2xl font-bold text-[#7c5c2b] mb-4" style={{ fontFamily: "serif" }}>
+                    {selected}
+                  </h3>
+                  
+                  <div className="flex gap-2 mb-4">
+                    <button
+                      className={`px-4 py-2 rounded-lg font-bold text-sm transition-all duration-200 border-2 ${
+                        sectorViewTab[selected] === "news"
+                          ? "bg-[#bfa76a] text-white border-[#a67c3c]"
+                          : "bg-[#f3e7c4] text-[#7c5c2b] border-[#e6d3a3]"
+                      }`}
+                      style={{ fontFamily: "serif" }}
+                      onClick={() =>
+                        setSectorViewTab((prev) => ({
+                          ...prev,
+                          [selected]:
+                            prev[selected] === "news" ? undefined : "news",
+                        }))
+                      }
+                    >
+                      뉴스 보기
+                    </button>
+                    <button
+                      className={`px-4 py-2 rounded-lg font-bold text-sm transition-all duration-200 border-2 ${
+                        sectorViewTab[selected] === "stocks"
+                          ? "bg-[#bfa76a] text-white border-[#a67c3c]"
+                          : "bg-[#f3e7c4] text-[#7c5c2b] border-[#e6d3a3]"
+                      }`}
+                      style={{ fontFamily: "serif" }}
+                      onClick={() =>
+                        setSectorViewTab((prev) => ({
+                          ...prev,
+                          [selected]:
+                            prev[selected] === "stocks" ? undefined : "stocks",
+                        }))
+                      }
+                    >
+                      종목 보기
+                    </button>
+                  </div>
+                  
+                  {/* 탭별 내용 */}
+                  {sectorViewTab[selected] === "news" && (
+                    <ul className="space-y-3">
+                      {(allSectorNews[selected] || []).map((news) => (
+                        <li
+                          key={news.id}
+                          className="bg-[#f3e7c4] rounded-lg p-4 shadow border-2 border-[#e6d3a3]"
+                        >
+                          <div className="text-xs text-[#a67c3c] mb-2">
+                            {news.date?.slice(0, 10)}
+                          </div>
+                          <div className="font-semibold text-[#7c5c2b] text-base">
+                            {news.title}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  
+                  {sectorViewTab[selected] === "stocks" && (
+                    stocks.length > 0 ? (
+                      <div className="space-y-3">
+                        <h4 className="text-lg font-bold text-[#7c5c2b]">
+                          종목 리스트
+                        </h4>
+                        <ul className="space-y-3">
+                          {stocks.map((stock) => (
                             <li
-                              key={news.id}
-                              className="bg-blue-50 rounded-lg p-4 shadow"
+                              key={stock.id}
+                              className="flex items-center justify-between bg-[#f3e7c4] rounded-lg p-4 shadow border border-[#e6d3a3]"
                             >
-                              <div className="text-sm text-gray-500 mb-1">
-                                {news.date?.slice(0, 10)}
+                              <div>
+                                <div className="font-semibold text-[#7c5c2b]">
+                                  {stock.name}{" "}
+                                  <span className="text-xs text-[#a67c3c]">
+                                    ({stock.symbol})
+                                  </span>
+                                </div>
+                                <div className="text-[#a67c3c] font-bold">
+                                  {stock.current_price.toLocaleString()}원
+                                </div>
                               </div>
-                              <div className="font-semibold text-gray-800">
-                                {news.title}
-                              </div>
-                              <div className="text-gray-600 text-sm">
-                                {news.summary}
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => handleStockClick(stock)}
+                                  className="px-4 py-2 bg-[#bfa76a] hover:bg-[#a67c3c] text-white rounded-lg font-bold border-2 border-[#e6d3a3]"
+                                  style={{ fontFamily: "serif" }}
+                                >
+                                  구매
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setOrderModal({ stock, type: "sell" });
+                                    setOrderType("sell");
+                                    setOrderQty(1);
+                                    fetchStockNews(stock.symbol);
+                                  }}
+                                  className="px-4 py-2 bg-[#7c5c2b] hover:bg-[#a67c3c] text-white rounded-lg font-bold border-2 border-[#e6d3a3]"
+                                  style={{ fontFamily: "serif" }}
+                                >
+                                  판매
+                                </button>
                               </div>
                             </li>
                           ))}
                         </ul>
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  sectorNews.length > 0 && (
-                    <div className="mb-6">
-                      <h3 className="text-lg font-bold text-blue-700 mb-2">
-                        {selected} 섹터 뉴스
-                      </h3>
-                      <ul className="space-y-2">
-                        {sectorNews.map((news) => (
-                          <li
-                            key={news.id}
-                            className="bg-blue-50 rounded-lg p-4 shadow"
-                          >
-                            <div className="text-sm text-gray-500 mb-1">
-                              {news.date?.slice(0, 10)}
-                            </div>
-                            <div className="font-semibold text-gray-800">
-                              {news.title}
-                            </div>
-                            <div className="text-gray-600 text-sm">
-                              {news.summary}
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )
-                )}
-                {/* 기존 주식 리스트 */}
-                {selected && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {stocks.map((stock) => (
-                      <div
-                        key={stock.id}
-                        onClick={() => handleStockClick(stock)}
-                        className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 cursor-pointer hover:shadow-lg transition-all duration-300 border-2 border-transparent hover:border-blue-300"
-                      >
-                        <div className="text-lg font-bold text-gray-800 mb-2">
-                          {stock.name}
-                        </div>
-                        <div className="text-sm text-gray-600 mb-2">
-                          {stock.symbol}
-                        </div>
-                        <div className="text-xl font-bold text-blue-600">
-                          {stock.current_price.toLocaleString()}원
-                        </div>
+                    ) : (
+                      <div className="text-[#a67c3c] text-center py-8">
+                        종목 정보가 없습니다.
                       </div>
-                    ))}
+                    )
+                  )}
+                </div>
+              ) : (
+                <div className="bg-[#f7e6b6] rounded-xl p-6 shadow-lg border-2 border-[#e6d3a3] min-h-[400px] flex items-center justify-center">
+                  <div className="text-[#a67c3c] text-xl font-semibold" style={{ fontFamily: "serif" }}>
+                    섹터를 선택해주세요
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </div>
-        )}
-
+        </div>
         {/* 뉴스 버튼 - 왼쪽 하단 고정 */}
         <button
-          onClick={() => navigate("/")}
-          className="fixed bottom-16 left-20 bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-full shadow-lg transition-all duration-300 z-40 flex items-center space-x-3 text-lg"
+          onClick={() => navigate(-1)}
+          className="fixed bottom-16 left-20 bg-[#bfa76a] hover:bg-[#a67c3c] text-white px-6 py-4 rounded-full shadow-lg transition-all duration-300 z-40 flex items-center space-x-3 text-lg border-2 border-[#e6d3a3]"
+          style={{ fontFamily: "serif" }}
         >
-          <span className="text-3xl">📰</span>
-          <span className="font-semibold text-xl">시장 뉴스</span>
+          <span className="text-3xl">←</span>
         </button>
-
         {/* 뉴스 모달 */}
         {newsModal && (
           <div
@@ -646,19 +707,90 @@ const SelectSector = () => {
             </div>
           </div>
         )}
+
+        {/* 우하단 고정 '다음 라운드' 버튼 */}
+        <button
+          className={`fixed bottom-10 right-10 ${
+            user?.current_round_idx + 1 === 10
+              ? "bg-[#bfa76a] hover:bg-[#a67c3c]"
+              : "bg-[#7c5c2b] hover:bg-[#a67c3c]"
+          } text-white font-bold py-4 px-16 rounded-full text-xl shadow-lg transition-all duration-200 z-50 border-4 border-[#e6d3a3]`}
+          onClick={
+            user?.current_round_idx + 1 === 10
+              ? () => navigate("/game-result")
+              : handleNextRound
+          }
+          disabled={advancing}
+          style={{ minWidth: "200px", fontFamily: "serif" }}
+        >
+          {advancing
+            ? "진행 중..."
+            : user?.current_round_idx + 1 === 10
+            ? "결과 보기"
+            : "다음 라운드"}
+        </button>
+
+        <ChatbotWidget />
       </div>
-
-      {/* 우하단 고정 '다음 라운드' 버튼 */}
-      <button
-        className="fixed bottom-10 right-10 bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-16 rounded-full text-xl shadow-lg transition-all duration-200 z-50"
-        onClick={handleNextRound}
-        disabled={advancing}
-        style={{ minWidth: "200px" }}
+      {/* 오른쪽 보유종목 사이드바 */}
+      <div
+        className="w-80 min-w-[320px] max-w-xs ml-8 bg-[#f3e7c4] rounded-xl shadow-lg border-2 border-[#e6d3a3] p-6 h-fit sticky top-8 self-start hidden lg:block"
+        style={{ fontFamily: "serif" }}
       >
-        {advancing ? "진행 중..." : "다음 라운드"}
-      </button>
-
-      <ChatbotWidget />
+        <button
+          className="w-full flex items-center justify-between text-xl font-bold text-[#7c5c2b] mb-2 focus:outline-none border-b-2 border-[#e6d3a3] pb-2"
+          onClick={() => setPortfolioOpen((open) => !open)}
+          style={{ fontFamily: "serif" }}
+        >
+          내 보유종목
+          <span
+            className={`ml-2 transition-transform duration-200 ${
+              portfolioOpen ? "rotate-180" : ""
+            }`}
+          >
+            ▼
+          </span>
+        </button>
+        <div
+          className={`overflow-hidden transition-all duration-300 ${
+            portfolioOpen ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"
+          }`}
+        >
+          {portfolio && portfolio.items.length > 0 ? (
+            <ul className="space-y-3 mt-2">
+              {portfolio.items.map((item) => (
+                <li
+                  key={item.stock_id}
+                  className="flex flex-col gap-1 border-b border-[#e6d3a3] pb-2 last:border-b-0 last:pb-0"
+                >
+                  <div className="font-semibold text-[#7c5c2b]">
+                    {item.stock_name}{" "}
+                    <span className="text-xs text-[#a67c3c]">
+                      ({item.stock_symbol})
+                    </span>
+                  </div>
+                  <div className="text-sm text-[#a67c3c]">
+                    보유수량:{" "}
+                    <span className="font-bold">
+                      {item.quantity.toLocaleString()}주
+                    </span>
+                  </div>
+                  <div className="text-sm text-[#a67c3c]">
+                    평균단가:{" "}
+                    <span className="font-bold">
+                      {item.average_price.toLocaleString()}원
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="text-[#a67c3c] text-center py-8">
+              보유한 종목이 없습니다.
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

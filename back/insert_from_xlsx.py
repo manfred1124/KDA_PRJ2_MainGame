@@ -38,6 +38,10 @@ excel_files = glob.glob(os.path.join('data', '*.xlsx'))
 total_inserted = 0
 
 for filepath in excel_files:
+    # --- 3.1) 기존에 DB에 있는 summary 전체를 조회 ---
+    cursor.execute("SELECT summary FROM news")
+    existing_summaries = {row[0] for row in cursor.fetchall()}
+
     # 4) Excel 파일에서 데이터 읽기
     df = pd.read_excel(filepath)
 
@@ -59,11 +63,20 @@ for filepath in excel_files:
           .str.zfill(6)                        # 6자리로 0 채우기
     )
 
+    # --- 8.1) 기존 summary와 중복되는 행 필터링 ---
+    before_count = len(df)
+    df = df[~df['summary'].isin(existing_summaries)]
+    skipped = before_count - len(df)
+
+    if df.empty:
+        print(f"{os.path.basename(filepath)}: {skipped} rows skipped (이미 존재), 추가할 행이 없습니다.")
+        continue
+
     # 9) DataFrame → SQLite 삽입
     df.to_sql('news', conn, if_exists='append', index=False)
-    count = len(df)
-    total_inserted += count
-    print(f"{os.path.basename(filepath)}: {count} rows added.")
+    inserted = len(df)
+    total_inserted += inserted
+    print(f"{os.path.basename(filepath)}: {skipped} rows skipped, {inserted} rows added.")
 
 # 10) 커밋 및 연결 종료
 conn.commit()

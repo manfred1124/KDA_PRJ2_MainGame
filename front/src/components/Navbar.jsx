@@ -11,6 +11,7 @@ import {
   LogOut,
   User,
   BarChart3,
+  ChevronDown,
 } from "lucide-react";
 
 const Navbar = () => {
@@ -22,6 +23,8 @@ const Navbar = () => {
   const [newsList, setNewsList] = useState([]);
   const [newsIdx, setNewsIdx] = useState(0);
   const [userBalance, setUserBalance] = useState(0);
+  const [newsBanner, setNewsBanner] = useState("");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   useEffect(() => {
     axios
@@ -70,6 +73,46 @@ const Navbar = () => {
     };
   }, []);
 
+  useEffect(() => {
+    if (user?.current_period) {
+      fetchBannerNews(user.current_period);
+    }
+  }, [user?.current_period]);
+
+  // 드롭다운 외부 클릭 시 닫기
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (isDropdownOpen && !event.target.closest('.dropdown-container')) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isDropdownOpen]);
+
+  const fetchBannerNews = async (period) => {
+    try {
+      const response = await fetch(
+        `/api/news?period=${encodeURIComponent(period)}`
+      );
+      const newsData = await response.json();
+      if (newsData.length > 0) {
+        setNewsList(newsData);
+        setNewsIdx(0);
+        setNewsBanner(newsData[0].title);
+      } else {
+        setNewsList([]);
+        setNewsBanner("");
+      }
+    } catch (e) {
+      setNewsList([]);
+      setNewsBanner("");
+    }
+  };
+
   // 사용자 정보가 변경될 때마다 잔고 업데이트
   useEffect(() => {
     if (user) {
@@ -96,7 +139,11 @@ const Navbar = () => {
   useEffect(() => {
     if (newsList.length <= 1) return;
     const timer = setInterval(() => {
-      setNewsIdx((idx) => (idx + 1) % newsList.length);
+      setNewsIdx((idx) => {
+        const newIdx = (idx + 1) % newsList.length;
+        setNewsBanner(newsList[newIdx].title);
+        return newIdx;
+      });
     }, 10000);
     return () => clearInterval(timer);
   }, [newsList]);
@@ -175,88 +222,198 @@ const Navbar = () => {
   const balance = user.total_balance || user.balance || 0;
 
   return (
-    <nav className="bg-gradient-to-r from-blue-50 to-white py-2">
-      <div className="w-full flex flex-col md:flex-row items-stretch md:h-28 gap-3 md:gap-4 px-2 md:px-6">
-        {/* 왼쪽: 홈+제목 - 홈 버튼에 맞게 크기 조정 */}
-        <div
-          className="flex items-center px-3 md:px-4 rounded-2xl shadow-md bg-white border-2 border-blue-200 flex-shrink-0 md:min-w-[120px] md:max-w-[140px] w-full md:w-auto mr-0 md:mr-2"
-          style={{ fontFamily: "inherit" }}
-        >
-          <Link
-            to="/"
-            className="flex items-center space-x-2 w-full justify-center"
-          >
-            <span className="text-2xl md:text-3xl">🏠</span>
-            <span className="text-sm md:text-base font-extrabold text-blue-800 tracking-tight"></span>
-          </Link>
-        </div>
-
-        {/* 중앙: 뉴스배너 */}
-        <div className="flex-1 flex items-center justify-center rounded-2xl shadow-md bg-white border-2 border-blue-200 px-2 md:px-6 mx-0 md:mx-2 min-w-0">
-          <div className="w-full flex items-center justify-center min-w-0">
-            <div className="flex items-center bg-blue-100 border border-blue-300 rounded-xl px-2 md:px-4 py-2 md:py-3 shadow text-blue-900 font-semibold text-sm md:text-base w-full max-w-xl min-w-0">
-              <span className="mr-2 md:mr-3 text-lg md:text-xl">📰</span>
-              <span className="truncate min-w-0">
-                {newsList.length > 0
-                  ? newsList[newsIdx]?.title
-                  : "최근 뉴스가 없습니다."}
-              </span>
-            </div>
+    <nav className="py-2 lg:py-4 relative bg-gradient-to-r from-[#f7e6b6] to-[#f3e7c4] shadow-lg" style={{ fontFamily: "serif" }}>
+      <div className="max-w-7xl mx-auto px-3 lg:px-4">
+        {/* 데스크톱 레이아웃 */}
+        <div className="hidden lg:flex items-center gap-6">
+          {/* 왼쪽: 홈 버튼 */}
+          <div className="flex-shrink-0">
+            <Link
+              to="/"
+              className="flex items-center justify-center w-16 h-16 bg-white rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105"
+            >
+              <span className="text-3xl">🏠</span>
+            </Link>
           </div>
-        </div>
 
-        {/* 라운드 정보 - 크기 확대 및 다음 라운드 버튼 추가 */}
-        <div className="flex flex-col items-center justify-center rounded-2xl shadow-md bg-white border-2 border-blue-200 px-3 md:px-4 py-2 md:py-3 ml-0 md:ml-2 flex-shrink-0 md:min-w-[140px] md:max-w-[160px] w-full md:w-auto">
-          <div className="flex items-center space-x-2 mb-2">
-            <span className="text-lg md:text-xl">🎯</span>
-            <div className="text-center">
-              <div className="text-xs font-medium text-gray-600">라운드</div>
-              <div className="text-lg md:text-xl font-bold text-blue-700">
-                {(user?.current_round_idx ?? 0) + 1}
+          {/* 중앙: 뉴스 배너 */}
+          <div className="flex-1 min-w-0">
+            <div className="bg-white rounded-2xl shadow-md px-6 py-4 max-w-2xl mx-auto">
+              <div className="flex items-center space-x-3">
+                <span className="text-2xl">📰</span>
+                <div className="overflow-hidden">
+                  <span 
+                    key={newsIdx} 
+                    className="text-[#7c5c2b] font-semibold text-lg truncate block animate-fade-in"
+                  >
+                    {newsBanner || "최근 뉴스가 없습니다."}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
-          <button
-            onClick={handleNextRound}
-            className={`px-2 py-1 rounded-lg text-xs font-medium transition-colors duration-200 ${
-              (user?.current_round || 1) >= 10
-                ? "bg-purple-500 hover:bg-purple-600 text-white"
-                : "bg-green-500 hover:bg-green-600 text-white"
-            }`}
-          >
-            {(user?.current_round || 1) >= 10 ? "결과 보기" : "다음 라운드"}
-          </button>
-        </div>
 
-        {/* 오른쪽: 잔고 + 유저 정보 + 로그아웃 */}
-        <div className="flex flex-col justify-center rounded-2xl shadow-md bg-white border-2 border-blue-200 px-3 md:px-6 py-2 md:py-4 ml-0 md:ml-2 flex-shrink-0 md:min-w-[200px] md:max-w-[280px] w-full md:w-auto">
-          <div className="flex items-center justify-between w-full mb-1">
-            <div className="flex items-baseline space-x-1 md:space-x-2">
-              <span className="text-sm md:text-base font-bold text-gray-700">
-                잔고:
-              </span>
-              <span className="text-lg md:text-2xl text-blue-700 font-extrabold">
-                {userBalance.toLocaleString()}
-              </span>
-              <span className="text-sm md:text-base font-bold text-gray-700">
-                원
-              </span>
+          {/* 라운드 정보 */}
+          <div className="flex-shrink-0">
+            <div className="bg-white rounded-2xl shadow-md px-6 py-4">
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-[#a67c3c] font-medium">라운드</span>
+                <span className="text-2xl font-bold text-[#7c5c2b]">
+                  {(user?.current_round_idx ?? 0) + 1}
+                </span>
+              </div>
             </div>
           </div>
-          <div className="flex items-center justify-between w-full mt-1">
-            <Link
-              to="/my-page"
-              className="text-base md:text-lg text-gray-700 font-semibold hover:text-blue-600 transition-colors cursor-pointer"
-            >
-              {user.username}
-            </Link>
+
+          {/* 잔고 정보 */}
+          <div className="flex-shrink-0">
+            <div className="bg-white rounded-2xl shadow-md px-6 py-4">
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-[#a67c3c] font-medium">잔고</span>
+                <span className="text-2xl font-bold text-[#7c5c2b]">
+                  {userBalance.toLocaleString()}원
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* 유저 드롭다운 */}
+          <div className="flex-shrink-0 relative dropdown-container">
             <button
-              onClick={handleLogout}
-              className="ml-2 md:ml-4 px-3 md:px-4 py-1.5 md:py-2 bg-blue-100 hover:bg-blue-600 hover:text-white text-blue-700 rounded-full transition-colors duration-200 font-bold border-2 border-blue-200 shadow text-sm md:text-base text-center flex items-center justify-center whitespace-nowrap"
-              style={{ minWidth: "70px" }}
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="flex items-center space-x-2 px-6 py-4 bg-white hover:bg-gray-50 text-[#7c5c2b] rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 font-semibold"
+              style={{ fontFamily: "serif" }}
             >
-              로그아웃
+              <User className="w-5 h-5" />
+              <span>{user.username}</span>
+              <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
+            
+            {/* 드롭다운 메뉴 */}
+            {isDropdownOpen && (
+              <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 z-50">
+                <div className="py-2">
+                  <Link
+                    to="/my-page"
+                    onClick={() => setIsDropdownOpen(false)}
+                    className="flex items-center space-x-3 px-4 py-3 text-[#7c5c2b] hover:bg-[#f7e6b6] transition-colors duration-200"
+                    style={{ fontFamily: "serif" }}
+                  >
+                    <User className="w-5 h-5" />
+                    <span className="font-semibold">마이페이지</span>
+                  </Link>
+                  <button
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      handleLogout();
+                    }}
+                    className="flex items-center space-x-3 px-4 py-3 text-red-600 hover:bg-red-50 transition-colors duration-200 w-full text-left"
+                    style={{ fontFamily: "serif" }}
+                  >
+                    <LogOut className="w-5 h-5" />
+                    <span className="font-semibold">로그아웃</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* 모바일 레이아웃 */}
+        <div className="lg:hidden space-y-3">
+          {/* 상단: 홈 + 뉴스 */}
+          <div className="flex items-center gap-3">
+            <Link
+              to="/"
+              className="flex items-center justify-center w-12 h-12 bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 flex-shrink-0"
+            >
+              <span className="text-2xl">🏠</span>
+            </Link>
+            
+            <div className="flex-1 min-w-0">
+              <div className="bg-white rounded-xl shadow-md px-4 py-3">
+                <div className="flex items-center space-x-2">
+                  <span className="text-lg">📰</span>
+                  <div className="overflow-hidden">
+                    <span 
+                      key={newsIdx} 
+                      className="text-[#7c5c2b] font-semibold text-sm truncate block animate-fade-in"
+                    >
+                      {newsBanner || "최근 뉴스가 없습니다."}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 하단: 라운드 + 잔고 + 유저 */}
+          <div className="flex items-center gap-2">
+            {/* 라운드 정보 */}
+            <div className="flex-1">
+              <div className="bg-white rounded-xl shadow-md px-3 py-2">
+                <div className="flex items-center justify-center space-x-1">
+                  <span className="text-xs text-[#a67c3c] font-medium">라운드</span>
+                  <span className="text-lg font-bold text-[#7c5c2b]">
+                    {(user?.current_round_idx ?? 0) + 1}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* 잔고 정보 */}
+            <div className="flex-1">
+              <div className="bg-white rounded-xl shadow-md px-3 py-2">
+                <div className="flex items-center justify-center space-x-1">
+                  <span className="text-xs text-[#a67c3c] font-medium">잔고</span>
+                  <span className="text-sm font-bold text-[#7c5c2b] truncate">
+                    {userBalance.toLocaleString()}원
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* 유저 드롭다운 */}
+            <div className="flex-shrink-0 relative dropdown-container">
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="flex items-center justify-center w-12 h-12 bg-white hover:bg-gray-50 text-[#7c5c2b] rounded-xl shadow-md hover:shadow-lg transition-all duration-300"
+                style={{ fontFamily: "serif" }}
+              >
+                <User className="w-5 h-5" />
+              </button>
+              
+              {/* 드롭다운 메뉴 */}
+              {isDropdownOpen && (
+                <div className="absolute top-full right-0 mt-2 w-40 bg-white rounded-xl shadow-lg border border-gray-100 z-50">
+                  <div className="py-2">
+                    <div className="px-3 py-2 text-sm text-[#7c5c2b] font-semibold border-b border-gray-100">
+                      {user.username}
+                    </div>
+                    <Link
+                      to="/my-page"
+                      onClick={() => setIsDropdownOpen(false)}
+                      className="flex items-center space-x-2 px-3 py-2 text-[#7c5c2b] hover:bg-[#f7e6b6] transition-colors duration-200"
+                      style={{ fontFamily: "serif" }}
+                    >
+                      <User className="w-4 h-4" />
+                      <span className="text-sm font-semibold">마이페이지</span>
+                    </Link>
+                    <button
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        handleLogout();
+                      }}
+                      className="flex items-center space-x-2 px-3 py-2 text-red-600 hover:bg-red-50 transition-colors duration-200 w-full text-left"
+                      style={{ fontFamily: "serif" }}
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span className="text-sm font-semibold">로그아웃</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

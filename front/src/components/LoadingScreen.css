@@ -1,0 +1,51 @@
+/* 전체 페이지 기본 설정 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+.loading-wrapper {
+  width: 100vw;
+  height: 100vh;
+  padding: 4rem 5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-image: url("../assets/road.png");
+  background-size: 30% auto; /* 가로 꽉, 세로는 비율 유지 */
+  background-position: center;
+  background-repeat: no-repeat;
+  position: relative;
+}
+
+/* 로딩 텍스트 */
+.loading-text {
+  font-size: 3rem;
+  font-weight: bold;
+  margin-top: 1.5rem;
+  animation: blink 1.1s infinite;
+  color: #222;
+  text-shadow: -1px -1px 0 #fff, /* 좌상 */ 1px -1px 0 #fff,
+    /* 우상 */ -1px 1px 0 #fff, /* 좌하 */ 1px 1px 0 #fff; /* 우하 */
+}
+
+/* 이미지 스타일 */
+.loading-image {
+  width: auto;
+  height: 220px;
+  transition: opacity 0.3s ease-in-out;
+  margin-top: 80px;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0.3;
+  }
+}

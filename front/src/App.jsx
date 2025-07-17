@@ -1,5 +1,5 @@
-import React from "react";
-import { Routes, Route } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Routes, Route, useNavigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import PrivateRoute from "./components/PrivateRoute";
 import Navbar from "./components/Navbar";
@@ -13,8 +13,42 @@ import SelectSector from "./pages/SelectSector";
 import MyPage from "./pages/MyPage";
 import GameResult from "./pages/GameResult";
 import ChatbotWidget from "./components/ChatbotWidget";
+import LoadingScreen from "./components/LoadingScreen";
+import GameIntro from "./components/GameIntro";
 
 function App() {
+  const [showLoading, setShowLoading] = useState(true);
+  const [showIntro, setShowIntro] = useState(() => {
+    // 최초 마운트 시 localStorage에서 introShown 확인
+    return !localStorage.getItem("introShown");
+  });
+  // 로그인 여부 확인하기 - 토큰으로
+  const isLoggedIn = !!localStorage.getItem("token");
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowLoading(false);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (showLoading) {
+    return <LoadingScreen />;
+  }
+
+  if (showIntro) {
+    return (
+      <GameIntro
+        onStart={() => {
+          setShowIntro(false);
+          localStorage.setItem("introShown", "true");
+          navigate("/login");
+        }}
+      />
+    );
+  }
+
   return (
     <AuthProvider>
       <div className="min-h-screen bg-[url('/bg.jpg')] bg-cover bg-center bg-no-repeat bg-fixed">
@@ -81,7 +115,7 @@ function App() {
             />
           </Routes>
         </main>
-        <ChatbotWidget />
+        {isLoggedIn && <ChatbotWidget />}
       </div>
     </AuthProvider>
   );

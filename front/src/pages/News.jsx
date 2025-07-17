@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import BannerHeader from "../components/BannerHeader";
+import { useAuth } from "../contexts/AuthContext";
 
 const News = () => {
   const [news, setNews] = useState([]);
@@ -11,6 +12,8 @@ const News = () => {
   // 모달 상태 추가
   const [selectedNews, setSelectedNews] = useState(null);
   const [currentPeriod, setCurrentPeriod] = useState(null);
+  const navigate = useNavigate(); // 추가
+  const { user } = useAuth();
 
   // ESC 키로 모달 닫기
   const handleKeyDown = useCallback((e) => {
@@ -35,16 +38,16 @@ const News = () => {
 
   // period가 준비되면 뉴스 불러오기
   useEffect(() => {
-    if (!currentPeriod) return;
-    fetchNews(currentPeriod);
-    // eslint-disable-next-line
-  }, [currentPeriod]);
+    if (user?.current_period) {
+      fetchNews(user.current_period);
+    }
+  }, [user?.current_period]);
 
   const fetchNews = async (period) => {
     setLoading(true);
     try {
       const response = await axios.get(
-        `/api/news/macro?period=${encodeURIComponent(period)}`
+        `/api/news?period=${encodeURIComponent(period)}`
       );
       setNews(response.data);
     } catch (error) {
@@ -85,7 +88,7 @@ const News = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 news-page">
       <BannerHeader title="시장 뉴스" />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -128,11 +131,9 @@ const News = () => {
 
       {/* next 버튼 */}
       <button
-        className="fixed bottom-10 right-10 bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-16 rounded-full text-xl shadow-lg transition-all duration-200 z-50"
-        onClick={() => {
-          window.location.href = "/select-sector";
-        }}
-        style={{ minWidth: "200px" }}
+        className="fixed bottom-10 right-10 bg-[#7c5c2b] hover:bg-[#a67c3c] text-white font-bold py-4 px-16 rounded-full text-xl shadow-lg transition-all duration-200 z-50 border-4 border-[#e6d3a3]"
+        onClick={() => navigate("/select-sector")}
+        style={{ minWidth: "200px", fontFamily: "serif" }}
       >
         주식 하러가기
       </button>

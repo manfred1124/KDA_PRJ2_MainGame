@@ -2,7 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from typing import List
 from datetime import datetime, timedelta
-from models import User, Stock, Portfolio, News
+from models import User, Stock, Portfolio, News, Transaction
 from schemas import GameState, RankingItem
 from .stock_service import StockService
 from .news_service import NewsService
@@ -118,9 +118,16 @@ class GameService:
             select(Portfolio).where(Portfolio.user_id == user.id)
         )
         portfolio_items = portfolio_result.scalars().all()
-        
         for item in portfolio_items:
             await db.delete(item)
+        
+        # 트랜잭션(매매 기록)도 모두 삭제
+        transaction_result = await db.execute(
+            select(Transaction).where(Transaction.user_id == user.id)
+        )
+        transactions = transaction_result.scalars().all()
+        for tx in transactions:
+            await db.delete(tx)
         
         # 사용자 정보 초기화
         user.current_round_idx = 0  # 라운드 인덱스 초기화
