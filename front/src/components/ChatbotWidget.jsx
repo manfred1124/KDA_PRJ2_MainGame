@@ -7,6 +7,7 @@ import React, {
 } from "react";
 import { MessageCircle } from "lucide-react";
 import axios from "axios";
+import heroImage from "../assets/mainlogo1.png"; // 용사 이미지 가져오기
 
 const ChatbotWidget = forwardRef(({ fixedPanel = false }, ref) => {
   const [showChatbot, setShowChatbot] = useState(false);
@@ -77,27 +78,36 @@ const ChatbotWidget = forwardRef(({ fixedPanel = false }, ref) => {
           {/* 챗봇 헤더 */}
           <div className="flex items-center justify-between px-6 py-4 bg-[#7c5c2b] text-white rounded-t-2xl">
             <span className="font-bold text-lg" style={{ fontFamily: "serif" }}>
-              🤖 투자 챗봇
+              ⚔️ 용사의 조언
             </span>
           </div>
           {/* 챗봇 메시지 영역 */}
           <div
-            className="flex-1 px-6 py-4 space-y-3 bg-[#f3e7c4] overflow-y-auto flex flex-col"
+            className="flex-1 px-6 py-4 space-y-4 bg-[#f3e7c4] overflow-y-auto flex flex-col"
             style={{ minHeight: "200px", maxHeight: "540px" }}
           >
-            {messages.map((msg, i) => (
-              <div
-                key={i}
-                className={
-                  (msg.role === "user"
-                    ? "self-end bg-[#bfa76a] text-white"
-                    : "self-start bg-[#e6d3a3] text-[#7c5c2b]") +
-                  " rounded-xl px-4 py-2 shadow text-gray-800 max-w-[80%]"
-                }
-              >
-                {msg.text}
-              </div>
-            ))}
+            {messages.map((msg, i) => {
+              if (msg.role === "user") {
+                return (
+                  <div
+                    key={i}
+                    className="self-end bg-[#bfa76a] text-white rounded-xl px-4 py-2 shadow text-gray-800 max-w-[80%]"
+                  >
+                    {msg.text}
+                  </div>
+                );
+              } else {
+                // 봇 메시지 (용사 이미지와 함께)
+                return (
+                  <div key={i} className="flex items-end gap-3 self-start max-w-[90%]">
+                    <img src={heroImage} alt="hero" className="w-12 h-12 rounded-full border-2 border-[#bfa76a] bg-white" />
+                    <div className="bg-[#e6d3a3] text-[#7c5c2b] rounded-xl px-4 py-2 shadow">
+                      {msg.text}
+                    </div>
+                  </div>
+                );
+              }
+            })}
             <div ref={messagesEndRef} />
           </div>
           {/* 챗봇 입력창 */}
@@ -110,7 +120,7 @@ const ChatbotWidget = forwardRef(({ fixedPanel = false }, ref) => {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="질문을 입력하세요..."
+              placeholder="용사에게 질문하기..."
               style={{ fontFamily: "serif" }}
               disabled={loading}
             />

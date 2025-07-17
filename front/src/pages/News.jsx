@@ -23,18 +23,24 @@ const ROUND_TREND_GUIDE = {
 };
 
 function getRoundTrendGuide(period, macroNews = null) {
+  const formatPeriod = (p) => {
+    if (!p || !p.includes(' ')) return p;
+    const [year, half] = p.split(' ');
+    const halfKorean = half === 'H1' ? '상반기' : '하반기';
+    return `${year}년 ${halfKorean}`;
+  };
+  const formattedPeriod = formatPeriod(period);
+
   if (ROUND_TREND_GUIDE[period]) return ROUND_TREND_GUIDE[period];
+
   if (macroNews && macroNews.length > 0) {
-    const title = macroNews[0].title;
-    // 말투 변환 로직 추가
-    if (title.includes("미중 1단계 무역협정")) {
-      return `${period}에는 이런 일이 있었네: 미국과 중국이 1단계 무역 합의를 맺었지만, 코로나 때문에 계획에 차질이 생겼지.`;
-    } else if (title.includes("글로벌 경제 V자 회복")) {
-      return `${period}에는 이런 일이 있었네: 세계 경제가 V자 형태로 빠르게 회복될 거라는 기대감이 부풀었지.`;
-    } else {
-      return `${period}의 주요 소식이라네: ${title}`;
-    }
+    // 최대 5개의 뉴스 제목을 요약
+    const newsTitles = macroNews.slice(0, 5).map(news => news.title.replace(/ 주요 이슈: /, '')); // "주요 이슈: " 부분 제거
+    const summary = `${formattedPeriod}에는 이런 소식들이 있었네: "${newsTitles.join('", "')}".`;
+    const tip = "이러한 시장의 흐름을 잘 읽고, 어떤 산업이 유망할지 신중하게 판단해서 투자해보게나. 기회는 언제나 위기 속에 숨어있는 법이지.";
+    return `${summary} ${tip}`;
   }
+
   if (period && period.includes(" ")) {
     const [year, half] = period.split(" ");
     if (half === "H1")

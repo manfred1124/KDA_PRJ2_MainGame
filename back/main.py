@@ -344,10 +344,11 @@ async def chatbot(
 
     # 해당 period까지의 데이터만 조회
     prices = await stock_service.get_prices_until_period(db, current_period)
-    news = await news_service.get_news_until_period(db, current_period)
+    all_news = await news_service.get_news_until_period(db, current_period)
 
-    # context 요약 (뉴스 5개, 주가 5개)
-    news_titles = [n.title for n in news][-5:]
+    # Macro0 뉴스만 필터링하여 context 생성
+    macro0_news = [n for n in all_news if n.category == 'Macro0']
+    news_titles = [n.title for n in macro0_news][-5:]
     price_summaries = []
     for p in prices[-5:]:
         price_summaries.append(f"{p.stock_id} {p.date}: {p.close_price}")
