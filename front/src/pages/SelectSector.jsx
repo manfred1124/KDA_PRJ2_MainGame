@@ -1,10 +1,14 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useContext } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import ChatbotWidget from "../components/ChatbotWidget";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import BannerHeader from "../components/BannerHeader";
+import { GuideMessageContext } from "../App";
+
+const GUIDE_MSG =
+  "여기는 다양한 산업의 주식이 모여있는 투자판이네. 신중히 섹터를 골라 투자해보게!";
 
 const SelectSector = () => {
   const { user, updateUser } = useAuth();
@@ -27,8 +31,10 @@ const SelectSector = () => {
   const [sectorViewTab, setSectorViewTab] = useState({}); // {섹터명: 'news' | 'stocks'}
   const [portfolio, setPortfolio] = useState(null);
   const [portfolioOpen, setPortfolioOpen] = useState(false);
+  const { addGuideMessage } = useContext(GuideMessageContext);
 
   useEffect(() => {
+    addGuideMessage(GUIDE_MSG);
     fetchSectors();
     fetchAllNews(); // 전체 뉴스 데이터 가져오기
     fetchPortfolio();
@@ -326,147 +332,171 @@ const SelectSector = () => {
           }
         />
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col items-center gap-6 p-8">
-            {sectors.map((sector) => (
-              <div key={sector} className="w-full max-w-md">
-                <button
-                  onClick={() => handleSectorSelect(sector)}
-                  className={`w-full rounded-xl shadow-md transition-all duration-300 p-8 text-left border bg-gradient-to-br ${
-                    selected === sector
-                      ? "from-[#f7e6b6] to-[#f3e7c4] border-[#bfa76a]"
-                      : "from-[#f9f6ef] to-[#f3e7c4] border-[#e6d3a3] hover:border-[#bfa76a] hover:from-[#f7e6b6] hover:to-[#f3e7c4]"
-                  } font-bold text-2xl text-[#7c5c2b] tracking-wide mb-2 hover:shadow-xl`}
-                  style={{ fontFamily: "serif" }}
-                >
-                  {sector}
-                  <div className="text-[#a67c3c] text-base mt-2 font-normal">
-                    주식 보기
-                  </div>
-                </button>
-                {/* 선택된 섹터: 탭 버튼 + 탭별 내용 */}
-                {selected === sector && (
-                  <div className="mt-3">
-                    <div className="flex gap-2 mb-3">
-                      <button
-                        className={`px-4 py-2 rounded-lg font-bold text-sm transition-all duration-200 border-2 ${
-                          sectorViewTab[sector] === "news"
-                            ? "bg-[#bfa76a] text-white border-[#a67c3c]"
-                            : "bg-[#f3e7c4] text-[#7c5c2b] border-[#e6d3a3]"
-                        }`}
-                        style={{ fontFamily: "serif" }}
-                        onClick={() =>
-                          setSectorViewTab((prev) => ({
-                            ...prev,
-                            [sector]:
-                              prev[sector] === "news" ? undefined : "news",
-                          }))
-                        }
-                      >
-                        뉴스 보기
-                      </button>
-                      <button
-                        className={`px-4 py-2 rounded-lg font-bold text-sm transition-all duration-200 border-2 ${
-                          sectorViewTab[sector] === "stocks"
-                            ? "bg-[#bfa76a] text-white border-[#a67c3c]"
-                            : "bg-[#f3e7c4] text-[#7c5c2b] border-[#e6d3a3]"
-                        }`}
-                        style={{ fontFamily: "serif" }}
-                        onClick={() =>
-                          setSectorViewTab((prev) => ({
-                            ...prev,
-                            [sector]:
-                              prev[sector] === "stocks" ? undefined : "stocks",
-                          }))
-                        }
-                      >
-                        종목 보기
-                      </button>
+          <div className="flex gap-8 p-8">
+            {/* 왼쪽 섹터 버튼 영역 */}
+            <div className="w-80 flex-shrink-0">
+              <div className="space-y-4">
+                {sectors.map((sector) => (
+                  <button
+                    key={sector}
+                    onClick={() => handleSectorSelect(sector)}
+                    className={`w-full h-32 rounded-xl shadow-md transition-all duration-300 p-8 text-left bg-gradient-to-br ${
+                      selected === sector
+                        ? "from-[#f7e6b6] to-[#f3e7c4] border-4 border-[#bfa76a] shadow-lg"
+                        : "from-[#f9f6ef] to-[#f3e7c4] hover:from-[#f7e6b6] hover:to-[#f3e7c4]"
+                    } font-bold text-2xl text-[#7c5c2b] tracking-wide hover:shadow-xl`}
+                    style={{ fontFamily: "serif" }}
+                  >
+                    {sector}
+                    <div className="text-[#a67c3c] text-base mt-2 font-normal">
+                      주식 보기
                     </div>
-                    {/* 탭별 내용: sectorViewTab[sector]가 있을 때만 렌더 */}
-                    {sectorViewTab[sector] === "news" && (
-                      <ul className="space-y-2 mt-2">
-                        {(allSectorNews[sector] || []).map((news) => (
-                          <li
-                            key={news.id}
-                            className="bg-[#f7e6b6] rounded-lg p-3 shadow border-2 border-[#e6d3a3]"
-                          >
-                            <div className="text-xs text-[#a67c3c] mb-1">
-                              {news.date?.slice(0, 10)}
-                            </div>
-                            <div className="font-semibold text-[#7c5c2b] text-base">
-                              {news.title}
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                    {sectorViewTab[sector] === "stocks" &&
-                      (stocks.length > 0 ? (
-                        <div className="mt-4 bg-[#f7e6b6] rounded-xl p-4 shadow-inner border-2 border-[#e6d3a3]">
-                          <h4 className="text-lg font-bold mb-2 text-[#7c5c2b]">
-                            종목 리스트
-                          </h4>
-                          <ul className="space-y-2">
-                            {stocks.map((stock) => (
-                              <li
-                                key={stock.id}
-                                className="flex items-center justify-between bg-[#f3e7c4] rounded-lg p-3 shadow border border-[#e6d3a3]"
-                              >
-                                <div>
-                                  <div className="font-semibold text-[#7c5c2b]">
-                                    {stock.name}{" "}
-                                    <span className="text-xs text-[#a67c3c]">
-                                      ({stock.symbol})
-                                    </span>
-                                  </div>
-                                  <div className="text-[#a67c3c] font-bold">
-                                    {stock.current_price.toLocaleString()}원
-                                  </div>
-                                </div>
-                                <div className="flex gap-2">
-                                  <button
-                                    onClick={() => handleStockClick(stock)}
-                                    className="px-4 py-2 bg-[#bfa76a] hover:bg-[#a67c3c] text-white rounded-lg font-bold border-2 border-[#e6d3a3]"
-                                    style={{ fontFamily: "serif" }}
-                                  >
-                                    구매
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      setOrderModal({ stock, type: "sell" });
-                                      setOrderType("sell");
-                                      setOrderQty(1);
-                                      fetchStockNews(stock.symbol);
-                                    }}
-                                    className="px-4 py-2 bg-[#7c5c2b] hover:bg-[#a67c3c] text-white rounded-lg font-bold border-2 border-[#e6d3a3]"
-                                    style={{ fontFamily: "serif" }}
-                                  >
-                                    판매
-                                  </button>
-                                </div>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      ) : (
-                        <div className="text-[#a67c3c] text-center py-4">
-                          종목 정보가 없습니다.
-                        </div>
-                      ))}
-                  </div>
-                )}
+                  </button>
+                ))}
               </div>
-            ))}
+            </div>
+
+            {/* 오른쪽 뉴스/종목 정보 영역 */}
+            <div className="flex-1 min-w-0">
+              {selected ? (
+                <div className="bg-[#f7e6b6] rounded-xl p-6 shadow-lg border-2 border-[#e6d3a3] min-h-[400px]">
+                  <h3
+                    className="text-2xl font-bold text-[#7c5c2b] mb-4"
+                    style={{ fontFamily: "serif" }}
+                  >
+                    {selected}
+                  </h3>
+
+                  <div className="flex gap-2 mb-4">
+                    <button
+                      className={`px-4 py-2 rounded-lg font-bold text-sm transition-all duration-200 border-2 ${
+                        sectorViewTab[selected] === "news"
+                          ? "bg-[#bfa76a] text-white border-[#a67c3c]"
+                          : "bg-[#f3e7c4] text-[#7c5c2b] border-[#e6d3a3]"
+                      }`}
+                      style={{ fontFamily: "serif" }}
+                      onClick={() =>
+                        setSectorViewTab((prev) => ({
+                          ...prev,
+                          [selected]:
+                            prev[selected] === "news" ? undefined : "news",
+                        }))
+                      }
+                    >
+                      뉴스 보기
+                    </button>
+                    <button
+                      className={`px-4 py-2 rounded-lg font-bold text-sm transition-all duration-200 border-2 ${
+                        sectorViewTab[selected] === "stocks"
+                          ? "bg-[#bfa76a] text-white border-[#a67c3c]"
+                          : "bg-[#f3e7c4] text-[#7c5c2b] border-[#e6d3a3]"
+                      }`}
+                      style={{ fontFamily: "serif" }}
+                      onClick={() =>
+                        setSectorViewTab((prev) => ({
+                          ...prev,
+                          [selected]:
+                            prev[selected] === "stocks" ? undefined : "stocks",
+                        }))
+                      }
+                    >
+                      종목 보기
+                    </button>
+                  </div>
+
+                  {/* 탭별 내용 */}
+                  {sectorViewTab[selected] === "news" && (
+                    <ul className="space-y-3">
+                      {(allSectorNews[selected] || []).map((news) => (
+                        <li
+                          key={news.id}
+                          className="bg-[#f3e7c4] rounded-lg p-4 shadow border-2 border-[#e6d3a3]"
+                        >
+                          <div className="text-xs text-[#a67c3c] mb-2">
+                            {news.date?.slice(0, 10)}
+                          </div>
+                          <div className="font-semibold text-[#7c5c2b] text-base">
+                            {news.title}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+
+                  {sectorViewTab[selected] === "stocks" &&
+                    (stocks.length > 0 ? (
+                      <div className="space-y-3">
+                        <h4 className="text-lg font-bold text-[#7c5c2b]">
+                          종목 리스트
+                        </h4>
+                        <ul className="space-y-3">
+                          {stocks.map((stock) => (
+                            <li
+                              key={stock.id}
+                              className="flex items-center justify-between bg-[#f3e7c4] rounded-lg p-4 shadow border border-[#e6d3a3]"
+                            >
+                              <div>
+                                <div className="font-semibold text-[#7c5c2b]">
+                                  {stock.name}{" "}
+                                  <span className="text-xs text-[#a67c3c]">
+                                    ({stock.symbol})
+                                  </span>
+                                </div>
+                                <div className="text-[#a67c3c] font-bold">
+                                  {stock.current_price.toLocaleString()}원
+                                </div>
+                              </div>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => handleStockClick(stock)}
+                                  className="px-4 py-2 bg-[#bfa76a] hover:bg-[#a67c3c] text-white rounded-lg font-bold border-2 border-[#e6d3a3]"
+                                  style={{ fontFamily: "serif" }}
+                                >
+                                  구매
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setOrderModal({ stock, type: "sell" });
+                                    setOrderType("sell");
+                                    setOrderQty(1);
+                                    fetchStockNews(stock.symbol);
+                                  }}
+                                  className="px-4 py-2 bg-[#7c5c2b] hover:bg-[#a67c3c] text-white rounded-lg font-bold border-2 border-[#e6d3a3]"
+                                  style={{ fontFamily: "serif" }}
+                                >
+                                  판매
+                                </button>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : (
+                      <div className="text-[#a67c3c] text-center py-8">
+                        종목 정보가 없습니다.
+                      </div>
+                    ))}
+                </div>
+              ) : (
+                <div className="bg-[#f7e6b6] rounded-xl p-6 shadow-lg border-2 border-[#e6d3a3] min-h-[400px] flex items-center justify-center">
+                  <div
+                    className="text-[#a67c3c] text-xl font-semibold"
+                    style={{ fontFamily: "serif" }}
+                  >
+                    섹터를 선택해주세요
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
         {/* 뉴스 버튼 - 왼쪽 하단 고정 */}
         <button
-          onClick={() => navigate("/")}
+          onClick={() => navigate(-1)}
           className="fixed bottom-16 left-20 bg-[#bfa76a] hover:bg-[#a67c3c] text-white px-6 py-4 rounded-full shadow-lg transition-all duration-300 z-40 flex items-center space-x-3 text-lg border-2 border-[#e6d3a3]"
           style={{ fontFamily: "serif" }}
         >
-          <span className="text-3xl">📰</span>
-          <span className="font-semibold text-xl">시장 뉴스</span>
+          <span className="text-3xl">←</span>
         </button>
         {/* 뉴스 모달 */}
         {newsModal && (
@@ -690,31 +720,39 @@ const SelectSector = () => {
         )}
 
         {/* 우하단 고정 '다음 라운드' 버튼 */}
-        <button
-          className={`fixed bottom-10 right-10 ${
-            user?.current_round_idx + 1 === 10
-              ? "bg-[#bfa76a] hover:bg-[#a67c3c]"
-              : "bg-[#7c5c2b] hover:bg-[#a67c3c]"
-          } text-white font-bold py-4 px-16 rounded-full text-xl shadow-lg transition-all duration-200 z-50 border-4 border-[#e6d3a3]`}
-          onClick={
-            user?.current_round_idx + 1 === 10
-              ? () => navigate("/game-result")
-              : handleNextRound
-          }
-          disabled={advancing}
-          style={{ minWidth: "200px", fontFamily: "serif" }}
-        >
-          {advancing
-            ? "진행 중..."
-            : user?.current_round_idx + 1 === 10
-            ? "결과 보기"
-            : "다음 라운드"}
-        </button>
+        <div className="relative w-full h-full">
+          <button
+            className={`fixed z-30 ${
+              user?.current_round_idx + 1 === 10
+                ? "bg-[#bfa76a] hover:bg-[#a67c3c]"
+                : "bg-[#7c5c2b] hover:bg-[#a67c3c]"
+            } text-white font-bold py-4 px-12 rounded-full text-xl shadow-lg transition-all duration-200 border-4 border-[#e6d3a3]`}
+            style={{
+              right: "calc(50vw - 640px/2 + 2rem)", // 640px = max-w-5xl, 2rem = 네모박스 padding
+              bottom: "2rem",
+              minWidth: "180px",
+              fontFamily: "serif",
+            }}
+            onClick={
+              user?.current_round_idx + 1 === 10
+                ? () => navigate("/game-result")
+                : handleNextRound
+            }
+            disabled={advancing}
+          >
+            {advancing
+              ? "진행 중..."
+              : user?.current_round_idx + 1 === 10
+              ? "결과 보기"
+              : "다음 라운드"}
+          </button>
+        </div>
 
         <ChatbotWidget />
       </div>
       {/* 오른쪽 보유종목 사이드바 */}
-      <div
+      {/* 아래 코드(보유종목 사이드바) 전체를 삭제 */}
+      {/* <div
         className="w-80 min-w-[320px] max-w-xs ml-8 bg-[#f3e7c4] rounded-xl shadow-lg border-2 border-[#e6d3a3] p-6 h-fit sticky top-8 self-start hidden lg:block"
         style={{ fontFamily: "serif" }}
       >
@@ -771,7 +809,7 @@ const SelectSector = () => {
             </div>
           )}
         </div>
-      </div>
+      </div> */}
     </div>
   );
 };

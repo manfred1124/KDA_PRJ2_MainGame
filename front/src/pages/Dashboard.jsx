@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import axios from "axios";
 import toast from "react-hot-toast";
@@ -11,6 +11,11 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { GuideMessageContext } from "../App";
+import ChatbotWidget from "../components/ChatbotWidget";
+
+const GUIDE_MSG =
+  "이번 라운드의 투자 결과를 한눈에 볼 수 있는 요약판이네. 다음 라운드를 준비하게!";
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -19,8 +24,10 @@ const Dashboard = () => {
   const [advancing, setAdvancing] = useState(false);
   const [restarting, setRestarting] = useState(false);
   const navigate = useNavigate();
+  const { addGuideMessage } = useContext(GuideMessageContext);
 
   useEffect(() => {
+    addGuideMessage(GUIDE_MSG);
     fetchGameState();
   }, []);
 

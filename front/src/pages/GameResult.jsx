@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import axios from "axios";
@@ -11,6 +11,10 @@ import {
   RefreshCw,
   Home,
 } from "lucide-react";
+import { GuideMessageContext } from "../App";
+import ChatbotWidget from "../components/ChatbotWidget";
+
+const GUIDE_MSG = "모험의 끝에 도달했네! 그대의 투자 여정을 돌아보게.";
 
 const GameResult = () => {
   const { user } = useAuth();
@@ -18,8 +22,10 @@ const GameResult = () => {
   const [gameState, setGameState] = useState(null);
   const [ranking, setRanking] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { addGuideMessage } = useContext(GuideMessageContext);
 
   useEffect(() => {
+    addGuideMessage(GUIDE_MSG);
     fetchGameResult();
   }, []);
 

@@ -1,15 +1,35 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
 import { MessageCircle } from "lucide-react";
 import axios from "axios";
 
-const ChatbotWidget = () => {
+const ChatbotWidget = forwardRef(({ fixedPanel = false }, ref) => {
   const [showChatbot, setShowChatbot] = useState(false);
   const [input, setInput] = useState("");
-  const [messages, setMessages] = useState([
-    { role: "bot", text: "안녕하세요! 궁금한 점을 물어보세요." },
-  ]);
+  const [messages, setMessages] = useState([]); // 초기 메시지 제거
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
+
+  // 외부에서 가이드 메시지 추가 (중복 방지)
+  useImperativeHandle(ref, () => ({
+    addGuideMessage: (text) => {
+      setMessages((msgs) => {
+        if (
+          msgs.length > 0 &&
+          msgs[msgs.length - 1].role === "bot" &&
+          msgs[msgs.length - 1].text === text
+        ) {
+          return msgs; // 중복 방지
+        }
+        return [...msgs, { role: "bot", text }];
+      });
+    },
+  }));
 
   // 스크롤 항상 아래로
   useEffect(() => {
@@ -47,43 +67,31 @@ const ChatbotWidget = () => {
 
   return (
     <>
-      {/* 챗봇 플로팅 버튼 */}
-      {!showChatbot && (
-        <button
-          className="fixed bottom-32 right-10 bg-blue-500 hover:bg-blue-600 text-white rounded-full shadow-lg p-5 z-50 flex items-center justify-center text-3xl"
-          onClick={() => setShowChatbot(true)}
-          aria-label="챗봇 열기"
+      {/* 챗봇 창 (fixedPanel이면 항상) */}
+      {fixedPanel && (
+        <div
+          className={
+            "w-full h-[700px] max-h-[90vh] bg-[#f7e6b6] rounded-2xl shadow-2xl flex flex-col overflow-hidden border-4 border-[#e6d3a3]"
+          }
         >
-          <MessageCircle size={32} />
-        </button>
-      )}
-
-      {/* 챗봇 창 */}
-      {showChatbot && (
-        <div className="fixed bottom-32 right-10 w-96 max-w-full bg-white rounded-2xl shadow-2xl z-50 flex flex-col overflow-hidden border border-blue-200">
           {/* 챗봇 헤더 */}
-          <div className="flex items-center justify-between px-6 py-4 bg-blue-600 text-white rounded-t-2xl">
-            <span className="font-bold text-lg">🤖 투자 챗봇</span>
-            <button
-              className="text-2xl hover:text-blue-200 focus:outline-none"
-              onClick={() => setShowChatbot(false)}
-              aria-label="챗봇 닫기"
-            >
-              ×
-            </button>
+          <div className="flex items-center justify-between px-6 py-4 bg-[#7c5c2b] text-white rounded-t-2xl">
+            <span className="font-bold text-lg" style={{ fontFamily: "serif" }}>
+              🤖 투자 챗봇
+            </span>
           </div>
           {/* 챗봇 메시지 영역 */}
           <div
-            className="flex-1 px-6 py-4 space-y-3 bg-blue-50 overflow-y-auto flex flex-col"
-            style={{ minHeight: "200px", maxHeight: "300px" }}
+            className="flex-1 px-6 py-4 space-y-3 bg-[#f3e7c4] overflow-y-auto flex flex-col"
+            style={{ minHeight: "200px", maxHeight: "540px" }}
           >
             {messages.map((msg, i) => (
               <div
                 key={i}
                 className={
                   (msg.role === "user"
-                    ? "self-end bg-blue-100"
-                    : "self-start bg-white") +
+                    ? "self-end bg-[#bfa76a] text-white"
+                    : "self-start bg-[#e6d3a3] text-[#7c5c2b]") +
                   " rounded-xl px-4 py-2 shadow text-gray-800 max-w-[80%]"
                 }
               >
@@ -94,30 +102,31 @@ const ChatbotWidget = () => {
           </div>
           {/* 챗봇 입력창 */}
           <form
-            className="flex items-center border-t px-4 py-3 bg-white"
+            className="flex items-center border-t-4 border-[#e6d3a3] px-4 py-3 bg-[#f7e6b6]"
             onSubmit={handleSend}
           >
             <input
+              className="flex-1 rounded-lg border border-[#bfa76a] px-3 py-2 mr-2 focus:outline-none focus:ring-2 focus:ring-[#bfa76a] bg-white text-[#7c5c2b]"
               type="text"
-              className="flex-1 rounded-full border border-gray-300 px-4 py-2 mr-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-              placeholder="메시지를 입력하세요..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
+              placeholder="질문을 입력하세요..."
+              style={{ fontFamily: "serif" }}
               disabled={loading}
-              autoFocus
             />
             <button
               type="submit"
-              className="bg-blue-500 hover:bg-blue-600 text-white rounded-full px-4 py-2 font-bold"
+              className="bg-[#bfa76a] hover:bg-[#a67c3c] text-white font-bold py-2 px-4 rounded-lg transition-all duration-200"
               disabled={loading || !input.trim()}
+              style={{ fontFamily: "serif" }}
             >
-              {loading ? "..." : "전송"}
+              전송
             </button>
           </form>
         </div>
       )}
     </>
   );
-};
+});
 
 export default ChatbotWidget;
