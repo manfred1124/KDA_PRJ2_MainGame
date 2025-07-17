@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import { IntroContext } from "../App";
 import { Eye, EyeOff, LogIn } from "lucide-react";
 
 const Login = () => {
@@ -10,6 +11,7 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
 
   const { login, user } = useAuth();
+  const { setShowIntro } = useContext(IntroContext);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -24,6 +26,8 @@ const Login = () => {
 
     const success = await login(username, password);
     if (success) {
+      localStorage.setItem("showIntro", "true");
+      setShowIntro(true);
       navigate("/");
     }
     setLoading(false);

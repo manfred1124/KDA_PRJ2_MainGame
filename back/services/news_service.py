@@ -44,6 +44,17 @@ class NewsService:
             select(News).where(News.period == period, News.category == 'Macro').order_by(News.date.asc())
         )
         news_list = result.scalars().all()
+        
+        # 말투 변경
+        for news in news_list:
+            # "2020 H1 주요 이슈: 미중 1단계 무역협정 체결 후 코로나로 이행 차질"
+            # -> "2020년 상반기에는 미중 무역협정이 있었지만, 코로나 때문에 차질이 생겼다네."
+            if '주요 이슈' in news.title and '무역협정' in news.title:
+                news.title = f"{period.split(' ')[0]}년 상반기에는 미국과 중국이 무역 합의를 했지만, 코로나 때문에 계획에 차질이 생겼다네."
+            elif '주요 이슈' in news.title and 'V자 회복' in news.title:
+                news.title = f"{period.split(' ')[0]}년 하반기에는 세계 경제가 V자 형태로 회복할 거라는 기대감이 커졌지."
+            # 여기에 다른 메시지 변환 규칙을 추가할 수 있네.
+
         return [NewsResponse.from_orm(news) for news in news_list]
     
     async def get_news_until_period(self, db: AsyncSession, period: str):

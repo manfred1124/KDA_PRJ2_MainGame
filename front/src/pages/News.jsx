@@ -11,6 +11,57 @@ import ChatbotWidget from "../components/ChatbotWidget";
 const GUIDE_MSG =
   "용사여, 이곳은 최신 시장 뉴스가 모이는 곳이네. 뉴스를 잘 살펴 투자에 참고하게!";
 
+const ROUND_TREND_GUIDE = {
+  "2020Q1": "2020년 1분기, 코로나19의 영향으로 글로벌 증시가 큰 충격을 받았네.",
+  "2020Q2": "2020년 2분기, 각국의 경기부양책으로 시장이 반등하기 시작했지.",
+  "2021Q1": "2021년 1분기, 백신 보급과 함께 경기 회복 기대감이 커졌네.",
+  "2023H1":
+    "2023년 상반기, 글로벌 경제가 점차 안정을 찾아가고 있네. 상반기에는 경기 회복 기대감이 컸지.",
+  "2023H2":
+    "2023년 하반기, 금리 인상과 인플레이션 이슈가 완화되며 시장이 점진적으로 회복되고 있네.",
+  // 필요에 따라 실제 period 값에 맞게 추가
+};
+
+function getRoundTrendGuide(period, macroNews = null) {
+  if (ROUND_TREND_GUIDE[period]) return ROUND_TREND_GUIDE[period];
+  if (macroNews && macroNews.length > 0) {
+    const title = macroNews[0].title;
+    // 말투 변환 로직 추가
+    if (title.includes("미중 1단계 무역협정")) {
+      return `${period}에는 이런 일이 있었네: 미국과 중국이 1단계 무역 합의를 맺었지만, 코로나 때문에 계획에 차질이 생겼지.`;
+    } else if (title.includes("글로벌 경제 V자 회복")) {
+      return `${period}에는 이런 일이 있었네: 세계 경제가 V자 형태로 빠르게 회복될 거라는 기대감이 부풀었지.`;
+    } else {
+      return `${period}의 주요 소식이라네: ${title}`;
+    }
+  }
+  if (period && period.includes(" ")) {
+    const [year, half] = period.split(" ");
+    if (half === "H1")
+      return `${year}년 상반기, 글로벌 경제와 산업의 주요 변화를 주목해보게!`;
+    if (half === "H2")
+      return `${year}년 하반기, 하반기 시장의 주요 이슈와 트렌드를 살펴보게!`;
+    if (year === "2023")
+      return "2023년, 글로벌 경제가 점차 안정을 찾아가고 있네.";
+    if (year === "2022")
+      return "2022년, 인플레이션과 금리 인상 이슈로 시장이 조정받고 있네.";
+    if (year === "2021")
+      return "2021년, 경기 회복과 성장주에 대한 기대가 높아졌지.";
+    if (year === "2020") return "2020년대 초반, 시장이 큰 변동성을 겪고 있네.";
+  }
+  if (period && period.length >= 4) {
+    const year = period.slice(0, 4);
+    if (year === "2023")
+      return "2023년, 글로벌 경제가 점차 안정을 찾아가고 있네.";
+    if (year === "2022")
+      return "2022년, 인플레이션과 금리 인상 이슈로 시장이 조정받고 있네.";
+    if (year === "2021")
+      return "2021년, 경기 회복과 성장주에 대한 기대가 높아졌지.";
+    if (year === "2020") return "2020년대 초반, 시장이 큰 변동성을 겪고 있네.";
+  }
+  return "현재 시점의 시장 동향을 잘 살펴 투자 전략을 세워보게!";
+}
+
 const News = () => {
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -45,13 +96,23 @@ const News = () => {
   // period가 준비되면 뉴스 불러오기
   useEffect(() => {
     if (user?.current_period) {
-      fetchNews(user.current_period);
+      // Macro 뉴스도 함께 불러와서 가이드 메시지에 활용
+      const fetchMacroNewsAndGuide = async () => {
+        try {
+          const macroRes = await axios.get(
+            `/api/news/macro?period=${encodeURIComponent(user.current_period)}`
+          );
+          addGuideMessage(
+            getRoundTrendGuide(user.current_period, macroRes.data)
+          );
+        } catch (e) {
+          addGuideMessage(getRoundTrendGuide(user.current_period));
+        }
+        fetchNews(user.current_period);
+      };
+      fetchMacroNewsAndGuide();
     }
   }, [user?.current_period]);
-
-  useEffect(() => {
-    addGuideMessage(GUIDE_MSG);
-  }, []);
 
   const fetchNews = async (period) => {
     setLoading(true);

@@ -18,10 +18,14 @@ import heroImage2 from "./assets/mainlogo2.png";
 
 // 가이드 메시지 Context 생성
 export const GuideMessageContext = createContext({ addGuideMessage: () => {} });
+export const IntroContext = createContext({
+  showIntro: false,
+  setShowIntro: () => {},
+});
 
 function App() {
   const [showLoading, setShowLoading] = useState(true);
-  const [showIntro, setShowIntro] = useState(true);
+  const [showIntro, setShowIntro] = useState(false);
   const [heroIdx, setHeroIdx] = useState(0);
   const isLoggedIn = !!localStorage.getItem("token");
   const navigate = useNavigate();
@@ -48,12 +52,20 @@ function App() {
     return () => clearInterval(interval);
   }, [showIntro]);
 
+  // localStorage의 showIntro가 true로 바뀌면 모달을 띄움
+  useEffect(() => {
+    if (localStorage.getItem("showIntro") === "true") {
+      setShowIntro(true);
+    }
+  }, []);
+
   const handleCloseIntro = () => {
     setShowIntro(false);
+    localStorage.removeItem("showIntro");
   };
 
   return (
-    <>
+    <IntroContext.Provider value={{ showIntro, setShowIntro }}>
       {!showLoading && showIntro && (
         <div
           style={{
@@ -241,7 +253,7 @@ function App() {
           </div>
         </GuideMessageContext.Provider>
       )}
-    </>
+    </IntroContext.Provider>
   );
 }
 export default App;

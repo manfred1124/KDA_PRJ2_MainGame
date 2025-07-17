@@ -10,6 +10,63 @@ import { GuideMessageContext } from "../App";
 const GUIDE_MSG =
   "여기는 다양한 산업의 주식이 모여있는 투자판이네. 신중히 섹터를 골라 투자해보게!";
 
+const SECTOR_GUIDE = {
+  IT: "IT·반도체 섹터는 첨단 기술과 혁신의 중심지라네. 빠르게 변화하는 트렌드를 이끄는 기업들이 모여 있지.",
+  반도체:
+    "반도체 섹터는 전자제품의 두뇌를 만드는 핵심 산업이라네. 첨단 기술과 글로벌 경쟁이 치열하지.",
+  금융: "금융 섹터는 은행, 보험, 증권 등 자본의 흐름을 책임지는 곳이네.",
+  소비재:
+    "소비재·유통 섹터는 일상생활과 밀접한 기업들이 모여있네. 경기 변동에 민감하지.",
+  유통: "소비재·유통 섹터는 일상생활과 밀접한 기업들이 모여있네. 경기 변동에 민감하지.",
+  에너지:
+    "에너지 섹터는 산업의 동력을 공급하는 곳이네. 원유, 가스, 발전 기업들이 이끌고 있지.",
+  헬스케어:
+    "헬스케어·바이오 섹터는 건강과 생명을 지키는 기업들이 모여 있네. 제약, 바이오, 의료기기 분야가 중심이지.",
+  바이오:
+    "헬스케어 섹터는 건강과 생명을 지키는 기업들이 모여 있네. 제약, 바이오, 의료기기 분야가 중심이지.",
+  산업재:
+    "산업재 섹터는 사회의 기반을 다지는 기업들이 모여 있네. 건설, 기계, 운송 등 다양한 산업이 속해 있지.",
+  소재: "소재·2차전지 섹터는 다양한 산업의 기초가 되는 원자재와 부품을 공급하는 곳이네.",
+  "2차전지":
+    "2차전지 섹터는 미래 에너지 저장의 핵심이라네. 전기차와 친환경 산업의 성장동력이 되지.",
+  커뮤니케이션:
+    "커뮤니케이션 섹터는 정보와 소통을 책임지는 기업들이 모여 있네. 통신, 미디어, 인터넷 기업이 중심이지.",
+  "공공·유틸리티":
+    "공공·유틸리티 섹터는 전기, 수도, 가스 등 생활에 꼭 필요한 서비스를 제공하는 곳이네. 안정적인 수익이 특징이지.",
+  // 필요에 따라 섹터명을 추가하세요
+};
+
+function getSectorGuide(sector) {
+  if (SECTOR_GUIDE[sector]) return SECTOR_GUIDE[sector];
+  for (const key of Object.keys(SECTOR_GUIDE)) {
+    if (sector.includes(key)) return SECTOR_GUIDE[key];
+  }
+  return `${sector} 섹터에 오신 것을 환영합니다!`;
+}
+
+const ROUND_TREND_GUIDE = {
+  "2020Q1": "2020년 1분기에는 코로나19의 영향으로 세계 증시가 큰 충격을 받았네.",
+  "2020Q2": "2020년 2분기에는 여러 나라의 경기 부양책 덕분에 시장이 다시 살아나기 시작했지.",
+  "2021Q1": "2021년 1분기에는 백신이 퍼지면서 경기가 좋아질 거라는 기대감이 커졌네.",
+  "2023H1": "2023년 상반기에는 중국 경제가 다시 문을 열면서 세계가 성장할 거라는 기대감이 부풀었지.",
+  // 필요에 따라 실제 period 값에 맞게 추가
+};
+
+function getRoundTrendGuide(period) {
+  if (ROUND_TREND_GUIDE[period]) return ROUND_TREND_GUIDE[period];
+  if (period && period.length >= 4) {
+    const year = period.slice(0, 4);
+    if (year === "2020") return "2020년대 초반, 시장이 큰 변동성을 겪고 있네.";
+    if (year === "2021")
+      return "2021년, 경기 회복과 성장주에 대한 기대가 높아졌지.";
+    if (year === "2022")
+      return "2022년, 인플레이션과 금리 인상 이슈로 시장이 조정받고 있네.";
+    if (year === "2023")
+      return "2023년, 글로벌 경제가 점차 안정을 찾아가고 있네.";
+  }
+  return "현재 시점의 시장 동향을 잘 살펴 투자 전략을 세워보게!";
+}
+
 const SelectSector = () => {
   const { user, updateUser } = useAuth();
   const [sectors, setSectors] = useState([]);
@@ -35,6 +92,7 @@ const SelectSector = () => {
 
   useEffect(() => {
     addGuideMessage(GUIDE_MSG);
+    // 라운드/시점 동향 메시지 출력 제거 (메인에서만 출력)
     fetchSectors();
     fetchAllNews(); // 전체 뉴스 데이터 가져오기
     fetchPortfolio();
@@ -220,6 +278,10 @@ const SelectSector = () => {
     setSectorViewTab((prev) => ({ ...prev, [sector]: prev[sector] || "news" }));
     await fetchStocksBySector(sector);
     await fetchSectorNews(sector);
+    // 섹터별 설명 챗봇에 출력 (부분 일치 포함)
+    if (addGuideMessage) {
+      addGuideMessage(getSectorGuide(sector));
+    }
   };
 
   const handleStockClick = async (stock) => {
