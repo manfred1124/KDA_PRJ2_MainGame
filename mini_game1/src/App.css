@@ -80,6 +80,13 @@ body, html {
   color: #5f6368; /* 약간 어두운 회색 */
 }
 
+.timer {
+  font-size: 1.25rem; /* 20px */
+  font-weight: bold;
+  color: #dc3545; /* 빨간색으로 강조 */
+  margin-bottom: 1rem; /* 16px */
+}
+
 .question-image {
   width: 100%;
   height: auto;
@@ -249,4 +256,109 @@ body, html {
 
 .incorrect-text {
   color: #dc3545; /* 오답 텍스트 색상 */
+}
+
+/* 진행률 바 컨테이너 */
+.progress-bar-container {
+  width: 100%;
+  background-color: #e0e0e0;
+  border-radius: 5px;
+  height: 10px;
+  margin-top: 1.5rem; /* 24px */
+  overflow: hidden; /* 내부 채우기가 둥근 모서리를 넘지 않도록 */
+}
+
+/* 진행률 바 채우기 */
+.progress-bar-fill {
+  height: 100%;
+  background-color: #4CAF50; /* 녹색 */
+  width: 0%; /* 초기 너비 */
+  border-radius: 5px;
+  transition: width 0.5s ease-in-out; /* 너비 변화에 애니메이션 적용 */
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .game-title {
+    font-size: 2rem;
+  }
+
+  .score-section,
+  .question-section {
+    padding: 1.5rem;
+  }
+
+  .score-section h2 {
+    font-size: 1.75rem;
+  }
+
+  .score-section p {
+    font-size: 1.1rem;
+  }
+
+  .question-text {
+    font-size: 1.5rem;
+  }
+
+  .option-button {
+    font-size: 1.1rem;
+    padding: 0.8rem 1.2rem;
+  }
+
+  .explanation-modal-content {
+    padding: 1.5rem;
+  }
+
+  .explanation-modal-content h2 {
+    font-size: 1.75rem;
+  }
+
+  .explanation-modal-content p {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .game-title {
+    font-size: 1.75rem;
+  }
+
+  .score-section,
+  .question-section {
+    padding: 1rem;
+  }
+
+  .score-section h2 {
+    font-size: 1.5rem;
+  }
+
+  .score-section p {
+    font-size: 1rem;
+  }
+
+  .question-text {
+    font-size: 1.25rem;
+  }
+
+  .option-button {
+    font-size: 1rem;
+    padding: 0.7rem 1rem;
+  }
+
+  .restart-button, .next-button {
+    font-size: 1rem;
+    padding: 0.6rem 1.2rem;
+  }
+
+  .explanation-modal-content {
+    padding: 1rem;
+  }
+
+  .explanation-modal-content h2 {
+    font-size: 1.5rem;
+  }
+
+  .explanation-modal-content p {
+    font-size: 0.9rem;
+  }
 }
