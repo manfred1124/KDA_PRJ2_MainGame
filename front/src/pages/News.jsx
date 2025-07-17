@@ -1,10 +1,15 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useContext } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import BannerHeader from "../components/BannerHeader";
 import { useAuth } from "../contexts/AuthContext";
+import { GuideMessageContext } from "../App";
+import ChatbotWidget from "../components/ChatbotWidget";
+
+const GUIDE_MSG =
+  "용사여, 이곳은 최신 시장 뉴스가 모이는 곳이네. 뉴스를 잘 살펴 투자에 참고하게!";
 
 const News = () => {
   const [news, setNews] = useState([]);
@@ -14,6 +19,7 @@ const News = () => {
   const [currentPeriod, setCurrentPeriod] = useState(null);
   const navigate = useNavigate(); // 추가
   const { user } = useAuth();
+  const { addGuideMessage } = useContext(GuideMessageContext);
 
   // ESC 키로 모달 닫기
   const handleKeyDown = useCallback((e) => {
@@ -42,6 +48,10 @@ const News = () => {
       fetchNews(user.current_period);
     }
   }, [user?.current_period]);
+
+  useEffect(() => {
+    addGuideMessage(GUIDE_MSG);
+  }, []);
 
   const fetchNews = async (period) => {
     setLoading(true);
@@ -131,9 +141,14 @@ const News = () => {
 
       {/* next 버튼 */}
       <button
-        className="fixed bottom-10 right-10 bg-[#7c5c2b] hover:bg-[#a67c3c] text-white font-bold py-4 px-16 rounded-full text-xl shadow-lg transition-all duration-200 z-50 border-4 border-[#e6d3a3]"
+        className="fixed z-30 bg-[#7c5c2b] hover:bg-[#a67c3c] text-white font-bold py-4 px-12 rounded-full text-xl shadow-lg transition-all duration-200 border-4 border-[#e6d3a3]"
+        style={{
+          right: "calc(50vw - 640px/2 + 2rem)", // 640px = max-w-5xl, 2rem = 네모박스 padding
+          bottom: "2rem",
+          minWidth: "180px",
+          fontFamily: "serif",
+        }}
         onClick={() => navigate("/select-sector")}
-        style={{ minWidth: "200px", fontFamily: "serif" }}
       >
         주식 하러가기
       </button>

@@ -1,10 +1,14 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useContext } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import ChatbotWidget from "../components/ChatbotWidget";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import BannerHeader from "../components/BannerHeader";
+import { GuideMessageContext } from "../App";
+
+const GUIDE_MSG =
+  "여기는 다양한 산업의 주식이 모여있는 투자판이네. 신중히 섹터를 골라 투자해보게!";
 
 const SelectSector = () => {
   const { user, updateUser } = useAuth();
@@ -27,8 +31,10 @@ const SelectSector = () => {
   const [sectorViewTab, setSectorViewTab] = useState({}); // {섹터명: 'news' | 'stocks'}
   const [portfolio, setPortfolio] = useState(null);
   const [portfolioOpen, setPortfolioOpen] = useState(false);
+  const { addGuideMessage } = useContext(GuideMessageContext);
 
   useEffect(() => {
+    addGuideMessage(GUIDE_MSG);
     fetchSectors();
     fetchAllNews(); // 전체 뉴스 데이터 가져오기
     fetchPortfolio();
@@ -349,15 +355,18 @@ const SelectSector = () => {
                 ))}
               </div>
             </div>
-            
+
             {/* 오른쪽 뉴스/종목 정보 영역 */}
             <div className="flex-1 min-w-0">
               {selected ? (
                 <div className="bg-[#f7e6b6] rounded-xl p-6 shadow-lg border-2 border-[#e6d3a3] min-h-[400px]">
-                  <h3 className="text-2xl font-bold text-[#7c5c2b] mb-4" style={{ fontFamily: "serif" }}>
+                  <h3
+                    className="text-2xl font-bold text-[#7c5c2b] mb-4"
+                    style={{ fontFamily: "serif" }}
+                  >
                     {selected}
                   </h3>
-                  
+
                   <div className="flex gap-2 mb-4">
                     <button
                       className={`px-4 py-2 rounded-lg font-bold text-sm transition-all duration-200 border-2 ${
@@ -394,7 +403,7 @@ const SelectSector = () => {
                       종목 보기
                     </button>
                   </div>
-                  
+
                   {/* 탭별 내용 */}
                   {sectorViewTab[selected] === "news" && (
                     <ul className="space-y-3">
@@ -413,9 +422,9 @@ const SelectSector = () => {
                       ))}
                     </ul>
                   )}
-                  
-                  {sectorViewTab[selected] === "stocks" && (
-                    stocks.length > 0 ? (
+
+                  {sectorViewTab[selected] === "stocks" &&
+                    (stocks.length > 0 ? (
                       <div className="space-y-3">
                         <h4 className="text-lg font-bold text-[#7c5c2b]">
                           종목 리스트
@@ -466,12 +475,14 @@ const SelectSector = () => {
                       <div className="text-[#a67c3c] text-center py-8">
                         종목 정보가 없습니다.
                       </div>
-                    )
-                  )}
+                    ))}
                 </div>
               ) : (
                 <div className="bg-[#f7e6b6] rounded-xl p-6 shadow-lg border-2 border-[#e6d3a3] min-h-[400px] flex items-center justify-center">
-                  <div className="text-[#a67c3c] text-xl font-semibold" style={{ fontFamily: "serif" }}>
+                  <div
+                    className="text-[#a67c3c] text-xl font-semibold"
+                    style={{ fontFamily: "serif" }}
+                  >
                     섹터를 선택해주세요
                   </div>
                 </div>
@@ -709,31 +720,39 @@ const SelectSector = () => {
         )}
 
         {/* 우하단 고정 '다음 라운드' 버튼 */}
-        <button
-          className={`fixed bottom-10 right-10 ${
-            user?.current_round_idx + 1 === 10
-              ? "bg-[#bfa76a] hover:bg-[#a67c3c]"
-              : "bg-[#7c5c2b] hover:bg-[#a67c3c]"
-          } text-white font-bold py-4 px-16 rounded-full text-xl shadow-lg transition-all duration-200 z-50 border-4 border-[#e6d3a3]`}
-          onClick={
-            user?.current_round_idx + 1 === 10
-              ? () => navigate("/game-result")
-              : handleNextRound
-          }
-          disabled={advancing}
-          style={{ minWidth: "200px", fontFamily: "serif" }}
-        >
-          {advancing
-            ? "진행 중..."
-            : user?.current_round_idx + 1 === 10
-            ? "결과 보기"
-            : "다음 라운드"}
-        </button>
+        <div className="relative w-full h-full">
+          <button
+            className={`fixed z-30 ${
+              user?.current_round_idx + 1 === 10
+                ? "bg-[#bfa76a] hover:bg-[#a67c3c]"
+                : "bg-[#7c5c2b] hover:bg-[#a67c3c]"
+            } text-white font-bold py-4 px-12 rounded-full text-xl shadow-lg transition-all duration-200 border-4 border-[#e6d3a3]`}
+            style={{
+              right: "calc(50vw - 640px/2 + 2rem)", // 640px = max-w-5xl, 2rem = 네모박스 padding
+              bottom: "2rem",
+              minWidth: "180px",
+              fontFamily: "serif",
+            }}
+            onClick={
+              user?.current_round_idx + 1 === 10
+                ? () => navigate("/game-result")
+                : handleNextRound
+            }
+            disabled={advancing}
+          >
+            {advancing
+              ? "진행 중..."
+              : user?.current_round_idx + 1 === 10
+              ? "결과 보기"
+              : "다음 라운드"}
+          </button>
+        </div>
 
         <ChatbotWidget />
       </div>
       {/* 오른쪽 보유종목 사이드바 */}
-      <div
+      {/* 아래 코드(보유종목 사이드바) 전체를 삭제 */}
+      {/* <div
         className="w-80 min-w-[320px] max-w-xs ml-8 bg-[#f3e7c4] rounded-xl shadow-lg border-2 border-[#e6d3a3] p-6 h-fit sticky top-8 self-start hidden lg:block"
         style={{ fontFamily: "serif" }}
       >
@@ -790,7 +809,7 @@ const SelectSector = () => {
             </div>
           )}
         </div>
-      </div>
+      </div> */}
     </div>
   );
 };

@@ -1,7 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, createContext } from "react";
 import { Routes, Route, useNavigate } from "react-router-dom";
-import { AuthProvider } from "./contexts/AuthContext";
-import PrivateRoute from "./components/PrivateRoute";
 import Navbar from "./components/Navbar";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -12,113 +10,238 @@ import Ranking from "./pages/Ranking";
 import SelectSector from "./pages/SelectSector";
 import MyPage from "./pages/MyPage";
 import GameResult from "./pages/GameResult";
+import PrivateRoute from "./components/PrivateRoute";
 import ChatbotWidget from "./components/ChatbotWidget";
 import LoadingScreen from "./components/LoadingScreen";
-import GameIntro from "./components/GameIntro";
+import heroImage1 from "./assets/mainlogo.png";
+import heroImage2 from "./assets/mainlogo2.png";
+
+// 가이드 메시지 Context 생성
+export const GuideMessageContext = createContext({ addGuideMessage: () => {} });
 
 function App() {
   const [showLoading, setShowLoading] = useState(true);
-  const [showIntro, setShowIntro] = useState(() => {
-    // 최초 마운트 시 localStorage에서 introShown 확인
-    return !localStorage.getItem("introShown");
-  });
-  // 로그인 여부 확인하기 - 토큰으로
+  const [showIntro, setShowIntro] = useState(true);
+  const [heroIdx, setHeroIdx] = useState(0);
   const isLoggedIn = !!localStorage.getItem("token");
   const navigate = useNavigate();
+  const chatbotRef = useRef();
+
+  // 가이드 메시지 추가 함수
+  const addGuideMessage = (text) => {
+    if (chatbotRef.current && chatbotRef.current.addGuideMessage) {
+      chatbotRef.current.addGuideMessage(text);
+    }
+  };
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowLoading(false);
-    }, 2000);
+    const timer = setTimeout(() => setShowLoading(false), 2000);
     return () => clearTimeout(timer);
   }, []);
 
-  if (showLoading) {
-    return <LoadingScreen />;
-  }
+  // Hero talking animation
+  useEffect(() => {
+    if (!showIntro) return;
+    const interval = setInterval(() => {
+      setHeroIdx((prev) => (prev === 0 ? 1 : 0));
+    }, 400);
+    return () => clearInterval(interval);
+  }, [showIntro]);
 
-  if (showIntro) {
-    return (
-      <GameIntro
-        onStart={() => {
-          setShowIntro(false);
-          localStorage.setItem("introShown", "true");
-          navigate("/login");
-        }}
-      />
-    );
-  }
+  const handleCloseIntro = () => {
+    setShowIntro(false);
+  };
 
   return (
-    <AuthProvider>
-      <div className="min-h-screen bg-[url('/bg.jpg')] bg-cover bg-center bg-no-repeat bg-fixed">
-        <Navbar />
-        <main className="container mx-auto px-4 py-8">
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route
-              path="/"
-              element={
-                <PrivateRoute>
-                  <News />
-                </PrivateRoute>
-              }
+    <>
+      {!showLoading && showIntro && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "transparent",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 48 }}>
+            {/* Speech bubble (left, larger) */}
+            <div
+              style={{
+                background: "#fffbe6",
+                borderRadius: 32,
+                boxShadow: "0 8px 32px #bfa76a55",
+                padding: "3.2rem 3.2rem 2.2rem 3.2rem",
+                maxWidth: 600,
+                minWidth: 400,
+                textAlign: "center",
+                position: "relative",
+                fontFamily: "serif",
+              }}
+            >
+              {/* Speech bubble tail (right side) */}
+              <div
+                style={{
+                  position: "absolute",
+                  right: -40,
+                  bottom: 48,
+                  width: 0,
+                  height: 0,
+                  borderTop: "28px solid transparent",
+                  borderBottom: "28px solid transparent",
+                  borderLeft: "40px solid #fffbe6",
+                  filter: "drop-shadow(2px 2px 2px #bfa76a33)",
+                }}
+              />
+              <div
+                style={{
+                  fontSize: 28,
+                  color: "#7c5c2b",
+                  marginBottom: 36,
+                  lineHeight: 1.6,
+                }}
+              >
+                용사여, 모의투자 게임에 온 것을 환영하네!
+                <br />
+                이곳은 투자 모험의 세계라네.
+                <br />
+                나와 함께 투자 영웅이 되어보지 않겠는가?
+              </div>
+              <button
+                onClick={handleCloseIntro}
+                style={{
+                  padding: "1.1rem 3rem",
+                  fontSize: "1.3rem",
+                  fontWeight: "bold",
+                  backgroundColor: "#001E5A",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "12px",
+                  cursor: "pointer",
+                  boxShadow: "2px 2px 5px rgba(0,0,0,0.3)",
+                  transition: "transform 0.2s",
+                }}
+                onMouseOver={(e) =>
+                  (e.currentTarget.style.transform = "scale(1.05)")
+                }
+                onMouseOut={(e) =>
+                  (e.currentTarget.style.transform = "scale(1)")
+                }
+              >
+                게임 시작하기 →
+              </button>
+            </div>
+            {/* Hero image (right, outside speech bubble) */}
+            <img
+              src={heroIdx === 0 ? heroImage1 : heroImage2}
+              alt="hero"
+              style={{
+                width: 220,
+                height: 220,
+                objectFit: "contain",
+                display: "block",
+                marginBottom: 0,
+              }}
             />
-            <Route
-              path="/stocks"
-              element={
-                <PrivateRoute>
-                  <Stocks />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/news"
-              element={
-                <PrivateRoute>
-                  <News />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/ranking"
-              element={
-                <PrivateRoute>
-                  <Ranking />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/select-sector"
-              element={
-                <PrivateRoute>
-                  <SelectSector />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/my-page"
-              element={
-                <PrivateRoute>
-                  <MyPage />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/game-result"
-              element={
-                <PrivateRoute>
-                  <GameResult />
-                </PrivateRoute>
-              }
-            />
-          </Routes>
-        </main>
-        {isLoggedIn && <ChatbotWidget />}
-      </div>
-    </AuthProvider>
+          </div>
+        </div>
+      )}
+      {showLoading ? (
+        <LoadingScreen />
+      ) : (
+        <GuideMessageContext.Provider value={{ addGuideMessage }}>
+          <div className="h-screen bg-[url('/bg.jpg')] bg-cover bg-center bg-no-repeat bg-fixed flex flex-col">
+            <Navbar />
+            <div className="flex-1 container mx-auto px-4 py-8 flex flex-row gap-8 overflow-hidden items-stretch">
+              {/* 왼쪽: 메인 컨텐츠 */}
+              <main className="flex-1 min-w-0 flex items-start justify-center h-full">
+                <div
+                  className="w-full max-w-5xl h-full min-h-[60vh] max-h-[80vh] bg-[#f7e6b6] rounded-3xl border-4 border-[#bfa76a] shadow-2xl p-8 overflow-y-auto game-scrollbar mt-6 mb-6"
+                  style={{
+                    boxShadow: "0 8px 32px #bfa76a55",
+                    fontFamily: "serif",
+                  }}
+                >
+                  <Routes>
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/register" element={<Register />} />
+                    <Route
+                      path="/"
+                      element={
+                        <PrivateRoute>
+                          <News />
+                        </PrivateRoute>
+                      }
+                    />
+                    <Route
+                      path="/stocks"
+                      element={
+                        <PrivateRoute>
+                          <Stocks />
+                        </PrivateRoute>
+                      }
+                    />
+                    <Route
+                      path="/news"
+                      element={
+                        <PrivateRoute>
+                          <News />
+                        </PrivateRoute>
+                      }
+                    />
+                    <Route
+                      path="/ranking"
+                      element={
+                        <PrivateRoute>
+                          <Ranking />
+                        </PrivateRoute>
+                      }
+                    />
+                    <Route
+                      path="/select-sector"
+                      element={
+                        <PrivateRoute>
+                          <SelectSector />
+                        </PrivateRoute>
+                      }
+                    />
+                    <Route
+                      path="/my-page"
+                      element={
+                        <PrivateRoute>
+                          <MyPage />
+                        </PrivateRoute>
+                      }
+                    />
+                    <Route
+                      path="/game-result"
+                      element={
+                        <PrivateRoute>
+                          <GameResult />
+                        </PrivateRoute>
+                      }
+                    />
+                  </Routes>
+                </div>
+              </main>
+              {/* 오른쪽: 챗봇 영역 */}
+              {isLoggedIn && (
+                <aside className="w-[420px] max-w-full flex-shrink-0 flex flex-col justify-start mt-6 mb-6 h-full">
+                  <div className="h-full flex flex-col">
+                    <ChatbotWidget ref={chatbotRef} fixedPanel />
+                  </div>
+                </aside>
+              )}
+            </div>
+          </div>
+        </GuideMessageContext.Provider>
+      )}
+    </>
   );
 }
-
 export default App;

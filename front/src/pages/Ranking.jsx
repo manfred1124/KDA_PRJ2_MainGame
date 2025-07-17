@@ -1,17 +1,24 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { Trophy, Medal, TrendingUp, TrendingDown, Home } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { GuideMessageContext } from "../App";
+import ChatbotWidget from "../components/ChatbotWidget";
+
+const GUIDE_MSG =
+  "여기서 다른 용사들과 실력을 겨룰 수 있네. 순위를 확인해보게!";
 
 const Ranking = () => {
   const [rankings, setRankings] = useState([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { addGuideMessage } = useContext(GuideMessageContext);
 
   useEffect(() => {
+    addGuideMessage(GUIDE_MSG);
     fetchRankings();
   }, []);
 
@@ -35,7 +42,14 @@ const Ranking = () => {
       case 3:
         return <Medal className="text-[#7c5c2b]" size={24} />;
       default:
-        return <span className="text-lg font-bold text-[#a67c3c]" style={{ fontFamily: "Jua, sans-serif" }}>{rank}</span>;
+        return (
+          <span
+            className="text-lg font-bold text-[#a67c3c]"
+            style={{ fontFamily: "Jua, sans-serif" }}
+          >
+            {rank}
+          </span>
+        );
     }
   };
 
@@ -70,7 +84,12 @@ const Ranking = () => {
   return (
     <div className="space-y-6" style={{ fontFamily: "Jua, sans-serif" }}>
       <div className="text-center">
-        <h1 className="text-4xl font-bold text-gray-900 mb-2" style={{ fontFamily: "Jua, sans-serif" }}>🏆 투자 랭킹</h1>
+        <h1
+          className="text-4xl font-bold text-gray-900 mb-2"
+          style={{ fontFamily: "Jua, sans-serif" }}
+        >
+          🏆 투자 랭킹
+        </h1>
         <p className="text-gray-700" style={{ fontFamily: "Jua, sans-serif" }}>
           다른 플레이어들과 경쟁하며 실력을 확인하세요!
         </p>
@@ -79,16 +98,27 @@ const Ranking = () => {
       <div className="card bg-[#f7e6b6] border-2 border-[#e6d3a3] shadow-lg">
         <div className="flex items-center space-x-2 mb-6">
           <Trophy className="text-[#bfa76a]" size={24} />
-          <h2 className="text-xl font-semibold text-[#7c5c2b]" style={{ fontFamily: "Jua, sans-serif" }}>상위 10위</h2>
+          <h2
+            className="text-xl font-semibold text-[#7c5c2b]"
+            style={{ fontFamily: "Jua, sans-serif" }}
+          >
+            상위 10위
+          </h2>
         </div>
 
         {top10.length === 0 ? (
           <div className="text-center py-12">
             <Trophy size={48} className="text-[#d6c08a] mx-auto mb-4" />
-            <p className="text-[#a67c3c] text-lg" style={{ fontFamily: "Jua, sans-serif" }}>
+            <p
+              className="text-[#a67c3c] text-lg"
+              style={{ fontFamily: "Jua, sans-serif" }}
+            >
               아직 랭킹 데이터가 없습니다.
             </p>
-            <p className="text-sm text-[#bfa76a] mt-2" style={{ fontFamily: "Jua, sans-serif" }}>
+            <p
+              className="text-sm text-[#bfa76a] mt-2"
+              style={{ fontFamily: "Jua, sans-serif" }}
+            >
               게임을 시작하고 투자해보세요!
             </p>
           </div>
@@ -107,10 +137,16 @@ const Ranking = () => {
                       {getRankIcon(ranking.rank)}
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-[#7c5c2b]" style={{ fontFamily: "Jua, sans-serif" }}>
+                      <h3
+                        className="text-lg font-semibold text-[#7c5c2b]"
+                        style={{ fontFamily: "Jua, sans-serif" }}
+                      >
                         {ranking.username}
                       </h3>
-                      <p className="text-sm text-[#a67c3c]" style={{ fontFamily: "Jua, sans-serif" }}>
+                      <p
+                        className="text-sm text-[#a67c3c]"
+                        style={{ fontFamily: "Jua, sans-serif" }}
+                      >
                         포트폴리오 가치:{" "}
                         {ranking.total_portfolio_value.toLocaleString()}원
                       </p>
@@ -130,12 +166,20 @@ const Ranking = () => {
                       ) : (
                         <TrendingDown size={20} />
                       )}
-                      <span className="text-xl font-bold" style={{ fontFamily: "Jua, sans-serif" }}>
+                      <span
+                        className="text-xl font-bold"
+                        style={{ fontFamily: "Jua, sans-serif" }}
+                      >
                         {ranking.total_profit_loss_percentage >= 0 ? "+" : ""}
                         {ranking.total_profit_loss_percentage.toFixed(2)}%
                       </span>
                     </div>
-                    <p className="text-sm text-[#a67c3c] mt-1" style={{ fontFamily: "Jua, sans-serif" }}>수익률 기준</p>
+                    <p
+                      className="text-sm text-[#a67c3c] mt-1"
+                      style={{ fontFamily: "Jua, sans-serif" }}
+                    >
+                      수익률 기준
+                    </p>
                   </div>
                 </div>
               </div>
@@ -152,10 +196,16 @@ const Ranking = () => {
               {getRankIcon(myRanking.rank)}
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-[#7c5c2b]" style={{ fontFamily: "Jua, sans-serif" }}>
+              <h3
+                className="text-lg font-semibold text-[#7c5c2b]"
+                style={{ fontFamily: "Jua, sans-serif" }}
+              >
                 내 랭킹: {myRanking.rank}위 ({myRanking.username})
               </h3>
-              <p className="text-sm text-[#a67c3c]" style={{ fontFamily: "Jua, sans-serif" }}>
+              <p
+                className="text-sm text-[#a67c3c]"
+                style={{ fontFamily: "Jua, sans-serif" }}
+              >
                 포트폴리오 가치:{" "}
                 {myRanking.total_portfolio_value.toLocaleString()}원
               </p>
@@ -173,12 +223,20 @@ const Ranking = () => {
                 ) : (
                   <TrendingDown size={20} />
                 )}
-                <span className="text-xl font-bold" style={{ fontFamily: "Jua, sans-serif" }}>
+                <span
+                  className="text-xl font-bold"
+                  style={{ fontFamily: "Jua, sans-serif" }}
+                >
                   {myRanking.total_profit_loss_percentage >= 0 ? "+" : ""}
                   {myRanking.total_profit_loss_percentage.toFixed(2)}%
                 </span>
               </div>
-              <p className="text-sm text-[#a67c3c] mt-1" style={{ fontFamily: "Jua, sans-serif" }}>수익률 기준</p>
+              <p
+                className="text-sm text-[#a67c3c] mt-1"
+                style={{ fontFamily: "Jua, sans-serif" }}
+              >
+                수익률 기준
+              </p>
             </div>
           </div>
         </div>
@@ -186,10 +244,16 @@ const Ranking = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="card bg-gradient-to-r from-[#f7e6b6] to-[#e6d3a3] border-2 border-[#bfa76a] shadow-lg">
-          <h3 className="text-lg font-semibold text-[#7c5c2b] mb-3" style={{ fontFamily: "Jua, sans-serif" }}>
+          <h3
+            className="text-lg font-semibold text-[#7c5c2b] mb-3"
+            style={{ fontFamily: "Jua, sans-serif" }}
+          >
             🥇 1등의 비밀
           </h3>
-          <ul className="space-y-2 text-sm text-[#a67c3c]" style={{ fontFamily: "Jua, sans-serif" }}>
+          <ul
+            className="space-y-2 text-sm text-[#a67c3c]"
+            style={{ fontFamily: "Jua, sans-serif" }}
+          >
             <li>• 분산 투자로 리스크를 줄입니다</li>
             <li>• 뉴스와 시장 동향을 꼼꼼히 분석합니다</li>
             <li>• 감정에 휘둘리지 않고 차분히 판단합니다</li>
@@ -198,10 +262,16 @@ const Ranking = () => {
         </div>
 
         <div className="card bg-gradient-to-r from-[#f3e7c4] to-[#e6d3a3] border-2 border-[#a67c3c] shadow-lg">
-          <h3 className="text-lg font-semibold text-[#7c5c2b] mb-3" style={{ fontFamily: "Jua, sans-serif" }}>
+          <h3
+            className="text-lg font-semibold text-[#7c5c2b] mb-3"
+            style={{ fontFamily: "Jua, sans-serif" }}
+          >
             📊 랭킹 시스템
           </h3>
-          <ul className="space-y-2 text-sm text-[#a67c3c]" style={{ fontFamily: "Jua, sans-serif" }}>
+          <ul
+            className="space-y-2 text-sm text-[#a67c3c]"
+            style={{ fontFamily: "Jua, sans-serif" }}
+          >
             <li>• 수익률 기준으로 순위가 결정됩니다</li>
             <li>• 포트폴리오 가치와 현금을 합산합니다</li>
             <li>• 실시간으로 업데이트됩니다</li>

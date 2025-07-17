@@ -72,7 +72,10 @@ const MyPage = () => {
   }
 
   return (
-    <div className="space-y-6 min-h-screen pb-12" style={{ fontFamily: "Jua, sans-serif" }}>
+    <div
+      className="space-y-6 min-h-screen pb-12"
+      style={{ fontFamily: "Jua, sans-serif" }}
+    >
       {/* 라운드 요약 제목 및 계속 진행하기 버튼 */}
       <div className="flex flex-col items-center gap-4 mt-4 mb-2">
         <h2
@@ -101,13 +104,20 @@ const MyPage = () => {
             >
               {user?.username}
             </h1>
-            <p className="text-[#a67c3c]" style={{ fontFamily: "Jua, sans-serif" }}>모험가</p>
+            <p
+              className="text-[#a67c3c]"
+              style={{ fontFamily: "Jua, sans-serif" }}
+            >
+              모험가
+            </p>
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="flex items-center space-x-2 text-[#7c5c2b]">
             <Calendar size={20} />
-            <span style={{ fontFamily: "Jua, sans-serif" }}>현재 라운드: {(user?.current_round_idx ?? 0) + 1}</span>
+            <span style={{ fontFamily: "Jua, sans-serif" }}>
+              현재 라운드: {(user?.current_round_idx ?? 0) + 1}
+            </span>
           </div>
           <div className="flex items-center space-x-2 text-[#7c5c2b]">
             <Trophy size={20} />
@@ -143,7 +153,10 @@ const MyPage = () => {
             style={{ fontFamily: "Jua, sans-serif" }}
           >
             <StockIcon className="text-[#a67c3c] mb-2" size={24} />
-            <span className="text-sm font-semibold text-[#7c5c2b]" style={{ fontFamily: "Jua, sans-serif" }}>
+            <span
+              className="text-sm font-semibold text-[#7c5c2b]"
+              style={{ fontFamily: "Jua, sans-serif" }}
+            >
               주식 매매하기
             </span>
           </button>
@@ -153,7 +166,12 @@ const MyPage = () => {
             style={{ fontFamily: "Jua, sans-serif" }}
           >
             <Newspaper className="text-[#a67c3c] mb-2" size={24} />
-            <span className="text-sm font-semibold text-[#7c5c2b]" style={{ fontFamily: "Jua, sans-serif" }}>뉴스</span>
+            <span
+              className="text-sm font-semibold text-[#7c5c2b]"
+              style={{ fontFamily: "Jua, sans-serif" }}
+            >
+              뉴스
+            </span>
           </button>
           <button
             onClick={() => navigate("/ranking")}
@@ -161,7 +179,12 @@ const MyPage = () => {
             style={{ fontFamily: "Jua, sans-serif" }}
           >
             <Trophy className="text-[#a67c3c] mb-2" size={24} />
-            <span className="text-sm font-semibold text-[#7c5c2b]" style={{ fontFamily: "Jua, sans-serif" }}>랭킹</span>
+            <span
+              className="text-sm font-semibold text-[#7c5c2b]"
+              style={{ fontFamily: "Jua, sans-serif" }}
+            >
+              랭킹
+            </span>
           </button>
         </div>
       </div>
@@ -344,10 +367,18 @@ const MyPage = () => {
         {portfolio.items.length === 0 ? (
           <div className="text-center py-12">
             <Package size={64} className="text-[#d6c08a] mx-auto mb-4" />
-            <p className="text-[#a67c3c] text-lg mb-2" style={{ fontFamily: "Jua, sans-serif" }}>
+            <p
+              className="text-[#a67c3c] text-lg mb-2"
+              style={{ fontFamily: "Jua, sans-serif" }}
+            >
               아직 보유한 주식이 없습니다.
             </p>
-            <p className="text-sm text-[#bfa76a]" style={{ fontFamily: "Jua, sans-serif" }}>주식 투자를 시작해보세요!</p>
+            <p
+              className="text-sm text-[#bfa76a]"
+              style={{ fontFamily: "Jua, sans-serif" }}
+            >
+              주식 투자를 시작해보세요!
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -441,7 +472,7 @@ const MyPage = () => {
         >
           매매 기록
         </h3>
-        
+
         {/* 데스크톱 테이블 뷰 */}
         <div className="hidden md:block overflow-x-auto">
           <table className="min-w-full text-sm text-left">
@@ -473,7 +504,11 @@ const MyPage = () => {
             <tbody>
               {tradeHistory.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="text-center py-8 text-[#a67c3c]" style={{ fontFamily: "Jua, sans-serif" }}>
+                  <td
+                    colSpan={9}
+                    className="text-center py-8 text-[#a67c3c]"
+                    style={{ fontFamily: "Jua, sans-serif" }}
+                  >
                     거래 내역이 없습니다.
                   </td>
                 </tr>
@@ -535,7 +570,10 @@ const MyPage = () => {
         {/* 모바일 카드 뷰 */}
         <div className="md:hidden space-y-4">
           {tradeHistory.length === 0 ? (
-            <div className="text-center py-8 text-[#a67c3c]" style={{ fontFamily: "Jua, sans-serif" }}>
+            <div
+              className="text-center py-8 text-[#a67c3c]"
+              style={{ fontFamily: "Jua, sans-serif" }}
+            >
               거래 내역이 없습니다.
             </div>
           ) : (
@@ -561,55 +599,91 @@ const MyPage = () => {
                     <h4 className="font-bold text-[#7c5c2b] text-lg">
                       {tx.stock_name}
                     </h4>
-                    <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                      tx.transaction_type === "buy" 
-                        ? "bg-red-100 text-red-700" 
-                        : "bg-blue-100 text-blue-700"
-                    }`}>
+                    <span
+                      className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                        tx.transaction_type === "buy"
+                          ? "bg-red-100 text-red-700"
+                          : "bg-blue-100 text-blue-700"
+                      }`}
+                    >
                       {tx.transaction_type === "buy" ? "매수" : "매도"}
                     </span>
                   </div>
-                  
+
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div>
                       <span className="text-[#a67c3c] font-medium">수량:</span>
-                      <span className="text-[#7c5c2b] ml-2">{tx.quantity}주</span>
-                    </div>
-                    <div>
-                      <span className="text-[#a67c3c] font-medium">거래가:</span>
-                      <span className="text-[#7c5c2b] ml-2">{tx.price.toLocaleString()}원</span>
-                    </div>
-                    <div>
-                      <span className="text-[#a67c3c] font-medium">라운드:</span>
-                      <span className="text-[#7c5c2b] ml-2">{tx.round_number}</span>
-                    </div>
-                    <div>
-                      <span className="text-[#a67c3c] font-medium">거래시점:</span>
-                      <span className="text-[#7c5c2b] ml-2">{tx.period || "-"}</span>
-                    </div>
-                    <div>
-                      <span className="text-[#a67c3c] font-medium">현재가:</span>
                       <span className="text-[#7c5c2b] ml-2">
-                        {currentPrice ? currentPrice.toLocaleString() + "원" : "-"}
+                        {tx.quantity}주
                       </span>
                     </div>
                     <div>
-                      <span className="text-[#a67c3c] font-medium">수익률:</span>
-                      <span className={`ml-2 font-semibold ${
-                        profitRate >= 0 ? "text-[#3b7c2b]" : "text-[#a63c2b]"
-                      }`}>
-                        {profitRate ? (profitRate >= 0 ? "+" : "") + profitRate.toFixed(2) + "%" : "-"}
+                      <span className="text-[#a67c3c] font-medium">
+                        거래가:
+                      </span>
+                      <span className="text-[#7c5c2b] ml-2">
+                        {tx.price.toLocaleString()}원
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[#a67c3c] font-medium">
+                        라운드:
+                      </span>
+                      <span className="text-[#7c5c2b] ml-2">
+                        {tx.round_number}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[#a67c3c] font-medium">
+                        거래시점:
+                      </span>
+                      <span className="text-[#7c5c2b] ml-2">
+                        {tx.period || "-"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[#a67c3c] font-medium">
+                        현재가:
+                      </span>
+                      <span className="text-[#7c5c2b] ml-2">
+                        {currentPrice
+                          ? currentPrice.toLocaleString() + "원"
+                          : "-"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[#a67c3c] font-medium">
+                        수익률:
+                      </span>
+                      <span
+                        className={`ml-2 font-semibold ${
+                          profitRate >= 0 ? "text-[#3b7c2b]" : "text-[#a63c2b]"
+                        }`}
+                      >
+                        {profitRate
+                          ? (profitRate >= 0 ? "+" : "") +
+                            profitRate.toFixed(2) +
+                            "%"
+                          : "-"}
                       </span>
                     </div>
                   </div>
-                  
+
                   {opportunityCost !== null && (
                     <div className="mt-3 pt-3 border-t border-[#e6d3a3]">
-                      <span className="text-[#a67c3c] font-medium">매도 후 현재가 대비:</span>
-                      <span className={`ml-2 font-semibold ${
-                        opportunityCost >= 0 ? "text-[#3b7c2b]" : "text-[#a63c2b]"
-                      }`}>
-                        {(opportunityCost >= 0 ? "+" : "") + opportunityCost.toFixed(2)}%
+                      <span className="text-[#a67c3c] font-medium">
+                        매도 후 현재가 대비:
+                      </span>
+                      <span
+                        className={`ml-2 font-semibold ${
+                          opportunityCost >= 0
+                            ? "text-[#3b7c2b]"
+                            : "text-[#a63c2b]"
+                        }`}
+                      >
+                        {(opportunityCost >= 0 ? "+" : "") +
+                          opportunityCost.toFixed(2)}
+                        %
                       </span>
                     </div>
                   )}
@@ -621,15 +695,19 @@ const MyPage = () => {
       </div>
 
       {/* 계속 진행하기 버튼을 페이지 맨 아래로 이동 */}
-      <div className="flex justify-center mt-8 mb-4">
-        <button
-          onClick={() => navigate("/")}
-          className="bg-gradient-to-b from-[#bfa76a] to-[#7c5c2b] text-white font-bold py-3 px-10 rounded-full text-lg shadow border-4 border-[#e6d3a3] tracking-wider transition-all duration-200 hover:from-[#d6c08a] hover:to-[#a67c3c]"
-          style={{ fontFamily: "Jua, sans-serif", letterSpacing: "0.05em" }}
-        >
-          계속 진행하기
-        </button>
-      </div>
+      <button
+        onClick={() => navigate("/")}
+        className="fixed z-30 bg-gradient-to-b from-[#bfa76a] to-[#7c5c2b] text-white font-bold py-3 px-10 rounded-full text-lg shadow border-4 border-[#e6d3a3] tracking-wider transition-all duration-200 hover:from-[#d6c08a] hover:to-[#a67c3c]"
+        style={{
+          right: "calc(50vw - 640px/2 + 2rem)",
+          bottom: "2rem",
+          fontFamily: "Jua, sans-serif",
+          letterSpacing: "0.05em",
+          minWidth: "180px",
+        }}
+      >
+        계속 진행하기
+      </button>
     </div>
   );
 };

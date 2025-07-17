@@ -27,34 +27,6 @@ const Navbar = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   useEffect(() => {
-    axios
-      .get("/api/news")
-      .then((res) => {
-        if (res.data && res.data.length > 0) {
-          setNewsList(res.data);
-          setNewsIdx(0);
-        } else {
-          // 뉴스가 없으면 기본 메시지 설정
-          setNewsList([
-            {
-              title: "주식 투자 시뮬레이션 게임",
-              content: "안전한 환경에서 투자 경험을 쌓아보세요!",
-            },
-          ]);
-          setNewsIdx(0);
-        }
-      })
-      .catch(() => {
-        // 에러 시 기본 메시지 설정
-        setNewsList([
-          {
-            title: "주식 투자 시뮬레이션 게임",
-            content: "안전한 환경에서 투자 경험을 쌓아보세요!",
-          },
-        ]);
-        setNewsIdx(0);
-      });
-
     // 사용자 잔고 정보 가져오기
     fetchUserBalance();
 
@@ -73,6 +45,7 @@ const Navbar = () => {
     };
   }, []);
 
+  // 뉴스 배너는 user.current_period가 준비된 후에만 호출
   useEffect(() => {
     if (user?.current_period) {
       fetchBannerNews(user.current_period);
@@ -82,14 +55,14 @@ const Navbar = () => {
   // 드롭다운 외부 클릭 시 닫기
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (isDropdownOpen && !event.target.closest('.dropdown-container')) {
+      if (isDropdownOpen && !event.target.closest(".dropdown-container")) {
         setIsDropdownOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [isDropdownOpen]);
 
@@ -222,7 +195,10 @@ const Navbar = () => {
   const balance = user.total_balance || user.balance || 0;
 
   return (
-    <nav className="py-2 lg:py-4 relative bg-gradient-to-r from-[#f7e6b6] to-[#f3e7c4] shadow-lg" style={{ fontFamily: "serif" }}>
+    <nav
+      className="py-2 lg:py-4 relative bg-gradient-to-r from-[#f7e6b6] to-[#f3e7c4] shadow-lg"
+      style={{ fontFamily: "serif" }}
+    >
       <div className="max-w-7xl mx-auto px-3 lg:px-4">
         {/* 데스크톱 레이아웃 */}
         <div className="hidden lg:flex items-center gap-6">
@@ -242,8 +218,8 @@ const Navbar = () => {
               <div className="flex items-center space-x-3">
                 <span className="text-2xl">📰</span>
                 <div className="overflow-hidden">
-                  <span 
-                    key={newsIdx} 
+                  <span
+                    key={newsIdx}
                     className="text-[#7c5c2b] font-semibold text-lg truncate block animate-fade-in"
                   >
                     {newsBanner || "최근 뉴스가 없습니다."}
@@ -257,7 +233,9 @@ const Navbar = () => {
           <div className="flex-shrink-0">
             <div className="bg-white rounded-2xl shadow-md px-6 py-4">
               <div className="flex items-center space-x-2">
-                <span className="text-sm text-[#a67c3c] font-medium">라운드</span>
+                <span className="text-sm text-[#a67c3c] font-medium">
+                  라운드
+                </span>
                 <span className="text-2xl font-bold text-[#7c5c2b]">
                   {(user?.current_round_idx ?? 0) + 1}
                 </span>
@@ -286,9 +264,13 @@ const Navbar = () => {
             >
               <User className="w-5 h-5" />
               <span>{user.username}</span>
-              <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown
+                className={`w-4 h-4 transition-transform duration-200 ${
+                  isDropdownOpen ? "rotate-180" : ""
+                }`}
+              />
             </button>
-            
+
             {/* 드롭다운 메뉴 */}
             {isDropdownOpen && (
               <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 z-50">
@@ -329,14 +311,14 @@ const Navbar = () => {
             >
               <span className="text-2xl">🏠</span>
             </Link>
-            
+
             <div className="flex-1 min-w-0">
               <div className="bg-white rounded-xl shadow-md px-4 py-3">
                 <div className="flex items-center space-x-2">
                   <span className="text-lg">📰</span>
                   <div className="overflow-hidden">
-                    <span 
-                      key={newsIdx} 
+                    <span
+                      key={newsIdx}
                       className="text-[#7c5c2b] font-semibold text-sm truncate block animate-fade-in"
                     >
                       {newsBanner || "최근 뉴스가 없습니다."}
@@ -353,7 +335,9 @@ const Navbar = () => {
             <div className="flex-1">
               <div className="bg-white rounded-xl shadow-md px-3 py-2">
                 <div className="flex items-center justify-center space-x-1">
-                  <span className="text-xs text-[#a67c3c] font-medium">라운드</span>
+                  <span className="text-xs text-[#a67c3c] font-medium">
+                    라운드
+                  </span>
                   <span className="text-lg font-bold text-[#7c5c2b]">
                     {(user?.current_round_idx ?? 0) + 1}
                   </span>
@@ -365,7 +349,9 @@ const Navbar = () => {
             <div className="flex-1">
               <div className="bg-white rounded-xl shadow-md px-3 py-2">
                 <div className="flex items-center justify-center space-x-1">
-                  <span className="text-xs text-[#a67c3c] font-medium">잔고</span>
+                  <span className="text-xs text-[#a67c3c] font-medium">
+                    잔고
+                  </span>
                   <span className="text-sm font-bold text-[#7c5c2b] truncate">
                     {userBalance.toLocaleString()}원
                   </span>
@@ -382,7 +368,7 @@ const Navbar = () => {
               >
                 <User className="w-5 h-5" />
               </button>
-              
+
               {/* 드롭다운 메뉴 */}
               {isDropdownOpen && (
                 <div className="absolute top-full right-0 mt-2 w-40 bg-white rounded-xl shadow-lg border border-gray-100 z-50">
