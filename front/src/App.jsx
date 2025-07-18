@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, createContext } from "react";
+import React, { useState, useEffect, useRef, createContext, useContext } from "react";
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Login from "./pages/Login";
@@ -18,6 +18,7 @@ import heroImage1 from "./assets/mainlogo.png";
 import heroImage2 from "./assets/mainlogo2.png";
 import boardImage1 from "./assets/board1.png";
 import ScrollToTop from "./components/ScrollToTop";
+import { useAuth } from "./contexts/AuthContext";
 
 // 가이드 메시지 Context 생성
 export const GuideMessageContext = createContext({ addGuideMessage: () => {} });
@@ -35,6 +36,7 @@ function App() {
   const chatbotRef = useRef();
   const gameBoxRef = useRef();
   const location = useLocation();
+  const { user } = useAuth();
   const showBoardBg = ["/login", "/register"].includes(location.pathname);
   const showGameBox = [
     "/",
@@ -46,6 +48,9 @@ function App() {
     "/game-result",
     "/review",
   ].includes(location.pathname);
+
+  // 현재 라운드 계산
+  const currentRound = (user?.current_round_idx ?? 0) + 1;
 
   // 가이드 메시지 추가 함수
   const addGuideMessage = (text) => {
@@ -369,7 +374,7 @@ function App() {
               {isLoggedIn && (
                 <aside className="w-[420px] max-w-full flex-shrink-0 flex flex-col justify-start h-full">
                   <div className="h-full flex flex-col">
-                    <ChatbotWidget ref={chatbotRef} fixedPanel />
+                    <ChatbotWidget ref={chatbotRef} fixedPanel currentRound={currentRound} />
                   </div>
                 </aside>
               )}
