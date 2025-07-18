@@ -32,8 +32,18 @@ function App() {
   const isLoggedIn = !!localStorage.getItem("token");
   const navigate = useNavigate();
   const chatbotRef = useRef();
+  const gameBoxRef = useRef();
   const location = useLocation();
   const showBoardBg = ["/login", "/register"].includes(location.pathname);
+  const showGameBox = [
+    "/",
+    "/stocks",
+    "/news",
+    "/ranking",
+    "/select-sector",
+    "/my-page",
+    "/game-result",
+  ].includes(location.pathname);
 
   // 가이드 메시지 추가 함수
   const addGuideMessage = (text) => {
@@ -46,6 +56,13 @@ function App() {
     const timer = setTimeout(() => setShowLoading(false), 2000);
     return () => clearTimeout(timer);
   }, []);
+
+  // 페이지 변경 시 게임 박스 스크롤 리셋
+  useEffect(() => {
+    if (gameBoxRef.current && showGameBox) {
+      gameBoxRef.current.scrollTop = 0;
+    }
+  }, [location.pathname, showGameBox]);
 
   // Hero talking animation
   useEffect(() => {
@@ -174,13 +191,16 @@ function App() {
       ) : (
         <GuideMessageContext.Provider value={{ addGuideMessage }}>
           <ScrollToTop />
-          <div className="min-h-screen bg-[url('/bg.jpg')] bg-cover bg-center bg-no-repeat bg-fixed flex flex-col">
+          <div className="h-screen bg-[url('/bg.jpg')] bg-cover bg-center bg-no-repeat bg-fixed flex flex-col overflow-hidden">
             <Navbar />
-            <div className="flex-1 container mx-auto px-4 py-8 flex flex-row gap-8 items-stretch">
+            <div className="flex-1 container mx-auto px-4 py-4 flex flex-row gap-8 items-stretch min-h-0">
               {/* 왼쪽: 메인 컨텐츠 */}
               <main className="flex-1 min-w-0 flex items-start justify-center">
                 <div
-                  className="w-full max-w-2xl p-4 game-scrollbar mt-6 mb-6 flex flex-col items-center justify-center"
+                  ref={showGameBox ? gameBoxRef : null}
+                  className={`w-full max-w-2xl game-scrollbar flex flex-col items-center justify-center ${
+                    showGameBox ? "" : "p-4"
+                  }`}
                   style={
                     showBoardBg
                       ? {
@@ -190,6 +210,21 @@ function App() {
                           backgroundRepeat: "no-repeat",
                           maxHeight: 3500,
                           width: "120%",
+                        }
+                      : showGameBox
+                      ? {
+                          backgroundColor: "rgba(255, 255, 255, 0.9)",
+                          border: "3px solid #8B4513",
+                          borderRadius: "15px",
+                          boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
+                          backdropFilter: "blur(10px)",
+                          height: "100%",
+                          width: "100%",
+                          maxWidth: "900px",
+                          overflow: "auto",
+                          padding: "20px",
+                          display: "flex",
+                          flexDirection: "column",
                         }
                       : {}
                   }
@@ -201,7 +236,15 @@ function App() {
                       path="/"
                       element={
                         <PrivateRoute>
-                          <News />
+                          <div
+                            className={
+                              showGameBox
+                                ? "flex-1 flex flex-col h-full w-full"
+                                : ""
+                            }
+                          >
+                            <News />
+                          </div>
                         </PrivateRoute>
                       }
                     />
@@ -209,7 +252,15 @@ function App() {
                       path="/stocks"
                       element={
                         <PrivateRoute>
-                          <Stocks />
+                          <div
+                            className={
+                              showGameBox
+                                ? "flex-1 flex flex-col h-full w-full"
+                                : ""
+                            }
+                          >
+                            <Stocks />
+                          </div>
                         </PrivateRoute>
                       }
                     />
@@ -217,7 +268,15 @@ function App() {
                       path="/news"
                       element={
                         <PrivateRoute>
-                          <News />
+                          <div
+                            className={
+                              showGameBox
+                                ? "flex-1 flex flex-col h-full w-full"
+                                : ""
+                            }
+                          >
+                            <News />
+                          </div>
                         </PrivateRoute>
                       }
                     />
@@ -225,7 +284,15 @@ function App() {
                       path="/ranking"
                       element={
                         <PrivateRoute>
-                          <Ranking />
+                          <div
+                            className={
+                              showGameBox
+                                ? "flex-1 flex flex-col h-full w-full"
+                                : ""
+                            }
+                          >
+                            <Ranking />
+                          </div>
                         </PrivateRoute>
                       }
                     />
@@ -233,7 +300,15 @@ function App() {
                       path="/select-sector"
                       element={
                         <PrivateRoute>
-                          <SelectSector />
+                          <div
+                            className={
+                              showGameBox
+                                ? "flex-1 flex flex-col h-full w-full"
+                                : ""
+                            }
+                          >
+                            <SelectSector />
+                          </div>
                         </PrivateRoute>
                       }
                     />
@@ -241,7 +316,15 @@ function App() {
                       path="/my-page"
                       element={
                         <PrivateRoute>
-                          <MyPage />
+                          <div
+                            className={
+                              showGameBox
+                                ? "flex-1 flex flex-col h-full w-full"
+                                : ""
+                            }
+                          >
+                            <MyPage />
+                          </div>
                         </PrivateRoute>
                       }
                     />
@@ -249,7 +332,15 @@ function App() {
                       path="/game-result"
                       element={
                         <PrivateRoute>
-                          <GameResult />
+                          <div
+                            className={
+                              showGameBox
+                                ? "flex-1 flex flex-col h-full w-full"
+                                : ""
+                            }
+                          >
+                            <GameResult />
+                          </div>
                         </PrivateRoute>
                       }
                     />
@@ -258,7 +349,7 @@ function App() {
               </main>
               {/* 오른쪽: 챗봇 영역 */}
               {isLoggedIn && (
-                <aside className="w-[420px] max-w-full flex-shrink-0 flex flex-col justify-start mt-6 mb-6 h-full">
+                <aside className="w-[420px] max-w-full flex-shrink-0 flex flex-col justify-start h-full">
                   <div className="h-full flex flex-col">
                     <ChatbotWidget ref={chatbotRef} fixedPanel />
                   </div>
