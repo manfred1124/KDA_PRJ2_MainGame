@@ -24,9 +24,9 @@ const ROUND_TREND_GUIDE = {
 
 function getRoundTrendGuide(period, macroNews = null) {
   const formatPeriod = (p) => {
-    if (!p || !p.includes(' ')) return p;
-    const [year, half] = p.split(' ');
-    const halfKorean = half === 'H1' ? '상반기' : '하반기';
+    if (!p || !p.includes(" ")) return p;
+    const [year, half] = p.split(" ");
+    const halfKorean = half === "H1" ? "상반기" : "하반기";
     return `${year}년 ${halfKorean}`;
   };
   const formattedPeriod = formatPeriod(period);
@@ -35,9 +35,14 @@ function getRoundTrendGuide(period, macroNews = null) {
 
   if (macroNews && macroNews.length > 0) {
     // 최대 5개의 뉴스 제목을 요약
-    const newsTitles = macroNews.slice(0, 5).map(news => news.title.replace(/ 주요 이슈: /, '')); // "주요 이슈: " 부분 제거
-    const summary = `${formattedPeriod}에는 이런 소식들이 있었네: "${newsTitles.join('", "')}".`;
-    const tip = "이러한 시장의 흐름을 잘 읽고, 어떤 산업이 유망할지 신중하게 판단해서 투자해보게나. 기회는 언제나 위기 속에 숨어있는 법이지.";
+    const newsTitles = macroNews
+      .slice(0, 5)
+      .map((news) => news.title.replace(/ 주요 이슈: /, "")); // "주요 이슈: " 부분 제거
+    const summary = `${formattedPeriod}에는 이런 소식들이 있었네: "${newsTitles.join(
+      '", "'
+    )}".`;
+    const tip =
+      "이러한 시장의 흐름을 잘 읽고, 어떤 산업이 유망할지 신중하게 판단해서 투자해보게나. 기회는 언제나 위기 속에 숨어있는 법이지.";
     return `${summary} ${tip}`;
   }
 

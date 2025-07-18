@@ -1,15 +1,23 @@
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import MetaData
+from sqlalchemy import MetaData, create_engine
 import os
 
 # 데이터베이스 URL
 DATABASE_URL = "sqlite+aiosqlite:///./toot_game.db"
+SYNC_DATABASE_URL = "sqlite:///./toot_game.db"
 
 # 엔진 생성
 engine = create_async_engine(
     DATABASE_URL,
     echo=True,  # SQL 쿼리 로그 출력
+    future=True
+)
+
+# Synchronous engine for migrations
+sync_engine = create_engine(
+    SYNC_DATABASE_URL,
+    echo=True,
     future=True
 )
 
@@ -92,8 +100,5 @@ async def insert_initial_data():
     async with AsyncSessionLocal() as session:
         # 주식 데이터 삽입
         await stock_service.insert_initial_stocks(session)
-        
-        # 뉴스 데이터 삽입
-        await news_service.insert_initial_news(session)
         
         await session.commit() 

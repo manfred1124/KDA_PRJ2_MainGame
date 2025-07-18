@@ -10,6 +10,10 @@ from fastapi import HTTPException
 from models import StockPrice
 import json
 from services.period_utils import period_to_date
+from langchain.chat_models import ChatOpenAI
+from langchain.prompts import ChatPromptTemplate
+import pandas as pd
+import numpy as np
 
 stock_service = StockService()
 news_service = NewsService()
@@ -92,7 +96,7 @@ class GameService:
         user.current_round_idx += 1
         new_period = periods[user.current_round_idx]
         # 새로운 뉴스 생성 등 필요한 로직에서 new_period 사용
-        # await news_service.generate_round_news(db, user.current_round_idx) 등
+        
         await db.commit()
         return {
             "message": f"라운드 {user.current_round_idx + 1}로 진행되었습니다.",
@@ -100,10 +104,7 @@ class GameService:
             "current_period": new_period
         }
     
-    async def apply_news_impact_to_stocks(self, db: AsyncSession, round_number: int):
-        """뉴스 영향으로 주식 가격 변동 적용 (비활성화됨)"""
-        # 구조 변경으로 인해 영향 적용 로직은 비활성화
-        pass
+    
     
     async def restart_game(self, db: AsyncSession, user_id: int):
         """게임 재시작"""
@@ -213,3 +214,131 @@ class GameService:
             ranking["rank"] = i + 1
         
         return [RankingItem(**ranking) for ranking in rankings] 
+
+    async def generate_round_review(self, db: AsyncSession, user_id: int, period: str) -> dict:
+        """해당 라운드의 종합 리뷰 생성"""
+        try:
+            # 1. 데이터 수집
+            # 1.1 매크로 뉴스
+            macro_news = await news_service.get_macro_news(db, period)
+            
+            # 1.2 모든 섹터 뉴스
+            sectors = await stock_service.get_all_sectors(db)
+            sector_news = {}
+            for sector in sectors:
+                sector_news[sector] = await news_service.get_sector_trend_news(db, sector, period)
+            
+            # 1.3 모든 종목 뉴스와 가격 데이터
+            stocks = await stock_service.get_all_stocks(db)
+            stock_data = {}
+            date = period_to_date(period)
+            
+            for stock in stocks:
+                # 종목 뉴스
+                stock_news = await news_service.get_news_by_stock(db, stock_name=stock.name, period=period)
+                
+                # 가격 데이터
+                price_result = await db.execute(
+                    select(StockPrice)
+                    .where(StockPrice.stock_id == stock.id)
+                    .where(StockPrice.date >= date)
+                    .order_by(StockPrice.date.asc())
+                    .limit(1)
+                )
+                price = price_result.scalar_one_or_none()
+                
+                # 이전 기간 가격 (변화율 계산용)
+                prev_date = date - timedelta(days=180)  # 6개월 전
+                prev_price_result = await db.execute(
+                    select(StockPrice)
+                    .where(StockPrice.stock_id == stock.id)
+                    .where(StockPrice.date >= prev_date)
+                    .order_by(StockPrice.date.asc())
+                    .limit(1)
+                )
+                prev_price = prev_price_result.scalar_one_or_none()
+                
+                price_change = 0
+                if price and prev_price:
+                    price_change = ((price.close_price - prev_price.close_price) / prev_price.close_price) * 100
+                
+                stock_data[stock.name] = {
+                    "news": stock_news,
+                    "current_price": price.close_price if price else 0,
+                    "price_change": price_change,
+                    "sector": stock.sector
+                }
+            
+            # 2. LLM을 통한 리뷰 생성
+            llm = ChatOpenAI(temperature=0.7)
+            
+            # 2.1 매크로 리뷰
+            macro_prompt = ChatPromptTemplate.from_messages([
+                ("system", """You are a financial market analyst specializing in comprehensive market analysis.
+                Write a detailed market review in Korean based on the given macro news.
+                Focus on key market trends, economic indicators, and their implications.
+                Use a professional yet accessible tone."""),
+                ("user", f"Macro News: {[news.dict() for news in macro_news]}")
+            ])
+            macro_review = await llm.apredict(macro_prompt)
+            
+            # 2.2 섹터별 리뷰
+            sector_reviews = {}
+            for sector, news in sector_news.items():
+                sector_stocks = [
+                    stock_info for stock_name, stock_info in stock_data.items()
+                    if stock_info["sector"] == sector
+                ]
+                
+                sector_prompt = ChatPromptTemplate.from_messages([
+                    ("system", """You are a sector analyst providing detailed sector analysis in Korean.
+                    Analyze the sector's performance based on news and stock price movements.
+                    Consider both sector-wide trends and individual stock performances.
+                    Use professional financial language while maintaining clarity."""),
+                    ("user", f"Sector: {sector}\nNews: {[n.dict() for n in news]}\nStocks: {sector_stocks}")
+                ])
+                sector_reviews[sector] = await llm.apredict(sector_prompt)
+            
+            # 2.3 주목할 만한 종목 리뷰
+            notable_stocks = []
+            for stock_name, data in stock_data.items():
+                if abs(data["price_change"]) > 10 or len(data["news"]) > 2:  # 큰 가격 변동이나 많은 뉴스가 있는 종목
+                    notable_stocks.append({
+                        "name": stock_name,
+                        **data
+                    })
+            
+            stocks_prompt = ChatPromptTemplate.from_messages([
+                ("system", """You are a stock analyst providing detailed analysis of notable stocks in Korean.
+                Focus on significant price movements and news impacts.
+                Explain potential reasons for stock performance and future implications.
+                Use professional yet clear language."""),
+                ("user", f"Notable Stocks: {notable_stocks}")
+            ])
+            stocks_review = await llm.apredict(stocks_prompt)
+            
+            # 3. 종합 리뷰 생성
+            final_prompt = ChatPromptTemplate.from_messages([
+                ("system", """You are a chief market strategist creating a comprehensive market review in Korean.
+                Synthesize macro trends, sector movements, and individual stock performances.
+                Provide insights about market dynamics and potential future implications.
+                Use a professional tone while ensuring accessibility."""),
+                ("user", f"""
+                Period: {period}
+                Macro Review: {macro_review}
+                Sector Reviews: {sector_reviews}
+                Notable Stocks: {stocks_review}
+                """)
+            ])
+            final_review = await llm.apredict(final_prompt)
+            
+            return {
+                "period": period,
+                "macro_review": macro_review,
+                "sector_reviews": sector_reviews,
+                "stocks_review": stocks_review,
+                "final_review": final_review
+            }
+            
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to generate round review: {str(e)}") 

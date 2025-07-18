@@ -245,7 +245,7 @@ const GameResult = () => {
             </h2>
 
             <div className="space-y-4">
-              {ranking.slice(0, 10).map((rankItem, index) => (
+              {ranking.slice(0, 5).map((rankItem, index) => (
                 <div
                   key={index}
                   className={`flex items-center justify-between p-4 rounded-lg border-2 ${
@@ -292,19 +292,32 @@ const GameResult = () => {
                   </div>
                 </div>
               ))}
+              {userRank && rank > 5 && (
+                <div className="mt-6 p-4 bg-[#f3e7c4] rounded-lg border-2 border-[#bfa76a]">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold bg-[#f3e7c4] text-[#7c5c2b]">
+                        {rank}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-[#7c5c2b]">
+                          {userRank.username} (나)
+                        </p>
+                        <p className="text-sm text-[#a67c3c]">
+                          수익률:{" "}
+                          {userRank.total_profit_loss_percentage.toFixed(2)}%
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-[#7c5c2b]">
+                        {userRank.total_portfolio_value.toLocaleString()}원
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-
-            {/* 내 순위 */}
-            {userRank && (
-              <div className="mt-6 p-4 bg-[#f3e7c4] rounded-lg border-2 border-[#bfa76a]">
-                <p
-                  className="text-center text-[#7c5c2b] font-semibold"
-                  style={{ fontFamily: "serif" }}
-                >
-                  내 순위: <span className="text-2xl font-bold">{rank}</span>위
-                </p>
-              </div>
-            )}
           </div>
         </div>
 
@@ -319,12 +332,11 @@ const GameResult = () => {
             <span>새 게임 시작</span>
           </button>
           <button
-            onClick={handleGoHome}
+            onClick={() => navigate("/my-page")}
             className="px-8 py-4 bg-[#7c5c2b] hover:bg-[#a67c3c] text-white rounded-full font-bold flex items-center space-x-2 transition-colors border-2 border-[#e6d3a3]"
             style={{ fontFamily: "serif" }}
           >
-            <Home className="w-5 h-5" />
-            <span>홈으로</span>
+            <span>결과 보기</span>
           </button>
         </div>
       </div>

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Boolean, Text
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Boolean, Text, JSON
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from database import Base
@@ -20,6 +20,7 @@ class User(Base):
     # 관계
     portfolio = relationship("Portfolio", back_populates="user")
     transactions = relationship("Transaction", back_populates="user")
+    round_reviews = None # This line is added to remove the relationship
 
 class Stock(Base):
     __tablename__ = "stocks"
@@ -33,9 +34,11 @@ class Stock(Base):
     portfolio_items = relationship("Portfolio", back_populates="stock")
     transactions = relationship("Transaction", back_populates="stock")
     prices = relationship("StockPrice", back_populates="stock")
+    news = relationship("News", back_populates="stock")
 
 class StockPrice(Base):
     __tablename__ = "stock_prices"
+    
     id = Column(Integer, primary_key=True, index=True)
     stock_id = Column(Integer, ForeignKey("stocks.id"), nullable=False)
     date = Column(DateTime, nullable=False)
@@ -44,6 +47,7 @@ class StockPrice(Base):
     high = Column(Float)
     low = Column(Float)
     volume = Column(Integer)
+    
     stock = relationship("Stock", back_populates="prices")
 
 class Portfolio(Base):
@@ -80,12 +84,38 @@ class Transaction(Base):
 
 class News(Base):
     __tablename__ = "news"
-
+    
     id = Column(Integer, primary_key=True, index=True)
     period = Column(String, nullable=True)  # 예: '2020 H1'
     category = Column(String, nullable=True)  # 예: 'Macro'
     title = Column(String, nullable=False)
     date = Column(DateTime, nullable=False)
     summary = Column(String, nullable=True)
-    ticker = Column(String, nullable=True)      # 추가
-    sentiment = Column(String, nullable=True)   # 추가 
+    ticker = Column(String, ForeignKey("stocks.symbol"), nullable=True)  # ForeignKey 추가
+    sentiment = Column(String, nullable=True)   # 추가
+    
+    # 관계
+    stock = relationship("Stock", back_populates="news")
+    
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "period": self.period,
+            "category": self.category,
+            "title": self.title,
+            "date": self.date.isoformat() if self.date else None,
+            "summary": self.summary,
+            "ticker": self.ticker,
+            "sentiment": self.sentiment
+        }
+
+class RoundReview(Base):
+    __tablename__ = "round_reviews"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    period = Column(String, unique=True)  # period를 unique key로 설정
+    macro_review = Column(Text)
+    sector_reviews = Column(JSON)  # JSON 형식으로 섹터별 리뷰 저장
+    stocks_review = Column(Text)
+    final_review = Column(Text)
+    created_at = Column(DateTime(timezone=True), server_default=func.now()) 
