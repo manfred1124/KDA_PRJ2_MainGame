@@ -20,10 +20,41 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 1440  # 24시간으로 연장
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def generate_sequential_periods():
-    years = [2020, 2021, 2022, 2023, 2024]
+    """1라운드를 랜덤으로 선택하고 연속된 3개 기간 생성"""
+    # 1라운드 가능한 기간 (2023 H1까지만)
+    years = [2020, 2021, 2022, 2023]
     halfs = ["H1", "H2"]
-    all_periods = [f"{y} {h}" for y in years for h in halfs]
-    return all_periods  # 순서대로 반환
+    available_periods = []
+    for y in years:
+        for h in halfs:
+            # 2023 H2는 제외 (연속 3개 기간 생성 시 2024, 2025로 가면 데이터 부족)
+            if y == 2023 and h == "H2":
+                continue
+            available_periods.append(f"{y} {h}")
+    
+    # 1라운드를 랜덤으로 선택
+    first_round = random.choice(available_periods)
+    
+    # 연속된 3개 기간 생성
+    [year, half] = first_round.split(" ")
+    year = int(year)
+    is_first_half = half == "H1"
+    
+    periods = [first_round]
+    
+    # 2라운드 기간
+    if is_first_half:
+        # H1 -> H2 (같은 해)
+        periods.append(f"{year} H2")
+        # 3라운드 기간: 다음 해 H1
+        periods.append(f"{year + 1} H1")
+    else:
+        # H2 -> 다음 해 H1
+        periods.append(f"{year + 1} H1")
+        # 3라운드 기간: 다음 해 H2
+        periods.append(f"{year + 1} H2")
+        
+    return periods
 
 class AuthService:
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:

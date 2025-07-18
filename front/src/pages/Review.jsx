@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { useAuth } from "../contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 import BannerHeader from "../components/BannerHeader";
 import RoundReview from "../components/RoundReview";
 import {
@@ -41,6 +42,7 @@ const formatPeriod = (period) => {
 
 const Review = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   // 사용자의 현재 라운드에 따른 기간 계산
   const getCurrentPeriods = () => {
@@ -97,6 +99,51 @@ const Review = () => {
       setLoading(false);
     }
   };
+
+  // 라운드 진행 함수
+  const handleNextRound = async () => {
+    try {
+      const response = await axios.post("/api/game/next-round");
+      console.log("다음 라운드 응답:", response.data);
+      toast.success("다음 라운드로 진행되었습니다!");
+
+      // 사용자 정보 업데이트 이벤트 발생
+      window.dispatchEvent(
+        new CustomEvent("userUpdated", {
+          detail: {
+            ...user,
+            current_round_idx: response.data.new_round_idx,
+            current_period: response.data.current_period,
+          },
+        })
+      );
+
+      // 다음 라운드로 이동
+      navigate("/news");
+    } catch (error) {
+      console.error("라운드 진행 실패:", error);
+
+      // 마지막 라운드인 경우 게임 결과 페이지로 이동
+      if (
+        error.response?.status === 400 &&
+        error.response?.data?.detail?.includes("마지막 라운드")
+      ) {
+        toast.success("게임이 완료되었습니다! 결과를 확인해보세요.");
+        navigate("/game-result");
+        return;
+      }
+
+      toast.error("라운드 진행에 실패했습니다.");
+    }
+  };
+
+  // 최종 결과 확인 함수
+  const handleShowFinalResult = () => {
+    navigate("/game-result");
+  };
+
+  // 현재 라운드가 마지막 라운드인지 확인
+  const isLastRound = (user?.current_round_idx ?? 0) >= 2; // 3라운드(인덱스 2)가 마지막
 
   // 고정된 더미 데이터 (일관된 값)
   const generateDummyData = () => {
@@ -313,14 +360,32 @@ const Review = () => {
           )}
         </div>
 
-        {/* 라운드 리뷰 버튼 */}
-        <div className="mb-6">
+        {/* 라운드 리뷰 및 진행 버튼 */}
+        <div className="mb-6 flex flex-col sm:flex-row gap-4">
           <button
             onClick={() => setShowReview(true)}
-            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium flex-1 sm:flex-none"
           >
             {selectedPeriod} 라운드 상세 리뷰 보기
           </button>
+
+          {/* 라운드 진행 버튼 - 현재 라운드를 보고 있을 때만 표시 */}
+          {selectedPeriod === currentPeriod &&
+            (isLastRound ? (
+              <button
+                onClick={handleShowFinalResult}
+                className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium flex-1 sm:flex-none shadow-lg"
+              >
+                🏆 최종 결과 확인하기
+              </button>
+            ) : (
+              <button
+                onClick={handleNextRound}
+                className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium flex-1 sm:flex-none shadow-lg"
+              >
+                ➡️ 다음 라운드 진행하기
+              </button>
+            ))}
         </div>
       </div>
 

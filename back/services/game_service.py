@@ -114,10 +114,39 @@ class GameService:
         }
     
     def get_all_periods(self):
-        """모든 가능한 기간을 반환"""
-        years = [2020, 2021, 2022, 2023, 2024]
+        """모든 가능한 기간을 반환 (1라운드용 - 2023 H1까지만)"""
+        years = [2020, 2021, 2022, 2023]
         halfs = ["H1", "H2"]
-        return [f"{y} {h}" for y in years for h in halfs]
+        periods = []
+        for y in years:
+            for h in halfs:
+                # 2023 H2는 제외 (1라운드로 선택 시 2-3라운드가 2024, 2025로 가면 데이터 부족)
+                if y == 2023 and h == "H2":
+                    continue
+                periods.append(f"{y} {h}")
+        return periods
+    
+    def generate_consecutive_periods(self, start_period: str):
+        """시작 기간부터 연속된 3개 기간 생성"""
+        [year, half] = start_period.split(" ")
+        year = int(year)
+        is_first_half = half == "H1"
+        
+        periods = [start_period]
+        
+        # 2라운드 기간
+        if is_first_half:
+            # H1 -> H2 (같은 해)
+            periods.append(f"{year} H2")
+            # 3라운드 기간: 다음 해 H1
+            periods.append(f"{year + 1} H1")
+        else:
+            # H2 -> 다음 해 H1
+            periods.append(f"{year + 1} H1")
+            # 3라운드 기간: 다음 해 H2
+            periods.append(f"{year + 1} H2")
+            
+        return periods
         
     async def restart_game(self, db: AsyncSession, user_id: int):
         """게임을 재시작"""
@@ -156,14 +185,17 @@ class GameService:
             # 사용자 정보 초기화
             print("사용자 정보 초기화 중...")
             user.current_round_idx = 0  # 라운드 인덱스 초기화
-            all_periods = self.get_all_periods()
-            print(f"전체 기간 수: {len(all_periods)}")
             
-            random.shuffle(all_periods)
-            selected_periods = all_periods[:3]
-            print(f"선택된 기간: {selected_periods}")
+            # 1라운드를 랜덤으로 선택 (2023 H1까지만)
+            available_first_rounds = self.get_all_periods()
+            first_round = random.choice(available_first_rounds)
+            print(f"1라운드로 선택된 기간: {first_round}")
             
-            user.round_periods = json.dumps(selected_periods)  # 3개 기간으로 제한
+            # 연속된 3개 기간 생성
+            selected_periods = self.generate_consecutive_periods(first_round)
+            print(f"연속된 3개 기간: {selected_periods}")
+            
+            user.round_periods = json.dumps(selected_periods)  # 연속된 3개 기간으로 설정
             user.total_balance = 10000000  # 1천만원으로 초기화
             user.realized_profit = 0  # 실현 수익 초기화
             

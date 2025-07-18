@@ -3,7 +3,6 @@ import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import toast from "react-hot-toast";
-import RoundReview from "../components/RoundReview";
 import {
   TrendingUp,
   TrendingDown,
@@ -22,7 +21,6 @@ const MyPage = () => {
   const [portfolio, setPortfolio] = useState(null);
   const [loading, setLoading] = useState(true);
   const [tradeHistory, setTradeHistory] = useState([]); // 거래내역
-  const [showReview, setShowReview] = useState(false);
 
   useEffect(() => {
     fetchPortfolio();
@@ -61,89 +59,6 @@ const MyPage = () => {
     }
   };
 
-  const handleRestartGame = async () => {
-    try {
-      const response = await axios.post("/api/game/restart");
-      console.log("게임 재시작 응답:", response.data);
-      toast.success("게임이 재시작되었습니다!");
-
-      // API 응답에서 사용자 정보 업데이트
-      if (response.data.user) {
-        console.log("게임 재시작 후 사용자 정보:", response.data.user);
-
-        // AuthContext의 사용자 정보 업데이트
-        window.dispatchEvent(
-          new CustomEvent("userUpdated", {
-            detail: response.data.user,
-          })
-        );
-
-        // 네비게이션 바 업데이트를 위한 이벤트 발생
-        window.dispatchEvent(new Event("transactionComplete"));
-
-        navigate("/");
-      } else {
-        // 백업: 사용자 정보 직접 조회
-        try {
-          const userResponse = await axios.get("/api/auth/me");
-          console.log("게임 재시작 후 사용자 정보 (백업):", userResponse.data);
-
-          window.dispatchEvent(
-            new CustomEvent("userUpdated", {
-              detail: userResponse.data,
-            })
-          );
-
-          window.dispatchEvent(new Event("transactionComplete"));
-
-          navigate("/");
-        } catch (userError) {
-          console.error("사용자 정보 업데이트 실패:", userError);
-          window.location.reload();
-        }
-      }
-    } catch (error) {
-      console.error("게임 재시작 실패:", error);
-      toast.error("게임 재시작에 실패했습니다.");
-    }
-  };
-
-  const handleNextRound = async () => {
-    try {
-      const response = await axios.post("/api/game/next-round");
-      console.log("다음 라운드 응답:", response.data);
-      toast.success("다음 라운드로 진행되었습니다!");
-
-      // 사용자 정보 업데이트
-      updateUser((prev) => ({
-        ...prev,
-        current_round_idx: response.data.new_round_idx,
-        current_period: response.data.current_period,
-      }));
-
-      // 3라운드 완료 후 게임 결과 페이지로 이동
-      if (response.data.new_round_idx >= 3) {
-        navigate("/game-result");
-      } else {
-        navigate("/news");
-      }
-    } catch (error) {
-      console.error("라운드 진행 실패:", error);
-
-      // 마지막 라운드인 경우 게임 결과 페이지로 이동
-      if (
-        error.response?.status === 400 &&
-        error.response?.data?.detail?.includes("마지막 라운드")
-      ) {
-        toast.success("게임이 완료되었습니다! 결과를 확인해보세요.");
-        navigate("/game-result");
-        return;
-      }
-
-      toast.error("라운드 진행에 실패했습니다.");
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -155,8 +70,6 @@ const MyPage = () => {
   if (!portfolio) {
     return <div>포트폴리오를 불러올 수 없습니다.</div>;
   }
-
-  const isLastRound = (user?.current_round_idx ?? 0) >= 3;
 
   return (
     <div
@@ -751,71 +664,20 @@ const MyPage = () => {
       </div>
 
       {/* 계속 진행하기 버튼을 페이지 맨 아래로 이동 */}
-      {isLastRound ? (
-        <button
-          onClick={handleRestartGame}
-          className="fixed z-30 bg-gradient-to-b from-[#bfa76a] to-[#7c5c2b] text-white font-bold py-3 px-10 rounded-full text-lg shadow border-4 border-[#e6d3a3] tracking-wider transition-all duration-200 hover:from-[#d6c08a] hover:to-[#a67c3c]"
-          style={{
-            right: "calc(50vw - 640px/2 + 2rem)",
-            bottom: "2rem",
-            fontFamily: "Jua, sans-serif",
-            letterSpacing: "0.05em",
-            minWidth: "180px",
-          }}
-        >
-          새 게임 시작
-        </button>
-      ) : (
-        <button
-          onClick={handleNextRound}
-          className="fixed z-30 bg-gradient-to-b from-[#bfa76a] to-[#7c5c2b] text-white font-bold py-3 px-10 rounded-full text-lg shadow border-4 border-[#e6d3a3] tracking-wider transition-all duration-200 hover:from-[#d6c08a] hover:to-[#a67c3c]"
-          style={{
-            right: "calc(50vw - 640px/2 + 2rem)",
-            bottom: "2rem",
-            fontFamily: "Jua, sans-serif",
-            letterSpacing: "0.05em",
-            minWidth: "180px",
-          }}
-        >
-          계속 진행하기
-        </button>
-      )}
+      {/* 버튼 제거됨 */}
 
       {/* 라운드 리뷰 버튼 */}
       <div className="flex justify-center space-x-4">
         <button
-          onClick={() => setShowReview(true)}
+          onClick={() => navigate("/review")}
           className="bg-[#7c5c2b] hover:bg-[#a67c3c] text-white font-bold py-4 px-12 rounded-full text-xl shadow-lg transition-all duration-200 border-4 border-[#e6d3a3]"
           style={{ minWidth: "180px", fontFamily: "serif" }}
         >
           라운드 리뷰
         </button>
-        {isLastRound ? (
-          <button
-            onClick={() => navigate("/game-result")}
-            className="bg-[#7c5c2b] hover:bg-[#a67c3c] text-white font-bold py-4 px-12 rounded-full text-xl shadow-lg transition-all duration-200 border-4 border-[#e6d3a3]"
-            style={{ minWidth: "180px", fontFamily: "serif" }}
-          >
-            결과 보기
-          </button>
-        ) : (
-          <button
-            onClick={handleNextRound}
-            className="bg-[#7c5c2b] hover:bg-[#a67c3c] text-white font-bold py-4 px-12 rounded-full text-xl shadow-lg transition-all duration-200 border-4 border-[#e6d3a3]"
-            style={{ minWidth: "180px", fontFamily: "serif" }}
-          >
-            계속 진행하기
-          </button>
-        )}
       </div>
 
-      {/* 라운드 리뷰 모달 */}
-      {showReview && (
-        <RoundReview
-          period={user?.current_period}
-          onClose={() => setShowReview(false)}
-        />
-      )}
+      {/* 라운드 리뷰 모달 제거됨 */}
     </div>
   );
 };
