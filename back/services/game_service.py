@@ -14,6 +14,7 @@ from langchain.chat_models import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 import pandas as pd
 import numpy as np
+import random
 
 stock_service = StockService()
 news_service = NewsService()
@@ -71,31 +72,39 @@ class GameService:
         
         return GameState(
             current_round=user.current_round_idx + 1,
-            total_rounds=10,
+            total_rounds=3,
             current_date=self.get_round_date(user.current_round_idx + 1),
             total_balance=user.total_balance,
-            total_portfolio_value=total_portfolio_value,
+            total_investment=total_investment,
             total_profit_loss=total_profit_loss,
             total_profit_loss_percentage=total_profit_loss_percentage,
-            realized_profit=user.realized_profit,
             total_profit=total_profit,
             total_profit_percentage=total_profit_percentage,
-            can_advance_round=(user.current_round_idx + 1) < 10,
-            is_game_completed=(user.current_round_idx + 1) >= 10
+            can_advance_round=(user.current_round_idx + 1) < 3,
+            is_game_completed=(user.current_round_idx + 1) >= 3
         )
     
     async def advance_round(self, db: AsyncSession, user_id: int, current_period: str):
-        user = await db.execute(select(User).where(User.id == user_id))
-        user = user.scalar_one_or_none()
+        """라운드를 진행"""
+        user_result = await db.execute(select(User).where(User.id == user_id))
+        user = user_result.scalar_one_or_none()
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
+        
+        # 3라운드 제한 체크
+        if user.current_round_idx >= 2:  # 0, 1, 2가 3라운드이므로 2가 마지막
+            raise HTTPException(status_code=400, detail="이미 마지막 라운드입니다.")
+        
         import json
         periods = json.loads(user.round_periods)
-        if user.current_round_idx >= len(periods) - 1:
-            raise HTTPException(status_code=400, detail="이미 마지막 라운드입니다.")
+        
+        # 기존 사용자가 10개 기간을 가지고 있을 경우 3개로 제한
+        if len(periods) > 3:
+            periods = periods[:3]
+            user.round_periods = json.dumps(periods)
+        
         user.current_round_idx += 1
-        new_period = periods[user.current_round_idx]
-        # 새로운 뉴스 생성 등 필요한 로직에서 new_period 사용
+        new_period = periods[user.current_round_idx] if user.current_round_idx < len(periods) else periods[0]
         
         await db.commit()
         return {
@@ -104,58 +113,77 @@ class GameService:
             "current_period": new_period
         }
     
-    
-    
-    async def restart_game(self, db: AsyncSession, user_id: int):
-        """게임 재시작"""
-        # 사용자 조회
-        user_result = await db.execute(select(User).where(User.id == user_id))
-        user = user_result.scalar_one_or_none()
-        if not user:
-            raise Exception("User not found")
-        
-        # 포트폴리오 초기화
-        portfolio_result = await db.execute(
-            select(Portfolio).where(Portfolio.user_id == user.id)
-        )
-        portfolio_items = portfolio_result.scalars().all()
-        for item in portfolio_items:
-            await db.delete(item)
-        
-        # 트랜잭션(매매 기록)도 모두 삭제
-        transaction_result = await db.execute(
-            select(Transaction).where(Transaction.user_id == user.id)
-        )
-        transactions = transaction_result.scalars().all()
-        for tx in transactions:
-            await db.delete(tx)
-        
-        # 사용자 정보 초기화
-        user.current_round_idx = 0  # 라운드 인덱스 초기화
-        import json
+    def get_all_periods(self):
+        """모든 가능한 기간을 반환"""
         years = [2020, 2021, 2022, 2023, 2024]
         halfs = ["H1", "H2"]
-        all_periods = [f"{y} {h}" for y in years for h in halfs]
-        user.round_periods = json.dumps(all_periods)  # 순서대로 10개
-        user.total_balance = 10000000  # 1천만원으로 초기화
-        user.realized_profit = 0  # 실현 수익 초기화
+        return [f"{y} {h}" for y in years for h in halfs]
         
-        # 모든 주식에 대해 초기 포트폴리오 생성 (수량 0)
-        stock_result = await db.execute(select(Stock))
-        for stock in stock_result.scalars().all():
-            portfolio = Portfolio(user_id=user.id, stock_id=stock.id, quantity=0, average_price=0)
-            db.add(portfolio)
-        
-        # 주식 가격을 1라운드로 초기화
-        await stock_service.reset_stock_prices(db)
-        
-        await db.commit()
-        
-        return {
-            "message": "Game restarted successfully",
-            "new_round": user.current_round_idx + 1,
-            "current_date": self.get_round_date(user.current_round_idx + 1)
-        }
+    async def restart_game(self, db: AsyncSession, user_id: int):
+        """게임을 재시작"""
+        try:
+            print(f"게임 재시작 시작: user_id={user_id}")
+            
+            user = await db.execute(select(User).where(User.id == user_id))
+            user = user.scalar_one_or_none()
+            if not user:
+                raise HTTPException(status_code=404, detail="User not found")
+            
+            print(f"사용자 찾음: {user.username}")
+            
+            # 기존 포트폴리오 삭제
+            print("기존 포트폴리오 삭제 중...")
+            portfolio_result = await db.execute(
+                select(Portfolio).where(Portfolio.user_id == user_id)
+            )
+            portfolio_items = portfolio_result.scalars().all()
+            print(f"삭제할 포트폴리오 항목 수: {len(portfolio_items)}")
+            
+            for item in portfolio_items:
+                await db.delete(item)
+            
+            # 기존 거래 기록 삭제
+            print("기존 거래 기록 삭제 중...")
+            transaction_result = await db.execute(
+                select(Transaction).where(Transaction.user_id == user_id)
+            )
+            transactions = transaction_result.scalars().all()
+            print(f"삭제할 거래 기록 수: {len(transactions)}")
+            
+            for tx in transactions:
+                await db.delete(tx)
+            
+            # 사용자 정보 초기화
+            print("사용자 정보 초기화 중...")
+            user.current_round_idx = 0  # 라운드 인덱스 초기화
+            all_periods = self.get_all_periods()
+            print(f"전체 기간 수: {len(all_periods)}")
+            
+            random.shuffle(all_periods)
+            selected_periods = all_periods[:3]
+            print(f"선택된 기간: {selected_periods}")
+            
+            user.round_periods = json.dumps(selected_periods)  # 3개 기간으로 제한
+            user.total_balance = 10000000  # 1천만원으로 초기화
+            user.realized_profit = 0  # 실현 수익 초기화
+            
+            print("데이터베이스 커밋 중...")
+            await db.commit()
+            print("게임 재시작 완료")
+            
+            return {
+                "message": "Game restarted successfully",
+                "new_round_idx": user.current_round_idx,
+                "current_period": selected_periods[0] if selected_periods else "2020 H1"
+            }
+            
+        except Exception as e:
+            print(f"게임 재시작 중 에러 발생: {e}")
+            print(f"에러 타입: {type(e)}")
+            import traceback
+            print(f"스택 트레이스: {traceback.format_exc()}")
+            await db.rollback()
+            raise HTTPException(status_code=500, detail=f"게임 재시작 실패: {str(e)}")
     
     async def get_ranking(self, db: AsyncSession) -> List[RankingItem]:
         """사용자 랭킹 조회"""

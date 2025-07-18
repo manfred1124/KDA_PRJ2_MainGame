@@ -111,13 +111,35 @@ const MyPage = () => {
   const handleNextRound = async () => {
     try {
       const response = await axios.post("/api/game/next-round");
+      console.log("다음 라운드 응답:", response.data);
+      toast.success("다음 라운드로 진행되었습니다!");
+
+      // 사용자 정보 업데이트
       updateUser((prev) => ({
         ...prev,
         current_round_idx: response.data.new_round_idx,
         current_period: response.data.current_period,
       }));
-      navigate("/news");
+
+      // 3라운드 완료 후 게임 결과 페이지로 이동
+      if (response.data.new_round_idx >= 2) {
+        navigate("/game-result");
+      } else {
+        navigate("/news");
+      }
     } catch (error) {
+      console.error("라운드 진행 실패:", error);
+
+      // 마지막 라운드인 경우 게임 결과 페이지로 이동
+      if (
+        error.response?.status === 400 &&
+        error.response?.data?.detail?.includes("마지막 라운드")
+      ) {
+        toast.success("게임이 완료되었습니다! 결과를 확인해보세요.");
+        navigate("/game-result");
+        return;
+      }
+
       toast.error("라운드 진행에 실패했습니다.");
     }
   };

@@ -427,10 +427,16 @@ const SelectSector = () => {
               <div className="w-full">
                 {selected ? (
                   <div className="bg-yellow-50 rounded-lg p-8 shadow-2xl border-2 border-[#e6d3a3] min-h-[400px]">
-                    <h3 className="text-2xl font-medium text-[#7c5c2b] mb-6" style={{ fontFamily: "Jua, sans-serif" }}>
+                    <h3
+                      className="text-2xl font-medium text-[#7c5c2b] mb-6"
+                      style={{ fontFamily: "Jua, sans-serif" }}
+                    >
                       {selected}
                     </h3>
-                    <div className="flex gap-2 mb-6" onClick={() => setShowAllNews(false)}>
+                    <div
+                      className="flex gap-2 mb-6"
+                      onClick={() => setShowAllNews(false)}
+                    >
                       <button
                         className={`px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 border-2 ${
                           sectorViewTab[selected] === "news"
@@ -441,7 +447,8 @@ const SelectSector = () => {
                         onClick={() =>
                           setSectorViewTab((prev) => ({
                             ...prev,
-                            [selected]: prev[selected] === "news" ? undefined : "news",
+                            [selected]:
+                              prev[selected] === "news" ? undefined : "news",
                           }))
                         }
                       >
@@ -457,7 +464,10 @@ const SelectSector = () => {
                         onClick={() =>
                           setSectorViewTab((prev) => ({
                             ...prev,
-                            [selected]: prev[selected] === "stocks" ? undefined : "stocks",
+                            [selected]:
+                              prev[selected] === "stocks"
+                                ? undefined
+                                : "stocks",
                           }))
                         }
                       >
@@ -485,14 +495,15 @@ const SelectSector = () => {
                             </li>
                           ))}
                         </ul>
-                        {(allSectorNews[selected] || []).length > 5 && !showAllNews && (
-                          <button
-                            className="mt-8 px-4 py-2 rounded bg-[#bfa76a] text-white font-normal mx-auto block"
-                            onClick={() => setShowAllNews(true)}
-                          >
-                            더보기
-                          </button>
-                        )}
+                        {(allSectorNews[selected] || []).length > 5 &&
+                          !showAllNews && (
+                            <button
+                              className="mt-8 px-4 py-2 rounded bg-[#bfa76a] text-white font-normal mx-auto block"
+                              onClick={() => setShowAllNews(true)}
+                            >
+                              더보기
+                            </button>
+                          )}
                       </>
                     )}
                     {sectorViewTab[selected] === "stocks" &&
@@ -504,7 +515,9 @@ const SelectSector = () => {
                           <ul className="space-y-3">
                             {stocks.map((stock) => {
                               // 내 포트폴리오에서 해당 종목의 보유 수량 찾기
-                              const owned = portfolio?.items?.find((item) => item.stock_id === stock.id);
+                              const owned = portfolio?.items?.find(
+                                (item) => item.stock_id === stock.id
+                              );
                               const hasStock = owned && owned.quantity > 0;
 
                               return (
@@ -539,10 +552,18 @@ const SelectSector = () => {
                                         setOrderQty(1);
                                         fetchStockNews(stock.symbol);
                                       }}
-                                      className={`px-4 py-2 bg-[#7c5c2b] hover:bg-[#a67c3c] text-white rounded-lg font-normal border-2 border-[#e6d3a3] ${!hasStock ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                      className={`px-4 py-2 bg-[#7c5c2b] hover:bg-[#a67c3c] text-white rounded-lg font-normal border-2 border-[#e6d3a3] ${
+                                        !hasStock
+                                          ? "opacity-50 cursor-not-allowed"
+                                          : ""
+                                      }`}
                                       style={{ fontFamily: "Jua, sans-serif" }}
                                       disabled={!hasStock}
-                                      title={!hasStock ? 'Insufficient stock quantity' : ''}
+                                      title={
+                                        !hasStock
+                                          ? "Insufficient stock quantity"
+                                          : ""
+                                      }
                                     >
                                       판매
                                     </button>
@@ -560,7 +581,10 @@ const SelectSector = () => {
                   </div>
                 ) : (
                   <div className="bg-[#f7e6b6] rounded-xl p-6 shadow-lg border-2 border-[#e6d3a3] min-h-[400px] flex items-center justify-center w-full">
-                    <div className="text-[#a67c3c] text-xl font-medium" style={{ fontFamily: "Jua, sans-serif" }}>
+                    <div
+                      className="text-[#a67c3c] text-xl font-medium"
+                      style={{ fontFamily: "Jua, sans-serif" }}
+                    >
                       섹터를 골라 관련 뉴스를 확인해보게!
                     </div>
                   </div>
@@ -576,7 +600,7 @@ const SelectSector = () => {
         <div className="w-full flex justify-center gap-8 mt-12 mb-4">
           <button
             className={`${
-              user?.current_round_idx + 1 === 10
+              user?.current_round_idx + 1 === 3
                 ? "bg-[#bfa76a] hover:bg-[#a67c3c]"
                 : "bg-[#7c5c2b] hover:bg-[#a67c3c]"
             } text-white font-normal py-4 px-12 rounded-full text-xl shadow-lg transition-all duration-200 border-4 border-[#e6d3a3]`}
@@ -585,7 +609,7 @@ const SelectSector = () => {
               fontFamily: "Jua, sans-serif",
             }}
             onClick={
-              user?.current_round_idx + 1 === 10
+              user?.current_round_idx + 1 === 3
                 ? () => navigate("/game-result")
                 : handleNextRound
             }
@@ -593,7 +617,7 @@ const SelectSector = () => {
           >
             {advancing
               ? "진행 중..."
-              : user?.current_round_idx + 1 === 10
+              : user?.current_round_idx + 1 === 3
               ? "결과 보기"
               : "결과 확인"}
           </button>
@@ -707,7 +731,11 @@ const SelectSector = () => {
                       <div className="text-sm text-gray-600 mb-2">
                         {orderModal.stock.symbol}
                       </div>
-                      <div className={`text-xl font-medium ${orderType === "buy" ? "text-red-600" : "text-blue-600"}`}>
+                      <div
+                        className={`text-xl font-medium ${
+                          orderType === "buy" ? "text-red-600" : "text-blue-600"
+                        }`}
+                      >
                         {orderModal.stock.current_price.toLocaleString()}원
                       </div>
                     </div>
@@ -764,11 +792,21 @@ const SelectSector = () => {
                         </div>
                       </div>
 
-                      <div className={`${orderType === "buy" ? "bg-red-50" : "bg-blue-50"} rounded-lg p-4`}>
+                      <div
+                        className={`${
+                          orderType === "buy" ? "bg-red-50" : "bg-blue-50"
+                        } rounded-lg p-4`}
+                      >
                         <div className="text-sm text-gray-600">
                           총 거래 금액
                         </div>
-                        <div className={`text-xl font-bold ${orderType === "buy" ? "text-red-600" : "text-blue-600"}`}>
+                        <div
+                          className={`text-xl font-bold ${
+                            orderType === "buy"
+                              ? "text-red-600"
+                              : "text-blue-600"
+                          }`}
+                        >
                           {totalAmount.toLocaleString()}원
                         </div>
                       </div>

@@ -16,27 +16,41 @@ import {
 import toast from "react-hot-toast";
 
 const Review = () => {
-  const [selectedPeriod, setSelectedPeriod] = useState("2020 H1");
+  const { user } = useAuth();
+
+  // 사용자의 현재 라운드에 따른 기간 계산
+  const getCurrentPeriods = () => {
+    if (!user || !user.round_periods) {
+      return ["2020 H1"]; // 기본값
+    }
+
+    const roundPeriods = JSON.parse(user.round_periods);
+    const currentRoundIndex = user.current_round_idx || 0;
+
+    // 현재 라운드까지의 기간들만 반환
+    return roundPeriods.slice(0, currentRoundIndex + 1);
+  };
+
+  const availablePeriods = getCurrentPeriods();
+  const currentPeriod = user?.round_periods
+    ? JSON.parse(user.round_periods)[user.current_round_idx || 0]
+    : "2020 H1";
+
+  const [selectedPeriod, setSelectedPeriod] = useState(currentPeriod);
   const [stockPerformanceData, setStockPerformanceData] = useState([]);
   const [showReview, setShowReview] = useState(false);
   const [selectedStock, setSelectedStock] = useState(null);
   const [stockDetailModal, setStockDetailModal] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { user } = useAuth();
 
-  // 가능한 기간 목록
-  const periods = [
-    "2020 H1",
-    "2020 H2",
-    "2021 H1",
-    "2021 H2",
-    "2022 H1",
-    "2022 H2",
-    "2023 H1",
-    "2023 H2",
-    "2024 H1",
-    "2024 H2",
-  ];
+  // 사용자 정보가 업데이트되면 선택된 기간도 업데이트
+  useEffect(() => {
+    if (user?.round_periods) {
+      const periods = JSON.parse(user.round_periods);
+      const current = periods[user.current_round_idx || 0];
+      setSelectedPeriod(current);
+    }
+  }, [user]);
 
   useEffect(() => {
     fetchStockPerformance();
@@ -151,29 +165,61 @@ const Review = () => {
       <BannerHeader title="라운드 리뷰" />
 
       <div className="flex-1 p-6 overflow-auto">
-        {/* 기간 선택기 */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            분석 기간 선택
-          </label>
-          <select
-            value={selectedPeriod}
-            onChange={(e) => setSelectedPeriod(e.target.value)}
-            className="w-48 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            {periods.map((period) => (
-              <option key={period} value={period}>
-                {period}
-              </option>
-            ))}
-          </select>
+        {/* 현재 라운드 정보 및 기간 선택기 */}
+        <div className="mb-6 bg-blue-50 p-4 rounded-lg border border-blue-200">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-semibold text-blue-800">
+                현재 진행 상황
+              </h3>
+              <p className="text-blue-600">
+                라운드 {(user?.current_round_idx || 0) + 1} / 3 진행 중
+              </p>
+            </div>
+            <div className="text-right">
+              <span className="text-sm text-blue-600">현재 기간</span>
+              <p className="text-lg font-bold text-blue-800">{currentPeriod}</p>
+            </div>
+          </div>
+
+          {availablePeriods.length > 1 && (
+            <div>
+              <label className="block text-sm font-medium text-blue-700 mb-2">
+                다른 기간 분석 보기
+              </label>
+              <select
+                value={selectedPeriod}
+                onChange={(e) => setSelectedPeriod(e.target.value)}
+                className="w-48 px-3 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              >
+                {availablePeriods.map((period) => (
+                  <option key={period} value={period}>
+                    {period} {period === currentPeriod ? "(현재)" : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {availablePeriods.length === 1 && (
+            <p className="text-sm text-blue-600">
+              💡 더 많은 라운드를 진행하면 이전 기간들도 분석할 수 있습니다!
+            </p>
+          )}
         </div>
 
         {/* 주식 수익률 차트 */}
         <div className="mb-8">
-          <h2 className="text-xl font-bold mb-4">
-            {selectedPeriod} 종목별 가격 변화율
-          </h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold">
+              {selectedPeriod} 종목별 가격 변화율
+            </h2>
+            {selectedPeriod === currentPeriod && (
+              <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
+                현재 라운드
+              </span>
+            )}
+          </div>
 
           {loading ? (
             <div className="flex justify-center items-center h-96">
@@ -216,9 +262,16 @@ const Review = () => {
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
-              <p className="text-sm text-gray-600 mt-2 text-center">
-                * 막대를 클릭하면 해당 종목의 상세 정보를 확인할 수 있습니다.
-              </p>
+              <div className="mt-2 text-center">
+                <p className="text-sm text-gray-600">
+                  * 막대를 클릭하면 해당 종목의 상세 정보를 확인할 수 있습니다.
+                </p>
+                {selectedPeriod !== currentPeriod && (
+                  <p className="text-sm text-blue-600 mt-1">
+                    📊 과거 라운드 데이터입니다. 투자 전략 수립에 참고하세요!
+                  </p>
+                )}
+              </div>
             </div>
           )}
         </div>

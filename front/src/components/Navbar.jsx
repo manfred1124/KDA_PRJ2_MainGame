@@ -135,9 +135,9 @@ const Navbar = () => {
     try {
       console.log("다음 라운드 진행 시도...");
 
-      // 현재 라운드가 10인지 확인
-      const currentRound = user?.current_round || 1;
-      if (currentRound >= 10) {
+      // 현재 라운드가 3라운드 완료 상태인지 확인
+      const currentRound = user?.current_round_idx + 1 || 1;
+      if (currentRound > 3) {
         // 게임 종료 - 결과 페이지로 이동
         navigate("/game-result");
         return;
@@ -159,29 +159,29 @@ const Navbar = () => {
           })
         );
 
-        // 네비게이션 바 잔고 업데이트를 위한 이벤트 발생
+        // 네비게이션 바 업데이트를 위한 이벤트 발생
         window.dispatchEvent(new Event("transactionComplete"));
+
+        // 3라운드 완료 후 게임 결과 페이지로 이동
+        if (userResponse.data.current_round_idx >= 2) {
+          navigate("/game-result");
+        }
       } catch (userError) {
         console.error("사용자 정보 업데이트 실패:", userError);
-        window.location.reload();
       }
     } catch (error) {
       console.error("다음 라운드 진행 실패:", error);
-      console.error("에러 응답:", error.response?.data);
-      console.error("에러 상태:", error.response?.status);
-      // 여기서 detail이 '이미 마지막 라운드입니다.'면 결과 페이지로 이동
+
+      // 마지막 라운드인 경우 게임 결과 페이지로 이동
       if (
-        error.response &&
-        error.response.status === 400 &&
-        error.response.data?.detail === "이미 마지막 라운드입니다."
+        error.response?.status === 400 &&
+        error.response?.data?.detail?.includes("마지막 라운드")
       ) {
-        toast.success("마지막 라운드입니다. 결과 페이지로 이동합니다.");
         navigate("/game-result");
-      } else {
-        toast.error(
-          error.response?.data?.detail || "라운드 진행에 실패했습니다."
-        );
+        return;
       }
+
+      toast.error("다음 라운드 진행에 실패했습니다.");
     }
   };
 
@@ -227,7 +227,9 @@ const Navbar = () => {
                 <div className="flex-1 min-w-0">
                   <div
                     className="overflow-hidden flex items-center min-w-0 cursor-pointer"
-                    onClick={() => newsList.length > 0 && setSelectedNews(newsList[newsIdx])}
+                    onClick={() =>
+                      newsList.length > 0 && setSelectedNews(newsList[newsIdx])
+                    }
                   >
                     <span
                       key={newsIdx}
@@ -241,7 +243,8 @@ const Navbar = () => {
                       <button
                         onClick={() => {
                           setNewsIdx((idx) => {
-                            const newIdx = (idx - 1 + newsList.length) % newsList.length;
+                            const newIdx =
+                              (idx - 1 + newsList.length) % newsList.length;
                             setNewsBanner(newsList[newIdx].title);
                             return newIdx;
                           });
@@ -481,7 +484,6 @@ const Navbar = () => {
                 </span>
               </div>
             )}
-            
           </div>
         </div>
       )}

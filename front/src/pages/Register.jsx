@@ -59,7 +59,6 @@ const Register = () => {
         </div>
 
         <div>
-          
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label
@@ -172,7 +171,7 @@ const Register = () => {
         {/* <div className="text-center text-sm text-gray-300">
           <p>💰 1천만원의 초기 자금으로 시작</p>
           <p>📊 15개 종목의 한국 대표 주식</p>
-          <p>🎯 10라운드 동안의 투자 경험</p>
+          <p>🎯 3라운드 동안의 투자 경험</p>
         </div> */}
       </div>
     </div>

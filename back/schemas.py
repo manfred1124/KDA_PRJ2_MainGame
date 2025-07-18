@@ -92,13 +92,12 @@ class NewsResponse(BaseModel):
 # Game State 관련 스키마
 class GameState(BaseModel):
     current_round: int
-    total_rounds: int = 10
+    total_rounds: int = 3
     current_date: str
     total_balance: float
-    total_portfolio_value: float
+    total_investment: float
     total_profit_loss: float
     total_profit_loss_percentage: float
-    realized_profit: float
     total_profit: float
     total_profit_percentage: float
     can_advance_round: bool

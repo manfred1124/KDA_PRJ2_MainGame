@@ -13,6 +13,7 @@ from dotenv import load_dotenv
 from langchain_community.chat_models import ChatOpenAI
 from langchain.schema import SystemMessage, HumanMessage
 from sqlalchemy.orm import joinedload
+import random
 
 from database import get_db, init_db
 from models import User, Stock, Portfolio, Transaction, News, RoundReview
@@ -52,7 +53,7 @@ async def root():
     return {"message": "🎮 주식 투자 시뮬레이션 게임 API"}
 
 # 인증 관련 엔드포인트
-@app.post("/auth/register", response_model=UserResponse)
+@app.post("/api/auth/register", response_model=UserResponse)
 async def register(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
     print(f"Received registration data: {user_data}")
     try:
@@ -72,11 +73,11 @@ async def register(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
         print(f"Registration error: {e}")
         raise
 
-@app.post("/auth/login")
+@app.post("/api/auth/login")
 async def login(user_data: UserLogin, db: AsyncSession = Depends(get_db)):
     return await auth_service.login_user(db, user_data)
 
-@app.get("/auth/me")
+@app.get("/api/auth/me")
 async def get_me(credentials: HTTPAuthorizationCredentials = Depends(security), db: AsyncSession = Depends(get_db)):
     user_id = auth_service.verify_token(credentials.credentials)
     user = await db.execute(select(User).where(User.id == user_id))
@@ -95,11 +96,11 @@ async def get_me(credentials: HTTPAuthorizationCredentials = Depends(security), 
     }
 
 # 주식 관련 엔드포인트
-@app.get("/stocks", response_model=List[StockResponse])
+@app.get("/api/stocks", response_model=List[StockResponse])
 async def get_stocks(db: AsyncSession = Depends(get_db)):
     return await stock_service.get_all_stocks(db)
 
-@app.get("/stocks/sector/{sector}", response_model=List[StockResponse])
+@app.get("/api/stocks/sector/{sector}", response_model=List[StockResponse])
 async def get_stocks_by_sector(
     sector: str,
     credentials: HTTPAuthorizationCredentials = Depends(security),
@@ -115,16 +116,16 @@ async def get_stocks_by_sector(
     date = period_to_date(current_period)
     return await stock_service.get_stocks_by_sector(db, sector, date)
 
-@app.get("/stocks/sectors", response_model=List[str])
+@app.get("/api/stocks/sectors", response_model=List[str])
 async def get_all_sectors(db: AsyncSession = Depends(get_db)):
     return await stock_service.get_all_sectors(db)
 
-@app.get("/stocks/{stock_id}", response_model=StockResponse)
+@app.get("/api/stocks/{stock_id}", response_model=StockResponse)
 async def get_stock(stock_id: int, db: AsyncSession = Depends(get_db)):
     return await stock_service.get_stock_by_id(db, stock_id)
 
 # 포트폴리오 관련 엔드포인트
-@app.get("/portfolio")
+@app.get("/api/portfolio")
 async def get_portfolio(credentials: HTTPAuthorizationCredentials = Depends(security), db: AsyncSession = Depends(get_db)):
     user_id = auth_service.verify_token(credentials.credentials)
     user = await db.execute(select(User).where(User.id == user_id))
@@ -189,7 +190,7 @@ async def get_portfolio(credentials: HTTPAuthorizationCredentials = Depends(secu
         "items": item_list
     }
 
-@app.get("/portfolio/stock/{stock_id}")
+@app.get("/api/portfolio/stock/{stock_id}")
 async def get_stock_quantity(
     stock_id: int,
     credentials: HTTPAuthorizationCredentials = Depends(security),
@@ -207,7 +208,7 @@ async def get_stock_quantity(
         "average_price": item.average_price if item else 0
     }
 
-@app.post("/portfolio/buy")
+@app.post("/api/portfolio/buy")
 async def buy_stock(
     transaction: TransactionCreate,
     credentials: HTTPAuthorizationCredentials = Depends(security),
@@ -222,7 +223,7 @@ async def buy_stock(
     current_period = periods[user.current_round_idx]
     return await portfolio_service.buy_stock(db, user_id, transaction, current_period)
 
-@app.post("/portfolio/sell")
+@app.post("/api/portfolio/sell")
 async def sell_stock(
     transaction: TransactionCreate,
     credentials: HTTPAuthorizationCredentials = Depends(security),
@@ -238,20 +239,20 @@ async def sell_stock(
     return await portfolio_service.sell_stock(db, user_id, transaction, current_period)
 
 # 뉴스 관련 엔드포인트
-@app.get("/news", response_model=List[NewsResponse])
+@app.get("/api/news", response_model=List[NewsResponse])
 async def get_news(period: str, db: AsyncSession = Depends(get_db)):
     return await news_service.get_current_news(db, period)
 
-@app.get("/news/stock/by-ticker", response_model=List[NewsResponse])
+@app.get("/api/news/stock/by-ticker", response_model=List[NewsResponse])
 async def get_news_by_stock_by_ticker(ticker: str, period: str = None, db: AsyncSession = Depends(get_db)):
     return await news_service.get_news_by_stock(db, stock_name=None, period=period, ticker=ticker)
 
-@app.get("/news/macro", response_model=List[NewsResponse])
+@app.get("/api/news/macro", response_model=List[NewsResponse])
 async def get_macro_news(period: str, db: AsyncSession = Depends(get_db)):
     """특정 period, Macro 카테고리 뉴스만 조회"""
     return await news_service.get_macro_news_by_period(db, period)
 
-@app.get("/news/sector/{sector}", response_model=List[NewsResponse])
+@app.get("/api/news/sector/{sector}", response_model=List[NewsResponse])
 async def get_sector_trend_news(
     sector: str,
     period: str,
@@ -266,7 +267,7 @@ async def get_sector_trend_news(
     return await news_service.get_sector_trend_news(db, sector, period)
 
 # 게임 상태 관련 엔드포인트
-@app.get("/game/state", response_model=GameState)
+@app.get("/api/game/state", response_model=GameState)
 async def get_game_state(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: AsyncSession = Depends(get_db)
@@ -276,10 +277,14 @@ async def get_game_state(
     user = user.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    current_period = user.round_periods[user.current_round_idx]
+    
+    # JSON 파싱 추가
+    periods = json.loads(user.round_periods) if user.round_periods else []
+    current_period = periods[user.current_round_idx] if periods and user.current_round_idx < len(periods) else "2020 H1"
+    
     return await game_service.get_game_state(db, user_id)
 
-@app.post("/game/next-round")
+@app.post("/api/game/next-round")
 async def next_round(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: AsyncSession = Depends(get_db)
@@ -289,10 +294,14 @@ async def next_round(
     user = user.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    current_period = user.round_periods[user.current_round_idx]
+    
+    # JSON 파싱 추가
+    periods = json.loads(user.round_periods) if user.round_periods else []
+    current_period = periods[user.current_round_idx] if periods and user.current_round_idx < len(periods) else "2020 H1"
+    
     return await game_service.advance_round(db, user_id, current_period)
 
-@app.post("/game/restart")
+@app.post("/api/game/restart")
 async def restart_game(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: AsyncSession = Depends(get_db)
@@ -304,31 +313,31 @@ async def restart_game(
         raise HTTPException(status_code=404, detail="User not found")
     result = await game_service.restart_game(db, user_id)
     
-    # 재시작 후 사용자 정보 반환
-    user = await db.execute(select(User).where(User.id == user_id))
-    user = user.scalar_one_or_none()
-    periods = json.loads(user.round_periods)
-    current_period = periods[user.current_round_idx]
+    # 사용자 정보 다시 조회하여 반환
+    updated_user = await db.execute(select(User).where(User.id == user_id))
+    updated_user = updated_user.scalar_one_or_none()
+    periods = json.loads(updated_user.round_periods) if updated_user.round_periods else []
+    current_period = periods[updated_user.current_round_idx] if periods and updated_user.current_round_idx < len(periods) else "2020 H1"
     
     return {
         **result,
         "user": {
-            "id": user.id,
-            "username": user.username,
-            "current_round_idx": user.current_round_idx,
-            "current_round": user.current_round_idx + 1,
+            "id": updated_user.id,
+            "username": updated_user.username,
+            "current_round_idx": updated_user.current_round_idx,
             "current_period": current_period,
-            "total_balance": user.total_balance,
-            "realized_profit": user.realized_profit
+            "total_balance": updated_user.total_balance,
+            "realized_profit": updated_user.realized_profit,
+            "round_periods": updated_user.round_periods
         }
     }
 
 # 랭킹 관련 엔드포인트
-@app.get("/ranking")
+@app.get("/api/ranking")
 async def get_ranking(db: AsyncSession = Depends(get_db)):
     return await game_service.get_ranking(db)
 
-@app.post("/chatbot")
+@app.post("/api/chatbot")
 async def chatbot(
     message: str = Body(..., embed=True),
     credentials: HTTPAuthorizationCredentials = Depends(security),
@@ -373,7 +382,7 @@ async def chatbot(
 
     return {"answer": answer}
 
-@app.get("/portfolio/transactions")
+@app.get("/api/portfolio/transactions")
 async def get_transaction_history(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: AsyncSession = Depends(get_db)
@@ -437,7 +446,7 @@ async def get_transaction_history(
     return tx_list
 
 # 라운드 리뷰 관련 엔드포인트
-@app.post("/game/round-review")
+@app.post("/api/game/round-review")
 async def generate_round_review(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: AsyncSession = Depends(get_db)
@@ -492,7 +501,7 @@ async def generate_round_review(
         "review": review_data
     }
 
-@app.get("/game/round-review/by-period/{period}")
+@app.get("/api/game/round-review/by-period/{period}")
 async def get_round_review_by_period(
     period: str,
     credentials: HTTPAuthorizationCredentials = Depends(security),
@@ -518,7 +527,7 @@ async def get_round_review_by_period(
         "final_review": review.final_review
     }
 
-@app.get("/game/round-reviews")
+@app.get("/api/game/round-reviews")
 async def get_all_round_reviews(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: AsyncSession = Depends(get_db)
@@ -539,6 +548,201 @@ async def get_all_round_reviews(
         "stocks_review": review.stocks_review,
         "final_review": review.final_review
     } for review in reviews]
+
+# 주식 수익률 분석 API
+@app.get("/api/stocks/performance/{period}")
+async def get_stock_performance(period: str, db: AsyncSession = Depends(get_db)):
+    """특정 기간의 주식 수익률 데이터를 반환"""
+    try:
+        # 기간 파싱 (예: "2020 H1" -> 2020년 상반기)
+        year, half = period.split()
+        year = int(year)
+        start_month = 1 if half == "H1" else 7
+        end_month = 6 if half == "H1" else 12
+        
+        start_date = datetime(year, start_month, 1)
+        if half == "H1":
+            end_date = datetime(year, 6, 30)
+        else:
+            end_date = datetime(year, 12, 31)
+        
+        # 모든 주식 가져오기
+        result = await db.execute(select(Stock))
+        stocks = result.scalars().all()
+        
+        performance_data = []
+        
+        for stock in stocks:
+            # 해당 기간 시작 시점의 가격
+            start_price_query = await db.execute(
+                select(StockPrice)
+                .filter(
+                    StockPrice.stock_id == stock.id,
+                    StockPrice.date >= start_date
+                )
+                .order_by(StockPrice.date.asc())
+                .limit(1)
+            )
+            start_price_result = start_price_query.scalars().first()
+            
+            # 해당 기간 종료 시점의 가격
+            end_price_query = await db.execute(
+                select(StockPrice)
+                .filter(
+                    StockPrice.stock_id == stock.id,
+                    StockPrice.date <= end_date
+                )
+                .order_by(StockPrice.date.desc())
+                .limit(1)
+            )
+            end_price_result = end_price_query.scalars().first()
+            
+            # 수익률 계산
+            if start_price_result and end_price_result:
+                start_price = start_price_result.close_price
+                end_price = end_price_result.close_price
+                return_rate = ((end_price - start_price) / start_price) * 100
+            else:
+                # 데이터가 없으면 랜덤 수익률 생성 (임시)
+                return_rate = (random.random() - 0.5) * 150  # -75% ~ +75%
+            
+            performance_data.append({
+                "name": stock.name,
+                "symbol": stock.symbol,
+                "sector": stock.sector,
+                "return": round(return_rate, 2)
+            })
+        
+        return performance_data
+        
+    except Exception as e:
+        print(f"Error getting stock performance: {e}")
+        # 에러 발생 시 더미 데이터 반환
+        stocks = ["삼성전자", "SK하이닉스", "NAVER", "카카오", "삼성바이오로직스", "셀트리온",
+                 "LG화학", "삼성SDI", "POSCO", "KB금융", "하나금융", "신한지주",
+                 "LG생활건강", "아모레퍼시픽", "CJ대한통운"]
+        
+        sector_map = {
+            "삼성전자": "반도체", "SK하이닉스": "반도체", "NAVER": "IT서비스",
+            "카카오": "IT서비스", "삼성바이오로직스": "바이오", "셀트리온": "바이오",
+            "LG화학": "화학", "삼성SDI": "배터리", "POSCO": "철강",
+            "KB금융": "금융", "하나금융": "금융", "신한지주": "금융",
+            "LG생활건강": "생활용품", "아모레퍼시픽": "화장품", "CJ대한통운": "물류"
+        }
+        
+        return [
+            {
+                "name": stock,
+                "symbol": stock.replace(" ", ""),
+                "sector": sector_map.get(stock, "기타"),
+                "return": round((random.random() - 0.5) * 150, 2)
+            }
+            for stock in stocks
+        ]
+
+# 종목별 뉴스 API
+@app.get("/api/news/stock/{symbol}")
+async def get_stock_news(symbol: str, period: str = None, db: AsyncSession = Depends(get_db)):
+    """특정 종목의 뉴스를 반환"""
+    try:
+        query = select(News).filter(News.ticker == symbol)
+        if period:
+            query = query.filter(News.period == period)
+        
+        result = await db.execute(query.order_by(News.date.desc()))
+        news = result.scalars().all()
+        
+        return [news_item.to_dict() for news_item in news]
+        
+    except Exception as e:
+        print(f"Error getting stock news: {e}")
+        # 더미 뉴스 반환
+        return [
+            {
+                "title": f"{symbol} 관련 주요 뉴스 1",
+                "date": "2024-01-15",
+                "summary": "긍정적인 실적 발표",
+                "sentiment": "positive"
+            },
+            {
+                "title": f"{symbol} 관련 주요 뉴스 2", 
+                "date": "2024-01-20",
+                "summary": "신제품 출시 소식",
+                "sentiment": "positive"
+            }
+        ]
+
+# 종목별 가격 히스토리 API
+@app.get("/api/stocks/{symbol}/price-history")
+async def get_stock_price_history(symbol: str, period: str = None, db: AsyncSession = Depends(get_db)):
+    """특정 종목의 가격 히스토리를 반환"""
+    try:
+        # 종목 찾기
+        stock_result = await db.execute(select(Stock).filter(Stock.symbol == symbol))
+        stock = stock_result.scalars().first()
+        
+        if not stock:
+            raise HTTPException(status_code=404, detail="Stock not found")
+        
+        query = select(StockPrice).filter(StockPrice.stock_id == stock.id)
+        
+        # 기간 필터링
+        if period:
+            year, half = period.split()
+            year = int(year)
+            start_month = 1 if half == "H1" else 7
+            start_date = datetime(year, start_month, 1)
+            if half == "H1":
+                end_date = datetime(year, 6, 30)
+            else:
+                end_date = datetime(year, 12, 31)
+            
+            query = query.filter(
+                StockPrice.date >= start_date,
+                StockPrice.date <= end_date
+            )
+        
+        result = await db.execute(query.order_by(StockPrice.date.asc()))
+        prices = result.scalars().all()
+        
+        return [
+            {
+                "date": price.date.strftime("%Y-%m-%d"),
+                "price": price.close_price,
+                "open": price.open_price,
+                "high": price.high,
+                "low": price.low,
+                "volume": price.volume
+            }
+            for price in prices
+        ]
+        
+    except Exception as e:
+        print(f"Error getting price history: {e}")
+        # 더미 데이터 반환
+        base_price = 50000
+        dates = []
+        prices = []
+        
+        for i in range(30):
+            date = datetime(2024, 1, i + 1)
+            dates.append(date.strftime("%Y-%m-%d"))
+            
+            random_change = (random.random() - 0.5) * 0.1
+            price = base_price if i == 0 else prices[i-1] * (1 + random_change)
+            prices.append(round(price))
+        
+        return [
+            {
+                "date": dates[i],
+                "price": prices[i],
+                "open": prices[i] * 0.98,
+                "high": prices[i] * 1.02,
+                "low": prices[i] * 0.97,
+                "volume": random.randint(100000, 1000000)
+            }
+            for i in range(len(dates))
+        ]
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True) 

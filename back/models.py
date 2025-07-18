@@ -11,7 +11,7 @@ class User(Base):
     username = Column(String(50), unique=True, index=True, nullable=False)
     hashed_password = Column(String(255), nullable=False)
     created_at = Column(DateTime, default=func.now())
-    round_periods = Column(Text, nullable=True)  # JSON 직렬화된 10개 period 리스트
+    round_periods = Column(Text, nullable=True)  # JSON 직렬화된 3개 period 리스트
     current_round_idx = Column(Integer, default=0)
     total_balance = Column(Float, default=10000000)  # 1천만원 시작
     realized_profit = Column(Float, default=0)  # 실현 수익

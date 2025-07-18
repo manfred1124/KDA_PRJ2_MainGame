@@ -30,12 +30,14 @@ function getRoundTrendGuide(period) {
   // "2020 H1"과 같은 형식 처리
   if (period && period.includes("H1")) {
     const year = period.slice(0, 4);
-    if (year === "2020") return "2020년 상반기에는 미중 무역협정이 체결되었지만, 코로나 때문에 계획에 차질이 생겼네.";
+    if (year === "2020")
+      return "2020년 상반기에는 미중 무역협정이 체결되었지만, 코로나 때문에 계획에 차질이 생겼네.";
   }
 
   if (period && period.length >= 4) {
     const year = period.slice(0, 4);
-    if (year === "2020") return "2020년대 초반에는 시장이 아주 큰 변동을 겪었으니, 조심하게나.";
+    if (year === "2020")
+      return "2020년대 초반에는 시장이 아주 큰 변동을 겪었으니, 조심하게나.";
     if (year === "2021")
       return "2021년에는 경기가 회복되고 성장하는 주식에 대한 기대가 한껏 높아졌지.";
     if (year === "2022")
@@ -78,15 +80,19 @@ const Dashboard = () => {
     setAdvancing(true);
     try {
       const response = await axios.post("/api/game/next-round");
-      toast.success(`라운드 ${response.data.new_round}로 진행되었습니다!`);
+      toast.success(
+        `라운드 ${response.data.new_round_idx + 1}로 진행되었습니다!`
+      );
       fetchGameState();
     } catch (error) {
+      console.error("라운드 진행 실패:", error);
+
+      // 마지막 라운드인 경우 게임 결과 페이지로 이동
       if (
-        error.response &&
-        error.response.status === 400 &&
-        error.response.data?.detail === "이미 마지막 라운드입니다."
+        error.response?.status === 400 &&
+        error.response?.data?.detail?.includes("마지막 라운드")
       ) {
-        toast.success("마지막 라운드입니다. 결과 페이지로 이동합니다.");
+        toast.success("게임이 완료되었습니다! 결과를 확인해보세요.");
         navigate("/game-result");
       } else {
         toast.error("라운드 진행에 실패했습니다.");
@@ -290,7 +296,7 @@ const Dashboard = () => {
             <li>• 뉴스 페이지에서 시장 동향을 확인하세요</li>
             <li>• 퀴즈를 풀어 투자 지식을 쌓으세요</li>
             <li>• 준비가 되면 다음 라운드로 진행하세요</li>
-            <li>• 총 10라운드 동안 최고의 수익률을 달성하세요!</li>
+            <li>• 총 3라운드 동안 최고의 수익률을 달성하세요!</li>
           </ul>
         </div>
 
