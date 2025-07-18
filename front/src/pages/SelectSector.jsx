@@ -394,7 +394,7 @@ const SelectSector = () => {
           >
             <span className="text-2xl">←</span>
           </button>
-          <div className="flex items-center justify-center mb-2 w-full">
+          <div className="flex items-center justify-center mb-2 ">
             <BannerHeader
               title="섹터별 주식 투자"
               className="w-full max-w-7xl mx-auto"
