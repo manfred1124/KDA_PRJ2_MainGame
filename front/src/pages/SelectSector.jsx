@@ -80,6 +80,7 @@ const SelectSector = () => {
   const [orderType, setOrderType] = useState("buy");
   const [orderQty, setOrderQty] = useState(1);
   const [stockNews, setStockNews] = useState([]);
+  const [orderTab, setOrderTab] = useState("chart"); // 주문창 탭 상태 추가 (1라운드: chart, 2라운드: chart, 3라운드: chart)
   const [loading, setLoading] = useState(true);
   const [priceUpdateTime, setPriceUpdateTime] = useState(null);
   const [newsModal, setNewsModal] = useState(false); // 뉴스 모달 상태 추가
@@ -280,7 +281,9 @@ const SelectSector = () => {
       return;
     }
     setSelected(sector);
-    setSectorViewTab((prev) => ({ ...prev, [sector]: prev[sector] || "news" }));
+    // 라운드별 기본값 설정: 1라운드는 stocks, 2라운드 이상은 news
+    const defaultTab = (user?.current_round_idx ?? 0) >= 1 ? "news" : "stocks";
+    setSectorViewTab((prev) => ({ ...prev, [sector]: prev[sector] || defaultTab }));
     await fetchStocksBySector(sector);
     await fetchSectorNews(sector);
     // 섹터별 설명 챗봇에 출력 (부분 일치 포함)
@@ -433,47 +436,50 @@ const SelectSector = () => {
                     >
                       {selected}
                     </h3>
-                    <div
-                      className="flex gap-2 mb-6"
-                      onClick={() => setShowAllNews(false)}
-                    >
-                      <button
-                        className={`px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 border-2 ${
-                          sectorViewTab[selected] === "news"
-                            ? "bg-[#bfa76a] text-white border-[#a67c3c]"
-                            : "bg-white text-[#7c5c2b] border-[#e6d3a3]"
-                        }`}
-                        style={{ fontFamily: "Jua, sans-serif" }}
-                        onClick={() =>
-                          setSectorViewTab((prev) => ({
-                            ...prev,
-                            [selected]:
-                              prev[selected] === "news" ? undefined : "news",
-                          }))
-                        }
+                    {/* 라운드별 탭 버튼 */}
+                    {(user?.current_round_idx ?? 0) >= 1 && (
+                      <div
+                        className="flex gap-2 mb-6"
+                        onClick={() => setShowAllNews(false)}
                       >
-                        뉴스 보기
-                      </button>
-                      <button
-                        className={`px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 border-2 ${
-                          sectorViewTab[selected] === "stocks"
-                            ? "bg-[#bfa76a] text-white border-[#a67c3c]"
-                            : "bg-white text-[#7c5c2b] border-[#e6d3a3]"
-                        }`}
-                        style={{ fontFamily: "Jua, sans-serif" }}
-                        onClick={() =>
-                          setSectorViewTab((prev) => ({
-                            ...prev,
-                            [selected]:
-                              prev[selected] === "stocks"
-                                ? undefined
-                                : "stocks",
-                          }))
-                        }
-                      >
-                        종목 보기
-                      </button>
-                    </div>
+                        <button
+                          className={`px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 border-2 ${
+                            sectorViewTab[selected] === "news"
+                              ? "bg-[#bfa76a] text-white border-[#a67c3c]"
+                              : "bg-white text-[#7c5c2b] border-[#e6d3a3]"
+                          }`}
+                          style={{ fontFamily: "Jua, sans-serif" }}
+                          onClick={() =>
+                            setSectorViewTab((prev) => ({
+                              ...prev,
+                              [selected]:
+                                prev[selected] === "news" ? undefined : "news",
+                            }))
+                          }
+                        >
+                          뉴스 보기
+                        </button>
+                        <button
+                          className={`px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 border-2 ${
+                            sectorViewTab[selected] === "stocks"
+                              ? "bg-[#bfa76a] text-white border-[#a67c3c]"
+                              : "bg-white text-[#7c5c2b] border-[#e6d3a3]"
+                          }`}
+                          style={{ fontFamily: "Jua, sans-serif" }}
+                          onClick={() =>
+                            setSectorViewTab((prev) => ({
+                              ...prev,
+                              [selected]:
+                                prev[selected] === "stocks"
+                                  ? undefined
+                                  : "stocks",
+                            }))
+                          }
+                        >
+                          종목 보기
+                        </button>
+                      </div>
+                    )}
                     {/* 탭별 내용 */}
                     {sectorViewTab[selected] === "news" && (
                       <>
@@ -523,7 +529,8 @@ const SelectSector = () => {
                               return (
                                 <li
                                   key={stock.id}
-                                  className="flex items-center justify-between bg-white rounded-lg p-4 shadow border border-[#e6d3a3]"
+                                  className="flex items-center justify-between bg-white rounded-lg p-4 shadow border border-[#e6d3a3] cursor-pointer hover:bg-gray-50 transition-colors"
+                                  onClick={() => handleStockClick(stock)}
                                 >
                                   <div>
                                     <div className="font-medium text-[#7c5c2b]">
@@ -536,10 +543,10 @@ const SelectSector = () => {
                                       {stock.current_price.toLocaleString()}원
                                     </div>
                                   </div>
-                                  <div className="flex gap-2">
+                                  <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                                     <button
                                       onClick={() => handleStockClick(stock)}
-                                      className="px-4 py-2 bg-[#bfa76a] hover:bg-[#a67c3c] text-white rounded-lg font-normal border-2 border-[#e6d3a3]"
+                                      className="px-4 py-2 bg-[#B22222] hover:bg-[#DC143C] hover:shadow-lg text-white rounded-lg font-normal border-2 border-[#e6d3a3] transition-all duration-200"
                                       style={{ fontFamily: "Jua, sans-serif" }}
                                     >
                                       구매
@@ -552,7 +559,7 @@ const SelectSector = () => {
                                         setOrderQty(1);
                                         fetchStockNews(stock.symbol);
                                       }}
-                                      className={`px-4 py-2 bg-[#7c5c2b] hover:bg-[#a67c3c] text-white rounded-lg font-normal border-2 border-[#e6d3a3] ${
+                                      className={`px-4 py-2 bg-[#1E90FF] hover:bg-[#4169E1] hover:shadow-lg text-white rounded-lg font-normal border-2 border-[#e6d3a3] transition-all duration-200 ${
                                         !hasStock
                                           ? "opacity-50 cursor-not-allowed"
                                           : ""
@@ -824,32 +831,131 @@ const SelectSector = () => {
                     </div>
                   </div>
 
-                  {/* 뉴스 섹션 */}
+                  {/* 라운드별 주문창 탭 */}
                   <div>
-                    <h3 className="text-lg font-bold text-gray-800 mb-4">
-                      관련 뉴스
-                    </h3>
-                    <div className="space-y-4">
-                      {stockNews.length > 0 ? (
-                        stockNews.map((news, index) => (
-                          <div
-                            key={index}
-                            className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 shadow-sm"
+                    {/* 2라운드 이상에서만 탭 버튼 표시 */}
+                    {(user?.current_round_idx ?? 0) >= 1 && (
+                      <div className="flex gap-2 mb-4">
+                        <button
+                          className={`px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 border-2 ${
+                            orderTab === "chart"
+                              ? "bg-[#bfa76a] text-white border-[#a67c3c]"
+                              : "bg-white text-[#7c5c2b] border-[#e6d3a3]"
+                          }`}
+                          style={{ fontFamily: "Jua, sans-serif" }}
+                          onClick={() => setOrderTab("chart")}
+                        >
+                          주가 차트
+                        </button>
+                        <button
+                          className={`px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 border-2 ${
+                            orderTab === "news"
+                              ? "bg-[#bfa76a] text-white border-[#a67c3c]"
+                              : "bg-white text-[#7c5c2b] border-[#e6d3a3]"
+                          }`}
+                          style={{ fontFamily: "Jua, sans-serif" }}
+                          onClick={() => setOrderTab("news")}
+                        >
+                          관련 뉴스
+                        </button>
+                        {/* 3라운드에서만 재무지표 탭 표시 */}
+                        {(user?.current_round_idx ?? 0) >= 2 && (
+                          <button
+                            className={`px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 border-2 ${
+                              orderTab === "financial"
+                                ? "bg-[#bfa76a] text-white border-[#a67c3c]"
+                                : "bg-white text-[#7c5c2b] border-[#e6d3a3]"
+                            }`}
+                            style={{ fontFamily: "Jua, sans-serif" }}
+                            onClick={() => setOrderTab("financial")}
                           >
-                            <div className="text-sm font-normal text-gray-800 mb-2">
-                              {news.title}
-                            </div>
-                            <div className="text-sm text-gray-600">
-                              {news.content}
+                            재무지표
+                          </button>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* 탭 내용 */}
+                    {/* 1라운드: 차트만 표시 */}
+                    {(user?.current_round_idx ?? 0) === 0 && (
+                      <div>
+                        <h3 className="text-lg font-bold text-gray-800 mb-4">
+                          주가 차트
+                        </h3>
+                        <div className="bg-gray-100 rounded-xl p-8 shadow-sm border-2 border-dashed border-gray-300 flex items-center justify-center min-h-[300px]">
+                          <div className="text-gray-500 text-center">
+                            <div className="text-2xl mb-2">📈</div>
+                            <div className="text-lg font-medium">차트 데이터 준비 중</div>
+                            <div className="text-sm">곧 차트가 표시됩니다</div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* 2라운드 이상: 탭으로 전환 */}
+                    {(user?.current_round_idx ?? 0) >= 1 && (
+                      <>
+                        {orderTab === "chart" && (
+                          <div>
+                            <h3 className="text-lg font-bold text-gray-800 mb-4">
+                              주가 차트
+                            </h3>
+                            <div className="bg-gray-100 rounded-xl p-8 shadow-sm border-2 border-dashed border-gray-300 flex items-center justify-center min-h-[300px]">
+                              <div className="text-gray-500 text-center">
+                                <div className="text-2xl mb-2">📈</div>
+                                <div className="text-lg font-medium">차트 데이터 준비 중</div>
+                                <div className="text-sm">곧 차트가 표시됩니다</div>
+                              </div>
                             </div>
                           </div>
-                        ))
-                      ) : (
-                        <div className="text-gray-500 text-center py-8">
-                          관련 뉴스가 없습니다.
-                        </div>
-                      )}
-                    </div>
+                        )}
+                        
+                        {orderTab === "news" && (
+                          <div>
+                            <h3 className="text-lg font-bold text-gray-800 mb-4">
+                              관련 뉴스
+                            </h3>
+                            <div className="space-y-4">
+                              {stockNews.length > 0 ? (
+                                stockNews.map((news, index) => (
+                                  <div
+                                    key={index}
+                                    className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 shadow-sm"
+                                  >
+                                    <div className="text-sm font-normal text-gray-800 mb-2">
+                                      {news.title}
+                                    </div>
+                                    <div className="text-sm text-gray-600">
+                                      {news.content}
+                                    </div>
+                                  </div>
+                                ))
+                              ) : (
+                                <div className="text-gray-500 text-center py-8">
+                                  관련 뉴스가 없습니다.
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* 3라운드 재무지표 탭 */}
+                        {(user?.current_round_idx ?? 0) >= 2 && orderTab === "financial" && (
+                          <div>
+                            <h3 className="text-lg font-bold text-gray-800 mb-4">
+                              재무지표
+                            </h3>
+                            <div className="bg-gray-100 rounded-xl p-8 shadow-sm border-2 border-dashed border-gray-300 flex items-center justify-center min-h-[300px]">
+                              <div className="text-gray-500 text-center">
+                                <div className="text-2xl mb-2">📊</div>
+                                <div className="text-lg font-medium">재무지표 데이터 준비 중</div>
+                                <div className="text-sm">곧 재무지표가 표시됩니다</div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
