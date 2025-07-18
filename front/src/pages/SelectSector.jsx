@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useCallback, useContext } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useContext,
+  useRef,
+} from "react";
 import { useAuth } from "../contexts/AuthContext";
 import ChatbotWidget from "../components/ChatbotWidget";
 import axios from "axios";
@@ -6,6 +12,9 @@ import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import BannerHeader from "../components/BannerHeader";
 import { GuideMessageContext } from "../App";
+
+// TradingView Lightweight Charts import
+import { createChart, ColorType } from "lightweight-charts";
 
 const GUIDE_MSG =
   "여기는 다양한 산업의 주식이 모여있는 투자판이네. 신중히 섹터를 골라 투자해보게!";
@@ -283,7 +292,10 @@ const SelectSector = () => {
     setSelected(sector);
     // 라운드별 기본값 설정: 1라운드는 stocks, 2라운드 이상은 news
     const defaultTab = (user?.current_round_idx ?? 0) >= 1 ? "news" : "stocks";
-    setSectorViewTab((prev) => ({ ...prev, [sector]: prev[sector] || defaultTab }));
+    setSectorViewTab((prev) => ({
+      ...prev,
+      [sector]: prev[sector] || defaultTab,
+    }));
     await fetchStocksBySector(sector);
     await fetchSectorNews(sector);
     // 섹터별 설명 챗봇에 출력 (부분 일치 포함)
@@ -543,7 +555,10 @@ const SelectSector = () => {
                                       {stock.current_price.toLocaleString()}원
                                     </div>
                                   </div>
-                                  <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                                  <div
+                                    className="flex gap-2"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
                                     <button
                                       onClick={() => handleStockClick(stock)}
                                       className="px-4 py-2 bg-[#B22222] hover:bg-[#DC143C] hover:shadow-lg text-white rounded-lg font-normal border-2 border-[#e6d3a3] transition-all duration-200"
@@ -874,7 +889,7 @@ const SelectSector = () => {
                         )}
                       </div>
                     )}
-                    
+
                     {/* 탭 내용 */}
                     {/* 1라운드: 차트만 표시 */}
                     {(user?.current_round_idx ?? 0) === 0 && (
@@ -882,16 +897,13 @@ const SelectSector = () => {
                         <h3 className="text-lg font-bold text-gray-800 mb-4">
                           주가 차트
                         </h3>
-                        <div className="bg-gray-100 rounded-xl p-8 shadow-sm border-2 border-dashed border-gray-300 flex items-center justify-center min-h-[300px]">
-                          <div className="text-gray-500 text-center">
-                            <div className="text-2xl mb-2">📈</div>
-                            <div className="text-lg font-medium">차트 데이터 준비 중</div>
-                            <div className="text-sm">곧 차트가 표시됩니다</div>
-                          </div>
-                        </div>
+                        <TradingViewChart
+                          stock={orderModal.stock}
+                          period={user?.current_period}
+                        />
                       </div>
                     )}
-                    
+
                     {/* 2라운드 이상: 탭으로 전환 */}
                     {(user?.current_round_idx ?? 0) >= 1 && (
                       <>
@@ -900,16 +912,13 @@ const SelectSector = () => {
                             <h3 className="text-lg font-bold text-gray-800 mb-4">
                               주가 차트
                             </h3>
-                            <div className="bg-gray-100 rounded-xl p-8 shadow-sm border-2 border-dashed border-gray-300 flex items-center justify-center min-h-[300px]">
-                              <div className="text-gray-500 text-center">
-                                <div className="text-2xl mb-2">📈</div>
-                                <div className="text-lg font-medium">차트 데이터 준비 중</div>
-                                <div className="text-sm">곧 차트가 표시됩니다</div>
-                              </div>
-                            </div>
+                            <TradingViewChart
+                              stock={orderModal.stock}
+                              period={user?.current_period}
+                            />
                           </div>
                         )}
-                        
+
                         {orderTab === "news" && (
                           <div>
                             <h3 className="text-lg font-bold text-gray-800 mb-4">
@@ -938,22 +947,27 @@ const SelectSector = () => {
                             </div>
                           </div>
                         )}
-                        
+
                         {/* 3라운드 재무지표 탭 */}
-                        {(user?.current_round_idx ?? 0) >= 2 && orderTab === "financial" && (
-                          <div>
-                            <h3 className="text-lg font-bold text-gray-800 mb-4">
-                              재무지표
-                            </h3>
-                            <div className="bg-gray-100 rounded-xl p-8 shadow-sm border-2 border-dashed border-gray-300 flex items-center justify-center min-h-[300px]">
-                              <div className="text-gray-500 text-center">
-                                <div className="text-2xl mb-2">📊</div>
-                                <div className="text-lg font-medium">재무지표 데이터 준비 중</div>
-                                <div className="text-sm">곧 재무지표가 표시됩니다</div>
+                        {(user?.current_round_idx ?? 0) >= 2 &&
+                          orderTab === "financial" && (
+                            <div>
+                              <h3 className="text-lg font-bold text-gray-800 mb-4">
+                                재무지표
+                              </h3>
+                              <div className="bg-gray-100 rounded-xl p-8 shadow-sm border-2 border-dashed border-gray-300 flex items-center justify-center min-h-[300px]">
+                                <div className="text-gray-500 text-center">
+                                  <div className="text-2xl mb-2">📊</div>
+                                  <div className="text-lg font-medium">
+                                    재무지표 데이터 준비 중
+                                  </div>
+                                  <div className="text-sm">
+                                    곧 재무지표가 표시됩니다
+                                  </div>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        )}
+                          )}
                       </>
                     )}
                   </div>
@@ -1025,6 +1039,250 @@ const SelectSector = () => {
           )}
         </div>
       </div> */}
+    </div>
+  );
+};
+
+// TradingView 차트 컴포넌트 (SelectSector용 - 6개월 데이터)
+const TradingViewChart = ({ stock, period }) => {
+  const chartContainerRef = useRef();
+  const chart = useRef();
+  const candlestickSeries = useRef();
+  const volumeSeries = useRef();
+  const [priceData, setPriceData] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // 현재 라운드 기간 이전의 데이터만 표시 (최대 2년치)
+  const calculatePeriodRange = (currentPeriod) => {
+    const [year, half] = currentPeriod.split(" ");
+    const currentYear = parseInt(year);
+    const isFirstHalf = half === "H1";
+
+    // 현재 기간의 시작 날짜 (이 날짜 이전까지의 데이터만 표시)
+    const currentPeriodStartMonth = isFirstHalf ? 1 : 7;
+    const endDate = `${currentYear}-${currentPeriodStartMonth
+      .toString()
+      .padStart(2, "0")}-01`;
+
+    // 2년 전 날짜 계산 (2019년 이후로 제한)
+    let startYear = Math.max(currentYear - 2, 2019);
+    let startMonth = currentPeriodStartMonth;
+
+    // 시작년도가 2019년이면 1월부터 시작
+    if (startYear === 2019) {
+      startMonth = 1;
+    }
+
+    const startDate = `${startYear}-${startMonth
+      .toString()
+      .padStart(2, "0")}-01`;
+
+    console.log(
+      `Period calculation: ${currentPeriod} -> ${startDate} to ${endDate} (showing data BEFORE current period)`
+    );
+
+    return { startDate, endDate };
+  };
+
+  // 가격 데이터 가져오기
+  const fetchPriceData = async () => {
+    try {
+      const { startDate, endDate } = calculatePeriodRange(period);
+      console.log(
+        `Fetching price data for ${stock.symbol}: ${startDate} to ${endDate}`
+      );
+
+      const response = await axios.get(
+        `/api/stocks/${stock.symbol}/price-history?start_date=${startDate}&end_date=${endDate}`
+      );
+
+      if (response.data && response.data.length > 0) {
+        setPriceData(response.data);
+      } else {
+        console.warn("No price data received");
+        setPriceData([]);
+      }
+    } catch (error) {
+      console.error("Failed to fetch price data:", error);
+      setPriceData([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (stock && period) {
+      fetchPriceData();
+    }
+  }, [stock, period]);
+
+  useEffect(() => {
+    if (!chartContainerRef.current || loading) return;
+
+    try {
+      // 차트 생성
+      chart.current = createChart(chartContainerRef.current, {
+        layout: {
+          background: { type: ColorType.Solid, color: "#ffffff" },
+          textColor: "#333",
+        },
+        width: chartContainerRef.current.clientWidth,
+        height: 300,
+        grid: {
+          vertLines: { color: "#f0f0f0" },
+          horzLines: { color: "#f0f0f0" },
+        },
+        crosshair: {
+          mode: 1,
+        },
+        rightPriceScale: {
+          borderColor: "#cccccc",
+        },
+        timeScale: {
+          borderColor: "#cccccc",
+          timeVisible: true,
+          secondsVisible: false,
+        },
+      });
+
+      // 캔들스틱 시리즈 추가
+      candlestickSeries.current = chart.current.addCandlestickSeries({
+        upColor: "#dc2626", // 빨강 (상승)
+        downColor: "#2563eb", // 파랑 (하락)
+        borderVisible: false,
+        wickUpColor: "#dc2626",
+        wickDownColor: "#2563eb",
+      });
+
+      // 거래량 히스토그램 시리즈 추가
+      volumeSeries.current = chart.current.addHistogramSeries({
+        color: "#a3a3a3",
+        priceFormat: {
+          type: "volume",
+        },
+        priceScaleId: "volume",
+      });
+
+      // 거래량용 별도 가격 스케일 설정
+      chart.current.priceScale("volume").applyOptions({
+        scaleMargins: {
+          top: 0.8,
+          bottom: 0,
+        },
+      });
+
+      // 리사이즈 핸들러
+      const handleResize = () => {
+        if (chart.current && chartContainerRef.current) {
+          chart.current.applyOptions({
+            width: chartContainerRef.current.clientWidth,
+          });
+        }
+      };
+
+      window.addEventListener("resize", handleResize);
+
+      return () => {
+        window.removeEventListener("resize", handleResize);
+        if (chart.current) {
+          chart.current.remove();
+        }
+      };
+    } catch (error) {
+      console.error("Chart creation error:", error);
+    }
+  }, [loading]);
+
+  useEffect(() => {
+    if (!candlestickSeries.current || !volumeSeries.current || loading) return;
+
+    let candleData = [];
+    let volumeData = [];
+
+    if (priceData && priceData.length > 0) {
+      priceData.forEach((item) => {
+        const dateStr = item.date;
+
+        const candlePoint = {
+          time: dateStr,
+          open: parseFloat(item.open) || parseFloat(item.price) || 50000,
+          high: parseFloat(item.high) || parseFloat(item.price) || 55000,
+          low: parseFloat(item.low) || parseFloat(item.price) || 45000,
+          close: parseFloat(item.close || item.price) || 50000,
+        };
+
+        // 데이터 검증 및 보정
+        if (candlePoint.high < Math.max(candlePoint.open, candlePoint.close)) {
+          candlePoint.high =
+            Math.max(candlePoint.open, candlePoint.close) * 1.01;
+        }
+        if (candlePoint.low > Math.min(candlePoint.open, candlePoint.close)) {
+          candlePoint.low =
+            Math.min(candlePoint.open, candlePoint.close) * 0.99;
+        }
+
+        candleData.push(candlePoint);
+        volumeData.push({
+          time: dateStr,
+          value: parseInt(item.volume) || 1000000,
+          color:
+            candlePoint.close >= candlePoint.open ? "#dc262620" : "#2563eb20",
+        });
+      });
+
+      candleData.sort((a, b) => new Date(a.time) - new Date(b.time));
+      volumeData.sort((a, b) => new Date(a.time) - new Date(b.time));
+    }
+
+    try {
+      candlestickSeries.current.setData(candleData);
+      volumeSeries.current.setData(volumeData);
+      chart.current.timeScale().fitContent();
+    } catch (dataError) {
+      console.error("Data setting error:", dataError);
+    }
+  }, [priceData, loading]);
+
+  if (loading) {
+    return (
+      <div className="bg-gray-100 rounded-xl p-8 shadow-sm border-2 border-dashed border-gray-300 flex items-center justify-center min-h-[300px]">
+        <div className="text-gray-500 text-center">
+          <div className="text-2xl mb-2">📈</div>
+          <div className="text-lg font-medium">차트 데이터 로딩 중</div>
+          <div className="text-sm">잠시만 기다려주세요</div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white p-4 border border-gray-200 rounded-lg">
+      <div className="mb-3 text-xs text-gray-600 flex flex-wrap gap-4">
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-2 bg-red-600"></div>
+          <span>상승</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-2 bg-blue-600"></div>
+          <span>하락</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-1 h-3 bg-gray-600"></div>
+          <span>고가-저가</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-2 bg-gray-400"></div>
+          <span>거래량</span>
+        </div>
+      </div>
+      <div
+        ref={chartContainerRef}
+        className="w-full border border-gray-200 rounded"
+        style={{ height: "300px" }}
+      />
+      <div className="mt-2 text-xs text-gray-500 text-center">
+        🔍 마우스 휠: 확대/축소 | 드래그: 이동 | 호버: 상세정보
+      </div>
     </div>
   );
 };
