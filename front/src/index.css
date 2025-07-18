@@ -146,3 +146,35 @@
 .game-scrollbar::-webkit-scrollbar-track {
   background: transparent;
 }
+
+/* 말풍선 페이드인 애니메이션 */
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* 타이핑 커서 애니메이션 */
+@keyframes blink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  51%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.animate-pulse {
+  animation: blink 1s infinite;
+}

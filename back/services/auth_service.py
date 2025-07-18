@@ -2,7 +2,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
-import jwt
+try:
+    import jwt
+except ImportError:
+    import PyJWT as jwt
 from typing import Optional
 import json
 import random

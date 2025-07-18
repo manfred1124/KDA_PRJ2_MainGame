@@ -4,7 +4,10 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 import uvicorn
 from datetime import datetime, timedelta
-import jwt
+try:
+    import jwt
+except ImportError:
+    import PyJWT as jwt
 from typing import List, Optional
 from sqlalchemy import select
 import json
@@ -95,6 +98,7 @@ async def get_me(credentials: HTTPAuthorizationCredentials = Depends(security), 
         "username": user.username,
         "current_round_idx": user.current_round_idx,
         "current_period": current_period,
+        "round_periods": periods,
         "total_balance": user.total_balance,
         "realized_profit": user.realized_profit
     }
@@ -388,10 +392,16 @@ async def chatbot(
     system_prompt = (
         """너는 주식 투자 시뮬레이션 게임의 챗봇이야.\n"
         "너는 주식 투자 게임을 통해 모험을 떠나는 용사를 위해 조언을 해주는 조언 용사야.\n"
-        "너의 말투는 '허허, ','~이런 소식들이 있었네, ~ 이러한 시장의 흐름을 잘 읽고, 어떤 산업이 유망할지 신중하게 판단해서 투자해보게나.'와 같은 구수하고 친근한 말투로 말해.\n"
-        "마치 세종대왕 같은 말투를 사용해.\n"
+        "너의 말투는 세종대왕의 어투를 정확히 모방해라.\n"
+        "답변 시작할 때는 반드시 '허허,', '과인이 생각하기에는,', '그대의 질문이 심오하구나,', '좋은 접근이군,' 같은 표현으로 시작해라.\n"
+        "문장 끝에는 '~하시게', '~하시는 것이 좋겠네', '~하는 것이 현명하리라' 같은 표현을 사용해라.\n"
+        "투자 조언을 줄 때는 '그대가 신중하게 판단하시게', '과인의 조언을 참고하시게', '이런 관점도 있으니 생각해보시게' 같은 표현을 사용해라.\n"
+        "예시: '허허, 그대의 질문이 심오하구나. 글로벌 부채 급증은 경제에 큰 부담을 주는 것이니, 그대가 신중하게 판단하시게. 과인의 조언을 참고하시면, 이런 시기에는 안전자산에 눈을 돌리는 것이 현명하리라.'\n"
         "아래 context(주가/뉴스) 정보까지만 참고해서 답변해.\n"
         "미래 데이터는 절대 알려주지 마.\n"
+        "답변은 2-3문장으로 간결하게 해라. 너무 길지 않게 핵심만 전달해라.\n"
+        "질문에 대해 먼저 '좋은 접근이군', '좋은 질문이야', '그대의 관심이 돋보이는구나' 같은 긍정적 피드백을 주고, 그 질문이 투자 관점에서 어떤 의미가 있는지 간단히 설명해라.\n"
+        "모르는 질문에 답변할 때도 '과인이 생각하기에는...', '그대의 질문이 심오하구나', '이런 관점도 있으니 참고하시게' 같은 세종대왕 스타일을 유지해라.\n"
         """
     )
     messages = [
@@ -408,61 +418,54 @@ async def get_transaction_history(
     db: AsyncSession = Depends(get_db)
 ):
     user_id = auth_service.verify_token(credentials.credentials)
+    print(f"Getting transactions for user_id: {user_id}")
+    
     # 유저의 period 리스트 가져오기
     user = await db.execute(select(User).where(User.id == user_id))
     user = user.scalar_one_or_none()
     periods = json.loads(user.round_periods) if user and user.round_periods else []
+    print(f"User periods: {periods}")
 
-    # 거래내역 최신순
+    # 거래내역 최신순 (joinedload 제거)
     result = await db.execute(
         select(Transaction)
         .where(Transaction.user_id == user_id)
         .order_by(Transaction.created_at.desc())
-        .options(joinedload(Transaction.stock))
     )
     transactions = result.scalars().all()
+    print(f"Found {len(transactions)} transactions")
 
-    # 각 거래의 종목 현재가 조회
-    from models import StockPrice
+    # 각 거래의 종목 정보 별도 조회
     tx_list = []
     for tx in transactions:
+        print(f"Processing transaction: {tx.id}, round: {tx.round_number}, stock_id: {tx.stock_id}")
+        
+        # 종목 정보 조회
+        stock_result = await db.execute(select(Stock).where(Stock.id == tx.stock_id))
+        stock = stock_result.scalar_one_or_none()
+        
         # period 매핑 (1라운드 거래는 periods[0], 즉 round_number-1)
         if tx.round_number > 0 and periods and tx.round_number <= len(periods):
             period_str = periods[tx.round_number - 1]
         else:
             period_str = ""
-        # 해당 period의 마지막 날짜 구하기
-        period_start = period_to_date(period_str) if period_str else None
-        if period_str and period_str.endswith("H1"):
-            period_end = f"{period_str.split()[0]}-06-30"
-        elif period_str and period_str.endswith("H2"):
-            period_end = f"{period_str.split()[0]}-12-31"
-        else:
-            period_end = None
-        # 해당 period의 마지막 가격 조회
-        current_price = None
-        if period_end:
-            price_result = await db.execute(
-                select(StockPrice.close_price)
-                .where(StockPrice.stock_id == tx.stock_id)
-                .where(StockPrice.date <= period_end)
-                .order_by(StockPrice.date.desc())
-                .limit(1)
-            )
-            current_price = price_result.scalar_one_or_none()
+        print(f"Transaction period: {period_str}")
+        
         tx_list.append({
             "id": tx.id,
             "stock_id": tx.stock_id,
-            "stock_name": tx.stock.name if tx.stock else "",
-            "stock_symbol": tx.stock.symbol if tx.stock else "",
+            "stock_name": stock.name if stock else "",
+            "stock_symbol": stock.symbol if stock else "",
             "transaction_type": tx.transaction_type,
             "quantity": tx.quantity,
             "price": tx.price,
             "total_amount": tx.total_amount,
             "round_number": tx.round_number,
             "period": period_str,  # 거래시점(라운드)
-            "current_price": current_price,
+            "created_at": tx.created_at.isoformat() if tx.created_at else None,
         })
+    
+    print(f"Returning {len(tx_list)} transactions")
     return tx_list
 
 # 라운드 리뷰 관련 엔드포인트
