@@ -85,7 +85,11 @@ async def get_me(credentials: HTTPAuthorizationCredentials = Depends(security), 
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     periods = json.loads(user.round_periods)
-    current_period = periods[user.current_round_idx]
+    # 3라운드 완료 후에는 마지막 기간 사용
+    if user.current_round_idx >= len(periods):
+        current_period = periods[-1]  # 마지막 기간 사용
+    else:
+        current_period = periods[user.current_round_idx]
     return {
         "id": user.id,
         "username": user.username,
@@ -133,7 +137,11 @@ async def get_portfolio(credentials: HTTPAuthorizationCredentials = Depends(secu
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     periods = json.loads(user.round_periods)
-    current_period = periods[user.current_round_idx]
+    # 3라운드 완료 후에는 마지막 기간 사용
+    if user.current_round_idx >= len(periods):
+        current_period = periods[-1]  # 마지막 기간 사용
+    else:
+        current_period = periods[user.current_round_idx]
     date = period_to_date(current_period)
     # 포트폴리오 조회 (수량이 0보다 큰 아이템만)
     portfolio_items = await db.execute(select(Portfolio).where(Portfolio.user_id == user.id, Portfolio.quantity > 0))
@@ -220,7 +228,11 @@ async def buy_stock(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     periods = json.loads(user.round_periods)
-    current_period = periods[user.current_round_idx]
+    # 3라운드 완료 후에는 마지막 기간 사용
+    if user.current_round_idx >= len(periods):
+        current_period = periods[-1]  # 마지막 기간 사용
+    else:
+        current_period = periods[user.current_round_idx]
     return await portfolio_service.buy_stock(db, user_id, transaction, current_period)
 
 @app.post("/api/portfolio/sell")
@@ -235,7 +247,11 @@ async def sell_stock(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     periods = json.loads(user.round_periods)
-    current_period = periods[user.current_round_idx]
+    # 3라운드 완료 후에는 마지막 기간 사용
+    if user.current_round_idx >= len(periods):
+        current_period = periods[-1]  # 마지막 기간 사용
+    else:
+        current_period = periods[user.current_round_idx]
     return await portfolio_service.sell_stock(db, user_id, transaction, current_period)
 
 # 뉴스 관련 엔드포인트
@@ -349,7 +365,11 @@ async def chatbot(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     periods = json.loads(user.round_periods)
-    current_period = periods[user.current_round_idx]
+    # 3라운드 완료 후에는 마지막 기간 사용
+    if user.current_round_idx >= len(periods):
+        current_period = periods[-1]  # 마지막 기간 사용
+    else:
+        current_period = periods[user.current_round_idx]
 
     # 해당 period까지의 데이터만 조회
     prices = await stock_service.get_prices_until_period(db, current_period)
@@ -460,7 +480,11 @@ async def generate_round_review(
     
     # 현재 period 가져오기
     periods = json.loads(user.round_periods)
-    current_period = periods[user.current_round_idx]
+    # 3라운드 완료 후에는 마지막 기간 사용
+    if user.current_round_idx >= len(periods):
+        current_period = periods[-1]  # 마지막 기간 사용
+    else:
+        current_period = periods[user.current_round_idx]
     
     # 이미 생성된 리뷰가 있는지 확인
     existing_review = await db.execute(

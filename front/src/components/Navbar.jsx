@@ -135,9 +135,8 @@ const Navbar = () => {
     try {
       console.log("다음 라운드 진행 시도...");
 
-      // 현재 라운드가 3라운드 완료 상태인지 확인
-      const currentRound = user?.current_round_idx + 1 || 1;
-      if (currentRound > 3) {
+      // 3라운드 완료 후 체크 (current_round_idx가 3 이상이면 게임 완료)
+      if ((user?.current_round_idx || 0) >= 3) {
         // 게임 종료 - 결과 페이지로 이동
         navigate("/game-result");
         return;
@@ -163,7 +162,7 @@ const Navbar = () => {
         window.dispatchEvent(new Event("transactionComplete"));
 
         // 3라운드 완료 후 게임 결과 페이지로 이동
-        if (userResponse.data.current_round_idx >= 2) {
+        if (userResponse.data.current_round_idx >= 3) {
           navigate("/game-result");
         }
       } catch (userError) {

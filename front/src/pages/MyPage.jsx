@@ -122,7 +122,7 @@ const MyPage = () => {
       }));
 
       // 3라운드 완료 후 게임 결과 페이지로 이동
-      if (response.data.new_round_idx >= 2) {
+      if (response.data.new_round_idx >= 3) {
         navigate("/game-result");
       } else {
         navigate("/news");
@@ -156,7 +156,7 @@ const MyPage = () => {
     return <div>포트폴리오를 불러올 수 없습니다.</div>;
   }
 
-  const isLastRound = (user?.current_round_idx ?? 0) === 9;
+  const isLastRound = (user?.current_round_idx ?? 0) >= 3;
 
   return (
     <div

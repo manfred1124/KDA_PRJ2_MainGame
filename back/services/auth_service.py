@@ -130,7 +130,11 @@ class AuthService:
             data={"sub": str(user.id)}, expires_delta=access_token_expires
         )
         periods = json.loads(user.round_periods)
-        current_period = periods[user.current_round_idx]
+        # 3라운드 완료 후에는 마지막 기간 사용
+        if user.current_round_idx >= len(periods):
+            current_period = periods[-1]  # 마지막 기간 사용
+        else:
+            current_period = periods[user.current_round_idx]
         return {
             "access_token": access_token,
             "token_type": "bearer",

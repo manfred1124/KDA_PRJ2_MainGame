@@ -80,8 +80,8 @@ class GameService:
             total_profit_loss_percentage=total_profit_loss_percentage,
             total_profit=total_profit,
             total_profit_percentage=total_profit_percentage,
-            can_advance_round=(user.current_round_idx + 1) < 3,
-            is_game_completed=(user.current_round_idx + 1) >= 3
+            can_advance_round=(user.current_round_idx + 1) <= 3,
+            is_game_completed=(user.current_round_idx + 1) > 3
         )
     
     async def advance_round(self, db: AsyncSession, user_id: int, current_period: str):
@@ -91,8 +91,8 @@ class GameService:
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
         
-        # 3라운드 제한 체크
-        if user.current_round_idx >= 2:  # 0, 1, 2가 3라운드이므로 2가 마지막
+        # 3라운드 제한 체크 - 3라운드 완료 후에만 제한
+        if user.current_round_idx >= 3:  # 0, 1, 2가 3라운드이므로 3이 되면 게임 완료
             raise HTTPException(status_code=400, detail="이미 마지막 라운드입니다.")
         
         import json

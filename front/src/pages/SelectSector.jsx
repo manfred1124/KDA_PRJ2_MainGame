@@ -600,7 +600,7 @@ const SelectSector = () => {
         <div className="w-full flex justify-center gap-8 mt-12 mb-4">
           <button
             className={`${
-              user?.current_round_idx + 1 === 3
+              (user?.current_round_idx ?? 0) >= 3
                 ? "bg-[#bfa76a] hover:bg-[#a67c3c]"
                 : "bg-[#7c5c2b] hover:bg-[#a67c3c]"
             } text-white font-normal py-4 px-12 rounded-full text-xl shadow-lg transition-all duration-200 border-4 border-[#e6d3a3]`}
@@ -609,7 +609,7 @@ const SelectSector = () => {
               fontFamily: "Jua, sans-serif",
             }}
             onClick={
-              user?.current_round_idx + 1 === 3
+              (user?.current_round_idx ?? 0) >= 3
                 ? () => navigate("/game-result")
                 : handleNextRound
             }
@@ -617,7 +617,7 @@ const SelectSector = () => {
           >
             {advancing
               ? "진행 중..."
-              : user?.current_round_idx + 1 === 3
+              : (user?.current_round_idx ?? 0) >= 3
               ? "결과 보기"
               : "결과 확인"}
           </button>
