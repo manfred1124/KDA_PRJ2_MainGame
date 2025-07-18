@@ -78,6 +78,10 @@ const News = () => {
   const { user } = useAuth();
   const { addGuideMessage } = useContext(GuideMessageContext);
 
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   // ESC 키로 모달 닫기
   const handleKeyDown = useCallback((e) => {
     if (e.key === "Escape") {
@@ -166,21 +170,20 @@ const News = () => {
 
   return (
     <div className="space-y-6 news-page">
-      <BannerHeader title="시장 뉴스" />
+      <BannerHeader title="시장 뉴스" className="mb-16" />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {news.map((item) => (
+        {news.slice(0, 4).map((item) => (
           <div
             key={item.id}
-            className={`card news-card cursor-pointer transition-all duration-200 ${getImpactColor(
+            className={`card news-card transition-all duration-200 ${getImpactColor(
               item.impact_type
-            )} hover:shadow-xl hover:bg-blue-50 hover:scale-[1.02]`}
-            onClick={() => setSelectedNews(item)}
+            )}`}
           >
             <div className="flex items-start justify-between mb-4">
               <div className="flex-1">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  <span className="inline-block bg-blue-100 text-blue-700 text-xs font-bold rounded-full px-2 py-0.5 mr-2 align-middle">
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  <span className="inline-block bg-blue-100 text-blue-700 text-xs font-normal rounded-full px-2 py-0.5 mr-2 align-middle">
                     {item.period}
                   </span>
                   {item.title}
@@ -200,7 +203,7 @@ const News = () => {
                   </span>
                 )}
               </div>
-              <div>라운드 {item.round_number}</div>
+              
             </div>
           </div>
         ))}
@@ -208,19 +211,23 @@ const News = () => {
 
       {/* next 버튼 */}
       <button
-        className="fixed z-30 bg-[#7c5c2b] hover:bg-[#a67c3c] text-white font-bold py-4 px-12 rounded-full text-xl shadow-lg transition-all duration-200 border-4 border-[#e6d3a3]"
-        style={{
-          right: "calc(50vw - 640px/2 + 2rem)", // 640px = max-w-5xl, 2rem = 네모박스 padding
-          bottom: "2rem",
-          minWidth: "180px",
-          fontFamily: "serif",
-        }}
+        className="mt-12 bg-[#7c5c2b] hover:bg-[#a67c3c] text-white font-normal py-4 px-12 rounded-full text-xl shadow-lg transition-all duration-200 border-4 border-[#e6d3a3] mx-auto block"
         onClick={() => navigate("/select-sector")}
       >
-        주식 하러가기
+        투자 하러가기
       </button>
 
-      {/* 뉴스 상세 모달 (닫기 기능은 아직 없음) */}
+      {news.length === 0 && (
+        <div className="text-center py-12">
+          <div className="text-6xl mb-4">📰</div>
+          <p className="text-gray-500 text-lg">아직 뉴스가 없습니다.</p>
+          <p className="text-sm text-gray-400 mt-2">
+            라운드를 진행하면 새로운 뉴스가 발표됩니다.
+          </p>
+        </div>
+      )}
+
+      {/* 뉴스 상세 모달 (상단 인덱스 클릭 시만) */}
       {selectedNews && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40"
@@ -238,14 +245,14 @@ const News = () => {
             >
               ×
             </button>
-            <h2 className="text-3xl font-bold mb-8 text-gray-900">
+            <h2 className="text-3xl font-medium mb-8 text-gray-900">
               <span className="inline-block bg-blue-100 text-blue-700 text-base font-bold rounded-full px-3 py-1 mr-3 align-middle">
                 {selectedNews.period}
               </span>
               {selectedNews.title}
             </h2>
             <p className="text-gray-700 mb-8 text-lg">{selectedNews.content}</p>
-            <div className="text-gray-600 mb-8 text-base whitespace-pre-line">
+            <div className="text-gray-600 mb-8 text-base font-normal whitespace-pre-line">
               {selectedNews.summary || selectedNews.content}
             </div>
             {selectedNews.affected_sectors && (
@@ -255,20 +262,7 @@ const News = () => {
                 </span>
               </div>
             )}
-            <div className="text-md text-gray-500">
-              라운드 {selectedNews.round_number}
-            </div>
           </div>
-        </div>
-      )}
-
-      {news.length === 0 && (
-        <div className="text-center py-12">
-          <div className="text-6xl mb-4">📰</div>
-          <p className="text-gray-500 text-lg">아직 뉴스가 없습니다.</p>
-          <p className="text-sm text-gray-400 mt-2">
-            라운드를 진행하면 새로운 뉴스가 발표됩니다.
-          </p>
         </div>
       )}
     </div>

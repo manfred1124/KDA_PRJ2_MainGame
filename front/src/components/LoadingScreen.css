@@ -27,6 +27,7 @@ body {
 
 /* 로딩 텍스트 */
 .loading-text {
+  font-family: "Jua", sans-serif;
   font-size: 3rem;
   font-weight: bold;
   margin-top: 1.5rem;

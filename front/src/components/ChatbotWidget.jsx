@@ -7,7 +7,7 @@ import React, {
 } from "react";
 import { MessageCircle } from "lucide-react";
 import axios from "axios";
-import heroImage from "../assets/mainlogo1.png"; // 용사 이미지 가져오기
+import heroImage from "../assets/face.png"; // 용사 이미지 가져오기
 
 const ChatbotWidget = forwardRef(({ fixedPanel = false }, ref) => {
   const [showChatbot, setShowChatbot] = useState(false);
