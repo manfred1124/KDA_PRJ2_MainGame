@@ -3,7 +3,7 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import BannerHeader from "../components/BannerHeader";
+
 import { useAuth } from "../contexts/AuthContext";
 import { GuideMessageContext } from "../App";
 import ChatbotWidget from "../components/ChatbotWidget";
@@ -12,9 +12,12 @@ const GUIDE_MSG =
   "허허, 용사여! 이곳은 최신 시장 뉴스가 모이는 곳이구나. 뉴스를 잘 살펴 투자에 참고하시게!";
 
 const ROUND_TREND_GUIDE = {
-  "2020Q1": "2020년 1분기에는 코로나19의 영향으로 글로벌 증시가 큰 충격을 받았으니, 그대가 신중하게 판단하시게.",
-  "2020Q2": "2020년 2분기에는 각국의 경기부양책으로 시장이 반등하기 시작했으니, 과인의 조언을 참고하시게.",
-  "2021Q1": "2021년 1분기에는 백신 보급과 함께 경기 회복 기대감이 커졌으니, 이런 시기를 잘 활용하시게.",
+  "2020Q1":
+    "2020년 1분기에는 코로나19의 영향으로 글로벌 증시가 큰 충격을 받았으니, 그대가 신중하게 판단하시게.",
+  "2020Q2":
+    "2020년 2분기에는 각국의 경기부양책으로 시장이 반등하기 시작했으니, 과인의 조언을 참고하시게.",
+  "2021Q1":
+    "2021년 1분기에는 백신 보급과 함께 경기 회복 기대감이 커졌으니, 이런 시기를 잘 활용하시게.",
   "2023H1":
     "2023년 상반기에는 글로벌 경제가 점차 안정을 찾아가고 있으니, 그대가 신중하게 판단하시게. 상반기에는 경기 회복 기대감이 컸으니, 과인의 조언을 참고하시게.",
   "2023H2":
@@ -58,7 +61,8 @@ function getRoundTrendGuide(period, macroNews = null) {
       return "2022년에는 인플레이션과 금리 인상 이슈로 시장이 조정받고 있으니, 과인의 조언을 참고하시게.";
     if (year === "2021")
       return "2021년에는 경기 회복과 성장주에 대한 기대가 높아졌으니, 이런 시기를 잘 활용하시게.";
-    if (year === "2020") return "2020년대 초반에는 시장이 큰 변동성을 겪고 있으니, 그대가 조심하시게.";
+    if (year === "2020")
+      return "2020년대 초반에는 시장이 큰 변동성을 겪고 있으니, 그대가 조심하시게.";
   }
   if (period && period.length >= 4) {
     const year = period.slice(0, 4);
@@ -68,7 +72,8 @@ function getRoundTrendGuide(period, macroNews = null) {
       return "2022년에는 인플레이션과 금리 인상 이슈로 시장이 조정받고 있으니, 과인의 조언을 참고하시게.";
     if (year === "2021")
       return "2021년에는 경기 회복과 성장주에 대한 기대가 높아졌으니, 이런 시기를 잘 활용하시게.";
-    if (year === "2020") return "2020년대 초반에는 시장이 큰 변동성을 겪고 있으니, 그대가 조심하시게.";
+    if (year === "2020")
+      return "2020년대 초반에는 시장이 큰 변동성을 겪고 있으니, 그대가 조심하시게.";
   }
   return "허허, 현재 시점의 시장 동향을 잘 살펴 투자 전략을 세워보시게!";
 }
@@ -175,8 +180,6 @@ const News = () => {
 
   return (
     <div className="space-y-6 news-page">
-      <BannerHeader title="시장 뉴스" className="mb-16" />
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {news.slice(0, 4).map((item) => (
           <div
@@ -208,7 +211,6 @@ const News = () => {
                   </span>
                 )}
               </div>
-              
             </div>
           </div>
         ))}

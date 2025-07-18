@@ -77,20 +77,15 @@ const MyPage = () => {
       style={{ fontFamily: "Jua, sans-serif" }}
     >
       {/* 라운드 요약 제목 및 계속 진행하기 버튼 */}
-      <div className="flex flex-col items-center gap-4 mt-4 mb-2">
-        <h2
-          className="text-3xl font-bold text-[#7c5c2b] drop-shadow"
-          style={{ fontFamily: "Jua, sans-serif" }}
-        >
-          {(user?.current_round_idx ?? 0) + 1}라운드 요약
-        </h2>
-      </div>
+      <div className="flex flex-col items-center gap-4 mt-4 mb-2"></div>
       {/* 사용자 정보 헤더 */}
       <div
         className="rounded-xl p-8 mb-2"
         style={{
-          background: "linear-gradient(135deg, #e6d3a3 60%, #bfa76a 100%)",
-          boxShadow: "0 2px 8px #c2b28055",
+          background:
+            "linear-gradient(135deg, rgba(230, 211, 163, 0.6) 60%, rgba(191, 167, 106, 0.6) 100%)",
+          boxShadow: "0 2px 8px rgba(194, 178, 128, 0.3)",
+          backdropFilter: "blur(8px)",
         }}
       >
         <div className="flex items-center space-x-4 mb-4">

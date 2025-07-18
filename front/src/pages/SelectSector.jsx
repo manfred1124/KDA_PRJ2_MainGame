@@ -10,7 +10,7 @@ import ChatbotWidget from "../components/ChatbotWidget";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
-import BannerHeader from "../components/BannerHeader";
+
 import { GuideMessageContext } from "../App";
 
 // TradingView Lightweight Charts import
@@ -396,13 +396,13 @@ const SelectSector = () => {
 
   return (
     <div
-      className="min-h-screen p-2 relative flex flex-row"
+      className="min-h-screen p-2 relative flex flex-row overflow-x-hidden"
       style={{ fontFamily: "Jua, sans-serif" }}
     >
       {/* 메인 컨텐츠 */}
       <div className="flex-1">
         {/* 헤더와 백버튼을 flex로 묶어서 왼쪽에 배치 */}
-        <div className="max-w-7xl mx-auto w-full grid grid-cols-3 items-center mb-2">
+        <div className="max-w-3xl mx-auto w-full grid grid-cols-3 items-center mb-2">
           <button
             onClick={() => navigate(-1)}
             className="justify-self-start bg-[#bfa76a] hover:bg-[#a67c3c] text-white px-6 py-3 rounded-full shadow-lg transition-all duration-300 flex items-center space-x-2 text-lg border-2 border-[#e6d3a3]"
@@ -410,29 +410,24 @@ const SelectSector = () => {
           >
             <span className="text-2xl">←</span>
           </button>
-          <div className="flex items-center justify-center mb-2 ">
-            <BannerHeader
-              title="섹터별 주식 투자"
-              className="w-full max-w-7xl mx-auto"
-            />
-          </div>
+          <div className="flex items-center justify-center mb-2 "></div>
           <div /> {/* 오른쪽 빈칸 */}
         </div>
-        <div className="max-w-7xl mx-auto relative">
-          <div className="flex gap-8 p-8">
+        <div className="max-w-3xl mx-auto relative">
+          <div className="flex gap-4 p-4">
             {/* 왼쪽 섹터 버튼 영역 */}
             <div className="flex flex-col items-center gap-6 w-full">
               {/* 섹터 버튼 5개 */}
-              <div className="flex flex-row gap-4 justify-center w-full">
+              <div className="flex flex-row flex-wrap gap-4 justify-center w-full">
                 {sectors.slice(0, 5).map((sector) => (
                   <button
                     key={sector}
                     onClick={() => handleSectorSelect(sector)}
-                    className={`flex-1 min-w-[150px] max-w-xs w-full h-20 rounded-xl shadow-md transition-all duration-300 flex items-center justify-center text-center bg-gradient-to-br ${
+                    className={`flex-1 min-w-[100px] max-w-[160px] w-full h-20 rounded-xl shadow-md transition-all duration-300 flex items-center justify-center text-center bg-gradient-to-br ${
                       selected === sector
                         ? "from-[#f7e6b6] to-[#f3e7c4] border-4 border-[#bfa76a] shadow-lg"
                         : "from-[#f9f6ef] to-[#f3e7c4] hover:from-[#f7e6b6] hover:to-[#f3e7c4]"
-                    } font-bold text-lg text-[#7c5c2b] tracking-wide hover:shadow-xl whitespace-normal`}
+                    } font-bold text-base text-[#7c5c2b] tracking-wide hover:shadow-xl whitespace-normal`}
                     style={{ fontFamily: "Jua, sans-serif", lineHeight: "1.2" }}
                   >
                     {sector}
@@ -442,7 +437,7 @@ const SelectSector = () => {
               {/* 안내/정보 영역: 안내 박스는 버튼 5개 아래에만 렌더링, 기존 오른쪽 안내 박스 완전 삭제 */}
               <div className="w-full">
                 {selected ? (
-                  <div className="bg-yellow-50 rounded-lg p-8 shadow-2xl border-2 border-[#e6d3a3] min-h-[400px]">
+                  <div className="bg-yellow-50 rounded-lg p-6 shadow-2xl border-2 border-[#e6d3a3] min-h-[400px]">
                     <h3
                       className="text-2xl font-medium text-[#7c5c2b] mb-6"
                       style={{ fontFamily: "Jua, sans-serif" }}
@@ -603,7 +598,7 @@ const SelectSector = () => {
                       ))}
                   </div>
                 ) : (
-                  <div className="bg-[#f7e6b6] rounded-xl p-6 shadow-lg border-2 border-[#e6d3a3] min-h-[400px] flex items-center justify-center w-full">
+                  <div className="bg-[#f7e6b6] rounded-xl p-4 shadow-lg border-2 border-[#e6d3a3] min-h-[400px] flex items-center justify-center w-full">
                     <div
                       className="text-[#a67c3c] text-xl font-medium"
                       style={{ fontFamily: "Jua, sans-serif" }}
@@ -651,7 +646,7 @@ const SelectSector = () => {
             className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
             onClick={handleModalBackdropClick}
           >
-            <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
               <div className="p-6">
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-2xl font-bold text-gray-800">
@@ -665,7 +660,7 @@ const SelectSector = () => {
                   </button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 gap-6">
                   {allNews.length > 0 ? (
                     allNews.map((news, index) => (
                       <div
@@ -730,7 +725,7 @@ const SelectSector = () => {
             className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
             onClick={handleOrderModalBackdropClick}
           >
-            <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
               <div className="p-6">
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-2xl font-semibold text-gray-800">
@@ -744,7 +739,7 @@ const SelectSector = () => {
                   </button>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 gap-6">
                   {/* 주문 폼 */}
                   <div className="space-y-4">
                     <div className="bg-gray-50 rounded-lg p-4">

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import BannerHeader from "../components/BannerHeader";
+
 import {
   BarChart,
   Bar,
@@ -288,11 +288,9 @@ const Review = () => {
       className="w-full h-full flex flex-col"
       style={{ fontFamily: "Jua, sans-serif" }}
     >
-      <BannerHeader title="라운드 리뷰" />
-
-      <div className="flex-1 p-6 overflow-auto bg-gradient-to-br from-[#f9f6ef] to-[#f3e7c4] min-h-screen">
+      <div className="flex-1 p-6 overflow-auto bg-gradient-to-br from-[#f9f6ef]/30 to-[#f3e7c4]/30 min-h-screen">
         {/* 현재 라운드 정보 및 기간 선택기 */}
-        <div className="mb-6 bg-gradient-to-br from-[#f7e6b6] to-[#f3e7c4] p-6 rounded-xl border-2 border-[#e6d3a3] shadow-lg">
+        <div className="mb-6 bg-gradient-to-br from-[#f7e6b6]/70 to-[#f3e7c4]/70 p-6 rounded-xl border-2 border-[#e6d3a3]/60 shadow-lg backdrop-blur-sm">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3

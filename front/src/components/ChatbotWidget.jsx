@@ -267,10 +267,10 @@ const ChatbotWidget = forwardRef(
                 {/* 말풍선 */}
                 {showSpeechBubble && (
                   <div className="absolute bottom-full right-0 transform translate-x-8 mb-4 animate-fadeIn">
-                    <div className="relative bg-white rounded-3xl px-8 py-6 shadow-xl border-2 border-[#bfa76a] w-80 h-48">
+                    <div className="relative bg-black bg-opacity-50 rounded-3xl px-8 py-6 shadow-xl border-2 border-[#bfa76a] border-opacity-50 w-80 h-48 backdrop-blur-sm">
                       <div
                         ref={messageContainerRef}
-                        className="text-[#7c5c2b] text-sm font-medium leading-relaxed h-full overflow-y-auto game-scrollbar"
+                        className="text-white text-sm font-medium leading-relaxed h-full overflow-y-auto game-scrollbar"
                       >
                         <div className="whitespace-pre-wrap break-words">
                           {currentMessage
@@ -290,7 +290,7 @@ const ChatbotWidget = forwardRef(
                   <img
                     src={isSpeaking && heroAnimating ? heroImage2 : heroImage1}
                     alt="용사"
-                    className="w-64 h-64 object-contain transition-all duration-200"
+                    className="w-80 h-80 object-contain transition-all duration-200"
                     style={{
                       filter: isSpeaking ? "brightness(1.1)" : "brightness(1)",
                       transform: isSpeaking ? "scale(1.05)" : "scale(1)",

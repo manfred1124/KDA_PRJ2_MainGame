@@ -31,6 +31,69 @@ const Navbar = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedNews, setSelectedNews] = useState(null);
 
+  // 현재 기간을 한국어로 변환
+  const formatPeriod = (period) => {
+    if (!period || !period.includes(" ")) return "";
+    const [year, half] = period.split(" ");
+    const halfKorean = half === "H1" ? "상반기" : "하반기";
+    return `${year}년 ${halfKorean}`;
+  };
+
+  // 라운드 정보가 필요한 페이지인지 확인
+  const shouldShowPeriod = () => {
+    const path = location.pathname;
+    return ["/", "/news", "/select-sector", "/my-page", "/review"].includes(
+      path
+    );
+  };
+
+  // 현재 페이지 제목 가져기기 (세종대왕 컨셉, 라운드별)
+  const getPageTitle = () => {
+    const path = location.pathname;
+    const currentRound = (user?.current_round_idx ?? 0) + 1;
+
+    switch (path) {
+      case "/":
+        if (currentRound === 1) return "🏰 첫 번째 모험을 시작하시게";
+        if (currentRound === 2) return "🏰 두 번째 모험이 기다리고 있소";
+        if (currentRound === 3) return "🏰 마지막 모험을 완수하시게";
+        return "🏰 투자 모험의 전당";
+
+      case "/news":
+        if (currentRound === 1) return "📜 시장의 소식을 들어보시게";
+        if (currentRound === 2) return "📜 천하의 정세를 파악하시게";
+        if (currentRound === 3) return "📜 모든 정보를 수집하시게";
+        return "📜 조선의 시장 소식";
+
+      case "/select-sector":
+        if (currentRound === 1) return "📈 차트를 보며 현명하게 투자하시게";
+        if (currentRound === 2) return "📈 차트와 뉴스로 지혜롭게 투자하시게";
+        if (currentRound === 3) return "📈 모든 정보로 완벽하게 투자하시게";
+        return "📈 조선 상업의 중심지";
+
+      case "/my-page":
+        if (currentRound === 1) return "📊 첫 번째 모험의 성과를 살펴보시게";
+        if (currentRound === 2) return "📊 두 번째 모험의 성과를 살펴보시게";
+        if (currentRound === 3) return "📊 마지막 모험의 성과를 살펴보시게";
+        return "📊 그대의 투자 여정";
+
+      case "/review":
+        if (currentRound === 1) return "📋 첫 모험의 교훈을 되새기시게";
+        if (currentRound === 2) return "📋 두 번째 모험의 지혜를 쌓으시게";
+        if (currentRound === 3) return "📋 모든 모험의 깨달음을 얻으시게";
+        return "📋 투자의 교훈과 지혜";
+
+      case "/ranking":
+        return "🏆 조선 최고의 상인을 가리는 곳";
+
+      case "/game-result":
+        return "🎉 위대한 모험의 대단원";
+
+      default:
+        return "🎮 조선왕조 투자실록";
+    }
+  };
+
   useEffect(() => {
     // 사용자 잔고 정보 가져오기
     fetchUserBalance();
@@ -218,57 +281,18 @@ const Navbar = () => {
             </Link>
           </div>
 
-          {/* 중앙: 뉴스 배너 */}
+          {/* 중앙: 페이지 제목 */}
           <div className="flex-1 min-w-0">
             <div className="bg-white rounded-2xl shadow-md px-6 py-4 max-w-2xl mx-auto relative">
-              <div className="flex items-center space-x-3">
-                <span className="text-2xl">📰</span>
-                <div className="flex-1 min-w-0">
-                  <div
-                    className="overflow-hidden flex items-center min-w-0 cursor-pointer"
-                    onClick={() =>
-                      newsList.length > 0 && setSelectedNews(newsList[newsIdx])
-                    }
-                  >
-                    <span
-                      key={newsIdx}
-                      className="text-[#7c5c2b] font-normal text-lg truncate block animate-fade-in"
-                    >
-                      {newsBanner || "최근 뉴스가 없습니다."}
-                    </span>
+              <div className="flex items-center justify-center gap-3">
+                <span className="text-[#7c5c2b] font-bold text-xl text-center">
+                  {getPageTitle()}
+                </span>
+                {shouldShowPeriod() && user?.current_period && (
+                  <div className="bg-gradient-to-r from-[#bfa76a] to-[#a67c3c] text-white px-3 py-1 rounded-lg text-sm font-medium shadow-sm">
+                    {formatPeriod(user.current_period)}
                   </div>
-                  {newsList.length > 1 && (
-                    <div className="flex flex-col absolute right-4 top-1/2 -translate-y-1/2 z-10">
-                      <button
-                        onClick={() => {
-                          setNewsIdx((idx) => {
-                            const newIdx =
-                              (idx - 1 + newsList.length) % newsList.length;
-                            setNewsBanner(newsList[newIdx].title);
-                            return newIdx;
-                          });
-                        }}
-                        className="p-0 hover:bg-gray-100 rounded-full text-[#7c5c2b] text-base leading-none"
-                        aria-label="이전 뉴스"
-                      >
-                        ▲
-                      </button>
-                      <button
-                        onClick={() => {
-                          setNewsIdx((idx) => {
-                            const newIdx = (idx + 1) % newsList.length;
-                            setNewsBanner(newsList[newIdx].title);
-                            return newIdx;
-                          });
-                        }}
-                        className="p-0 hover:bg-gray-100 rounded-full mt-px text-[#7c5c2b] text-base leading-none"
-                        aria-label="다음 뉴스"
-                      >
-                        ▼
-                      </button>
-                    </div>
-                  )}
-                </div>
+                )}
               </div>
             </div>
           </div>
