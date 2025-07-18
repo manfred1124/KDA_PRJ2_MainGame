@@ -12,7 +12,11 @@ import {
   User,
   BarChart3,
   ChevronDown,
+  ChevronUp,
 } from "lucide-react";
+import menu1Bg from "../assets/menu1.png";
+import navbarBg from "../assets/navbar.png";
+import menu2Bg from "../assets/menu2.png";
 
 const Navbar = () => {
   const { user, logout, token } = useAuth();
@@ -25,6 +29,7 @@ const Navbar = () => {
   const [userBalance, setUserBalance] = useState(0);
   const [newsBanner, setNewsBanner] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [selectedNews, setSelectedNews] = useState(null);
 
   useEffect(() => {
     // 사용자 잔고 정보 가져오기
@@ -196,8 +201,10 @@ const Navbar = () => {
 
   return (
     <nav
-      className="py-2 lg:py-4 relative bg-gradient-to-r from-[#f7e6b6] to-[#f3e7c4] shadow-lg"
-      style={{ fontFamily: "serif" }}
+      className="py-2 lg:py-4 relative bg-gradient-to-r from-[#f7e6b6]/60 to-[#f3e7c4]/60 shadow-lg"
+      style={{
+        fontFamily: "Jua, sans-serif",
+      }}
     >
       <div className="max-w-7xl mx-auto px-3 lg:px-4">
         {/* 데스크톱 레이아웃 */}
@@ -214,16 +221,51 @@ const Navbar = () => {
 
           {/* 중앙: 뉴스 배너 */}
           <div className="flex-1 min-w-0">
-            <div className="bg-white rounded-2xl shadow-md px-6 py-4 max-w-2xl mx-auto">
+            <div className="bg-white rounded-2xl shadow-md px-6 py-4 max-w-2xl mx-auto relative">
               <div className="flex items-center space-x-3">
                 <span className="text-2xl">📰</span>
-                <div className="overflow-hidden">
-                  <span
-                    key={newsIdx}
-                    className="text-[#7c5c2b] font-semibold text-lg truncate block animate-fade-in"
+                <div className="flex-1 min-w-0">
+                  <div
+                    className="overflow-hidden flex items-center min-w-0 cursor-pointer"
+                    onClick={() => newsList.length > 0 && setSelectedNews(newsList[newsIdx])}
                   >
-                    {newsBanner || "최근 뉴스가 없습니다."}
-                  </span>
+                    <span
+                      key={newsIdx}
+                      className="text-[#7c5c2b] font-normal text-lg truncate block animate-fade-in"
+                    >
+                      {newsBanner || "최근 뉴스가 없습니다."}
+                    </span>
+                  </div>
+                  {newsList.length > 1 && (
+                    <div className="flex flex-col absolute right-4 top-1/2 -translate-y-1/2 z-10">
+                      <button
+                        onClick={() => {
+                          setNewsIdx((idx) => {
+                            const newIdx = (idx - 1 + newsList.length) % newsList.length;
+                            setNewsBanner(newsList[newIdx].title);
+                            return newIdx;
+                          });
+                        }}
+                        className="p-0 hover:bg-gray-100 rounded-full text-[#7c5c2b] text-base leading-none"
+                        aria-label="이전 뉴스"
+                      >
+                        ▲
+                      </button>
+                      <button
+                        onClick={() => {
+                          setNewsIdx((idx) => {
+                            const newIdx = (idx + 1) % newsList.length;
+                            setNewsBanner(newsList[newIdx].title);
+                            return newIdx;
+                          });
+                        }}
+                        className="p-0 hover:bg-gray-100 rounded-full mt-px text-[#7c5c2b] text-base leading-none"
+                        aria-label="다음 뉴스"
+                      >
+                        ▼
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -260,7 +302,7 @@ const Navbar = () => {
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               className="flex items-center space-x-2 px-6 py-4 bg-white hover:bg-gray-50 text-[#7c5c2b] rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 font-semibold"
-              style={{ fontFamily: "serif" }}
+              style={{ fontFamily: "Jua, sans-serif" }}
             >
               <User className="w-5 h-5" />
               <span>{user.username}</span>
@@ -279,10 +321,10 @@ const Navbar = () => {
                     to="/my-page"
                     onClick={() => setIsDropdownOpen(false)}
                     className="flex items-center space-x-3 px-4 py-3 text-[#7c5c2b] hover:bg-[#f7e6b6] transition-colors duration-200"
-                    style={{ fontFamily: "serif" }}
+                    style={{ fontFamily: "Jua, sans-serif" }}
                   >
                     <User className="w-5 h-5" />
-                    <span className="font-semibold">마이페이지</span>
+                    <span className="font-normal">마이페이지</span>
                   </Link>
                   <button
                     onClick={() => {
@@ -290,10 +332,10 @@ const Navbar = () => {
                       handleLogout();
                     }}
                     className="flex items-center space-x-3 px-4 py-3 text-red-600 hover:bg-red-50 transition-colors duration-200 w-full text-left"
-                    style={{ fontFamily: "serif" }}
+                    style={{ fontFamily: "Jua, sans-serif" }}
                   >
                     <LogOut className="w-5 h-5" />
-                    <span className="font-semibold">로그아웃</span>
+                    <span className="font-normal">로그아웃</span>
                   </button>
                 </div>
               </div>
@@ -403,6 +445,46 @@ const Navbar = () => {
           </div>
         </div>
       </div>
+
+      {/* 뉴스 상세 모달 (네비 뉴스 배너 클릭 시) */}
+      {selectedNews && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40"
+          onClick={() => setSelectedNews(null)}
+        >
+          <div
+            className="bg-white rounded-lg shadow-2xl max-w-4xl w-full min-h-[70vh] py-24 px-16 flex flex-col justify-center relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* X 닫기 버튼 */}
+            <button
+              className="absolute top-6 right-6 text-gray-400 hover:text-gray-700 text-3xl font-bold focus:outline-none"
+              onClick={() => setSelectedNews(null)}
+              aria-label="닫기"
+            >
+              ×
+            </button>
+            <h2 className="text-3xl font-semibold mb-8 text-gray-900">
+              <span className="inline-block bg-blue-100 text-blue-700 text-base font-normal rounded-full px-3 py-1 mr-3 align-middle">
+                {selectedNews.period}
+              </span>
+              {selectedNews.title}
+            </h2>
+            <p className="text-gray-700 mb-8 text-lg">{selectedNews.content}</p>
+            <div className="text-gray-600 mb-8 text-xl whitespace-pre-line">
+              {selectedNews.summary || selectedNews.content}
+            </div>
+            {selectedNews.affected_sectors && (
+              <div className="mb-4">
+                <span className="bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-base">
+                  {selectedNews.affected_sectors}
+                </span>
+              </div>
+            )}
+            
+          </div>
+        </div>
+      )}
     </nav>
   );
 };

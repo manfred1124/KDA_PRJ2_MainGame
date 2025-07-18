@@ -39,43 +39,43 @@
 
   /* 뉴스 페이지 폰트 적용 (나눔명조체) */
   .news-page {
-    font-family: "Nanum Myeongjo", serif;
+    font-family: "Jua", sans-serif;
   }
 
   .news-page h2 {
-    font-family: "Nanum Myeongjo", serif;
+    font-family: "Jua", sans-serif;
     font-size: 2.5rem;
     line-height: 1.2;
   }
 
   .news-page h3 {
-    font-family: "Nanum Myeongjo", serif;
+    font-family: "Jua", sans-serif;
     font-size: 1.3rem;
   }
 
   .news-page p {
-    font-family: "Nanum Myeongjo", serif;
+    font-family: "Jua", sans-serif;
     font-size: 1.1rem;
   }
 
   .news-page button {
-    font-family: "Nanum Myeongjo", serif;
+    font-family: "Jua", sans-serif;
   }
 
   .news-page .text-sm {
-    font-family: "Nanum Myeongjo", serif;
+    font-family: "Jua", sans-serif;
     font-size: 1rem;
   }
 
   .news-page .text-lg {
-    font-family: "Nanum Myeongjo", serif;
+    font-family: "Jua", sans-serif;
     font-size: 1.2rem;
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+    @apply bg-blue-900 hover:bg-blue-900 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200;
   }
 
   .btn-secondary {

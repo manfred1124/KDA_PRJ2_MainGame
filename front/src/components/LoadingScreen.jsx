@@ -17,7 +17,7 @@ const LoadingScreen = () => {
 
   return (
     <div className="loading-wrapper">
-      <p className="loading-text">loading...</p>
+      <p className="loading-text">로 딩 중...</p>
       <img
         src={frames[frame]}
         alt="loading character"

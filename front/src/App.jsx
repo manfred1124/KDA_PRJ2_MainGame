@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, createContext } from "react";
-import { Routes, Route, useNavigate } from "react-router-dom";
+import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -15,6 +15,8 @@ import ChatbotWidget from "./components/ChatbotWidget";
 import LoadingScreen from "./components/LoadingScreen";
 import heroImage1 from "./assets/mainlogo.png";
 import heroImage2 from "./assets/mainlogo2.png";
+import boardImage1 from "./assets/board1.png";
+import ScrollToTop from "./components/ScrollToTop";
 
 // 가이드 메시지 Context 생성
 export const GuideMessageContext = createContext({ addGuideMessage: () => {} });
@@ -30,6 +32,8 @@ function App() {
   const isLoggedIn = !!localStorage.getItem("token");
   const navigate = useNavigate();
   const chatbotRef = useRef();
+  const location = useLocation();
+  const showBoardBg = ["/login", "/register"].includes(location.pathname);
 
   // 가이드 메시지 추가 함수
   const addGuideMessage = (text) => {
@@ -78,7 +82,9 @@ function App() {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            background: "transparent",
+            backgroundImage: "url('/bg.jpg')",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
           }}
         >
           <div style={{ display: "flex", alignItems: "flex-end", gap: 48 }}>
@@ -93,7 +99,7 @@ function App() {
                 minWidth: 400,
                 textAlign: "center",
                 position: "relative",
-                fontFamily: "serif",
+                fontFamily: "Jua, sans-serif",
               }}
             >
               {/* Speech bubble tail (right side) */}
@@ -129,7 +135,7 @@ function App() {
                 style={{
                   padding: "1.1rem 3rem",
                   fontSize: "1.3rem",
-                  fontWeight: "bold",
+                  fontWeight: "normal",
                   backgroundColor: "#001E5A",
                   color: "white",
                   border: "none",
@@ -167,17 +173,26 @@ function App() {
         <LoadingScreen />
       ) : (
         <GuideMessageContext.Provider value={{ addGuideMessage }}>
-          <div className="h-screen bg-[url('/bg.jpg')] bg-cover bg-center bg-no-repeat bg-fixed flex flex-col">
+          <ScrollToTop />
+          <div className="min-h-screen bg-[url('/bg.jpg')] bg-cover bg-center bg-no-repeat bg-fixed flex flex-col">
             <Navbar />
-            <div className="flex-1 container mx-auto px-4 py-8 flex flex-row gap-8 overflow-hidden items-stretch">
+            <div className="flex-1 container mx-auto px-4 py-8 flex flex-row gap-8 items-stretch">
               {/* 왼쪽: 메인 컨텐츠 */}
-              <main className="flex-1 min-w-0 flex items-start justify-center h-full">
+              <main className="flex-1 min-w-0 flex items-start justify-center">
                 <div
-                  className="w-full max-w-5xl h-full min-h-[60vh] max-h-[80vh] bg-[#f7e6b6] rounded-3xl border-4 border-[#bfa76a] shadow-2xl p-8 overflow-y-auto game-scrollbar mt-6 mb-6"
-                  style={{
-                    boxShadow: "0 8px 32px #bfa76a55",
-                    fontFamily: "serif",
-                  }}
+                  className="w-full max-w-2xl p-4 game-scrollbar mt-6 mb-6 flex flex-col items-center justify-center"
+                  style={
+                    showBoardBg
+                      ? {
+                          backgroundImage: `url(${boardImage1})`,
+                          backgroundSize: "700px 600px",
+                          backgroundPosition: "center",
+                          backgroundRepeat: "no-repeat",
+                          maxHeight: 3500,
+                          width: "120%",
+                        }
+                      : {}
+                  }
                 >
                   <Routes>
                     <Route path="/login" element={<Login />} />
