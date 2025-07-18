@@ -10,6 +10,7 @@ import Ranking from "./pages/Ranking";
 import SelectSector from "./pages/SelectSector";
 import MyPage from "./pages/MyPage";
 import GameResult from "./pages/GameResult";
+import Review from "./pages/Review";
 import PrivateRoute from "./components/PrivateRoute";
 import ChatbotWidget from "./components/ChatbotWidget";
 import LoadingScreen from "./components/LoadingScreen";
@@ -43,6 +44,7 @@ function App() {
     "/select-sector",
     "/my-page",
     "/game-result",
+    "/review",
   ].includes(location.pathname);
 
   // 가이드 메시지 추가 함수
@@ -340,6 +342,22 @@ function App() {
                             }
                           >
                             <GameResult />
+                          </div>
+                        </PrivateRoute>
+                      }
+                    />
+                    <Route
+                      path="/review"
+                      element={
+                        <PrivateRoute>
+                          <div
+                            className={
+                              showGameBox
+                                ? "flex-1 flex flex-col h-full w-full"
+                                : ""
+                            }
+                          >
+                            <Review />
                           </div>
                         </PrivateRoute>
                       }
