@@ -288,7 +288,7 @@ const Review = () => {
       className="w-full h-full flex flex-col"
       style={{ fontFamily: "Jua, sans-serif" }}
     >
-      <div className="flex-1 p-6 overflow-auto bg-gradient-to-br from-[#f9f6ef]/30 to-[#f3e7c4]/30 min-h-screen">
+      <div className="flex-1 p-6 bg-gradient-to-br from-[#f9f6ef]/30 to-[#f3e7c4]/30">
         {/* 현재 라운드 정보 및 기간 선택기 */}
         <div className="mb-6 bg-gradient-to-br from-[#f7e6b6]/70 to-[#f3e7c4]/70 p-6 rounded-xl border-2 border-[#e6d3a3]/60 shadow-lg backdrop-blur-sm">
           <div className="flex items-center justify-between mb-4">
@@ -813,8 +813,8 @@ const StockDetailModal = ({ stock, period, onClose }) => {
           </button>
         </div>
 
-        {/* 스크롤 가능한 컨텐츠 영역 */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-6">
+        {/* 컨텐츠 영역 */}
+        <div className="flex-1 p-4 md:p-6">
           {loading ? (
             <div className="flex justify-center items-center h-64">
               <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-[#bfa76a]"></div>
@@ -876,7 +876,7 @@ const StockDetailModal = ({ stock, period, onClose }) => {
                 >
                   관련 뉴스
                 </h3>
-                <div className="space-y-2 md:space-y-3 max-h-60 md:max-h-80 overflow-y-auto">
+                <div className="space-y-2 md:space-y-3">
                   {stockNews.length > 0 ? (
                     stockNews.map((news, index) => (
                       <div

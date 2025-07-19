@@ -114,6 +114,27 @@
   animation: float 3s ease-in-out infinite;
 }
 
+/* 물속 일렁임 애니메이션 */
+@keyframes waterWave {
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-5px) rotate(1deg);
+  }
+  50% {
+    transform: translateY(-2px) rotate(-0.5deg);
+  }
+  75% {
+    transform: translateY(-8px) rotate(0.5deg);
+  }
+}
+
+.animate-water-wave {
+  animation: waterWave 4s ease-in-out infinite;
+}
+
 /* 주식 차트 스타일 */
 .stock-chart {
   @apply bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg p-4;

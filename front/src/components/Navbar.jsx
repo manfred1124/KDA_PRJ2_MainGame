@@ -17,6 +17,7 @@ import {
 import menu1Bg from "../assets/menu1.png";
 import navbarBg from "../assets/navbar.png";
 import menu2Bg from "../assets/menu2.png";
+import logoImage from "../assets/logoimage.png";
 
 const Navbar = () => {
   const { user, logout, token } = useAuth();
@@ -190,8 +191,14 @@ const Navbar = () => {
   }, [newsList]);
 
   const handleLogout = () => {
-    logout();
-    navigate("/login");
+    console.log("로그아웃 시도...");
+    try {
+      logout();
+      console.log("로그아웃 성공");
+      navigate("/login");
+    } catch (error) {
+      console.error("로그아웃 실패:", error);
+    }
   };
 
   const handleNextRound = async () => {
@@ -263,9 +270,13 @@ const Navbar = () => {
 
   return (
     <nav
-      className="py-2 lg:py-4 relative bg-gradient-to-r from-[#f7e6b6]/60 to-[#f3e7c4]/60 shadow-lg"
+      className="py-2 lg:py-4 relative shadow-lg"
       style={{
         fontFamily: "Jua, sans-serif",
+        backgroundColor: "rgba(0, 30, 90, 0.3)",
+        backdropFilter: "blur(8px)",
+        zIndex: 1000,
+        position: "relative",
       }}
     >
       <div className="max-w-7xl mx-auto px-3 lg:px-4">
@@ -277,7 +288,19 @@ const Navbar = () => {
               to="/"
               className="flex items-center justify-center w-16 h-16 bg-white rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105"
             >
-              <span className="text-3xl">🏠</span>
+              <img
+                src={logoImage}
+                alt="Home"
+                className="w-[52px] h-[52px] object-contain"
+                onError={(e) => {
+                  // 로고가 없으면 이모지로 대체
+                  e.target.style.display = "none";
+                  e.target.nextSibling.style.display = "block";
+                }}
+              />
+              <span className="text-3xl" style={{ display: "none" }}>
+                🏠
+              </span>
             </Link>
           </div>
 
@@ -326,7 +349,10 @@ const Navbar = () => {
           {/* 유저 드롭다운 */}
           <div className="flex-shrink-0 relative dropdown-container">
             <button
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              onClick={() => {
+                console.log("드롭다운 버튼 클릭됨, 현재 상태:", isDropdownOpen);
+                setIsDropdownOpen(!isDropdownOpen);
+              }}
               className="flex items-center space-x-2 px-6 py-4 bg-white hover:bg-gray-50 text-[#7c5c2b] rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 font-semibold"
               style={{ fontFamily: "Jua, sans-serif" }}
             >
@@ -341,7 +367,23 @@ const Navbar = () => {
 
             {/* 드롭다운 메뉴 */}
             {isDropdownOpen && (
-              <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 z-50">
+              <div
+                className="absolute top-full right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 pointer-events-auto"
+                style={{
+                  position: "absolute",
+                  top: "100%",
+                  right: "0",
+                  marginTop: "8px",
+                  width: "192px",
+                  backgroundColor: "white",
+                  borderRadius: "12px",
+                  boxShadow: "0 10px 25px rgba(0, 0, 0, 0.15)",
+                  border: "1px solid #e5e7eb",
+                  zIndex: 10000,
+                  pointerEvents: "auto",
+                }}
+              >
+                {console.log("드롭다운 메뉴가 표시됨")}
                 <div className="py-2">
                   <Link
                     to="/my-page"
@@ -353,12 +395,35 @@ const Navbar = () => {
                     <span className="font-normal">마이페이지</span>
                   </Link>
                   <button
-                    onClick={() => {
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      console.log("로그아웃 버튼 클릭됨");
                       setIsDropdownOpen(false);
                       handleLogout();
                     }}
-                    className="flex items-center space-x-3 px-4 py-3 text-red-600 hover:bg-red-50 transition-colors duration-200 w-full text-left"
-                    style={{ fontFamily: "Jua, sans-serif" }}
+                    className="flex items-center space-x-3 px-4 py-3 text-red-600 hover:bg-red-50 transition-colors duration-200 w-full text-left cursor-pointer"
+                    style={{
+                      fontFamily: "Jua, sans-serif",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                      padding: "12px 16px",
+                      color: "#dc2626",
+                      width: "100%",
+                      textAlign: "left",
+                      cursor: "pointer",
+                      border: "none",
+                      background: "transparent",
+                      transition: "background-color 0.2s",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.backgroundColor = "#fef2f2";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.backgroundColor = "transparent";
+                    }}
                   >
                     <LogOut className="w-5 h-5" />
                     <span className="font-normal">로그아웃</span>
@@ -377,7 +442,19 @@ const Navbar = () => {
               to="/"
               className="flex items-center justify-center w-12 h-12 bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 flex-shrink-0"
             >
-              <span className="text-2xl">🏠</span>
+              <img
+                src={logoImage}
+                alt="Home"
+                className="w-[42px] h-[42px] object-contain"
+                onError={(e) => {
+                  // 로고가 없으면 이모지로 대체
+                  e.target.style.display = "none";
+                  e.target.nextSibling.style.display = "block";
+                }}
+              />
+              <span className="text-2xl" style={{ display: "none" }}>
+                🏠
+              </span>
             </Link>
 
             <div className="flex-1 min-w-0">
@@ -439,7 +516,10 @@ const Navbar = () => {
 
               {/* 드롭다운 메뉴 */}
               {isDropdownOpen && (
-                <div className="absolute top-full right-0 mt-2 w-40 bg-white rounded-xl shadow-lg border border-gray-100 z-50">
+                <div
+                  className="absolute top-full right-0 mt-2 w-40 bg-white rounded-xl shadow-lg border border-gray-100 pointer-events-auto"
+                  style={{ zIndex: 10000 }}
+                >
                   <div className="py-2">
                     <div className="px-3 py-2 text-sm text-[#7c5c2b] font-semibold border-b border-gray-100">
                       {user.username}
@@ -454,11 +534,15 @@ const Navbar = () => {
                       <span className="text-sm font-semibold">마이페이지</span>
                     </Link>
                     <button
-                      onClick={() => {
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log("모바일 로그아웃 버튼 클릭됨");
                         setIsDropdownOpen(false);
                         handleLogout();
                       }}
-                      className="flex items-center space-x-2 px-3 py-2 text-red-600 hover:bg-red-50 transition-colors duration-200 w-full text-left"
+                      className="flex items-center space-x-2 px-3 py-2 text-red-600 hover:bg-red-50 transition-colors duration-200 w-full text-left cursor-pointer"
                       style={{ fontFamily: "serif" }}
                     >
                       <LogOut className="w-4 h-4" />

@@ -18,9 +18,12 @@ const GUIDE_MSG =
   "허허, 그대의 투자 여정을 한눈에 볼 수 있는 요약판이구나. 다음 라운드를 준비하시게!";
 
 const ROUND_TREND_GUIDE = {
-  "2020Q1": "2020년 1분기에는 코로나19의 영향으로 글로벌 증시가 큰 충격을 받았으니, 그대가 신중하게 판단하시게.",
-  "2020Q2": "2020년 2분기에는 각국의 경기부양책으로 시장이 반등하기 시작했으니, 과인의 조언을 참고하시게.",
-  "2021Q1": "2021년 1분기에는 백신 보급과 함께 경기 회복 기대감이 커졌으니, 이런 시기를 잘 활용하시게.",
+  "2020Q1":
+    "2020년 1분기에는 코로나19의 영향으로 글로벌 증시가 큰 충격을 받았으니, 그대가 신중하게 판단하시게.",
+  "2020Q2":
+    "2020년 2분기에는 각국의 경기부양책으로 시장이 반등하기 시작했으니, 과인의 조언을 참고하시게.",
+  "2021Q1":
+    "2021년 1분기에는 백신 보급과 함께 경기 회복 기대감이 커졌으니, 이런 시기를 잘 활용하시게.",
   // 필요에 따라 실제 period 값에 맞게 추가
 };
 
@@ -135,10 +138,23 @@ const Dashboard = () => {
     return <div>게임 상태를 불러올 수 없습니다.</div>;
   }
 
+  // 안전한 값 추출 (기본값 포함)
+  const totalBalance = gameState?.total_balance ?? 0;
+  const totalPortfolioValue = gameState?.total_portfolio_value ?? 0;
+  const totalProfitLoss = gameState?.total_profit_loss ?? 0;
+  const totalProfitLossPercentage =
+    gameState?.total_profit_loss_percentage ?? 0;
+  const totalProfitPercentage = gameState?.total_profit_percentage ?? 0;
+  const currentRoundIdx = gameState?.current_round_idx ?? 0;
+  const totalRounds = gameState?.total_rounds ?? 3;
+  const currentDate = gameState?.current_date ?? "";
+  const canAdvanceRound = gameState?.can_advance_round ?? false;
+  const isGameCompleted = gameState?.is_game_completed ?? false;
+
   const profitLossColor =
-    gameState.total_profit_loss >= 0 ? "text-success-600" : "text-danger-600";
+    totalProfitLoss >= 0 ? "text-success-600" : "text-danger-600";
   const profitLossIcon =
-    gameState.total_profit_loss >= 0 ? <TrendingUp /> : <TrendingDown />;
+    totalProfitLoss >= 0 ? <TrendingUp /> : <TrendingDown />;
 
   return (
     <div className="space-y-6">
@@ -157,15 +173,14 @@ const Dashboard = () => {
             <div>
               <p className="text-sm font-medium text-gray-600">현재 라운드</p>
               <p className="text-2xl font-bold text-gray-900">
-                {(gameState.current_round_idx ?? 0) + 1} /{" "}
-                {gameState.total_rounds}
+                {currentRoundIdx + 1} / {totalRounds}
               </p>
             </div>
             <div className="p-3 bg-blue-100 rounded-full">
               <Calendar className="text-blue-600" size={24} />
             </div>
           </div>
-          <p className="text-sm text-gray-500 mt-2">{gameState.current_date}</p>
+          <p className="text-sm text-gray-500 mt-2">{currentDate}</p>
         </div>
 
         <div className="card">
@@ -173,7 +188,7 @@ const Dashboard = () => {
             <div>
               <p className="text-sm font-medium text-gray-600">보유 현금</p>
               <p className="text-2xl font-bold text-gray-900">
-                {gameState.total_balance.toLocaleString()}원
+                {totalBalance.toLocaleString()}원
               </p>
             </div>
             <div className="p-3 bg-green-100 rounded-full">
@@ -189,7 +204,7 @@ const Dashboard = () => {
                 포트폴리오 가치
               </p>
               <p className="text-2xl font-bold text-gray-900">
-                {gameState.total_portfolio_value.toLocaleString()}원
+                {totalPortfolioValue.toLocaleString()}원
               </p>
             </div>
             <div className="p-3 bg-blue-100 rounded-full">
@@ -203,19 +218,17 @@ const Dashboard = () => {
             <div>
               <p className="text-sm font-medium text-gray-600">총 손익</p>
               <p className={`text-2xl font-bold ${profitLossColor}`}>
-                {gameState.total_profit_loss >= 0 ? "+" : ""}
-                {gameState.total_profit_loss.toLocaleString()}원
+                {totalProfitLoss >= 0 ? "+" : ""}
+                {totalProfitLoss.toLocaleString()}원
               </p>
               <p className={`text-sm ${profitLossColor}`}>
-                ({gameState.total_profit_loss_percentage >= 0 ? "+" : ""}
-                {gameState.total_profit_loss_percentage.toFixed(2)}%)
+                ({totalProfitLossPercentage >= 0 ? "+" : ""}
+                {totalProfitLossPercentage.toFixed(2)}%)
               </p>
             </div>
             <div
               className={`p-3 rounded-full ${
-                gameState.total_profit_loss >= 0
-                  ? "bg-success-100"
-                  : "bg-danger-100"
+                totalProfitLoss >= 0 ? "bg-success-100" : "bg-danger-100"
               }`}
             >
               <div className={profitLossColor}>{profitLossIcon}</div>
@@ -225,7 +238,7 @@ const Dashboard = () => {
       </div>
 
       {/* 라운드 진행 버튼 */}
-      {gameState.can_advance_round && (
+      {canAdvanceRound && (
         <div className="card text-center">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
             다음 라운드로 진행하시겠습니까?
@@ -254,7 +267,7 @@ const Dashboard = () => {
       )}
 
       {/* 게임 완료 메시지 */}
-      {gameState.is_game_completed && (
+      {isGameCompleted && (
         <div className="card text-center bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200">
           <h3 className="text-2xl font-bold text-gray-900 mb-4">
             🎉 게임 완료!
@@ -263,7 +276,7 @@ const Dashboard = () => {
             모든 라운드를 완료하셨습니다. 최종 성과를 확인해보세요!
           </p>
           <div className="text-lg font-semibold text-gray-900 mb-6">
-            최종 수익률: {gameState.total_profit_percentage.toFixed(2)}%
+            최종 수익률: {totalProfitPercentage.toFixed(2)}%
           </div>
           <button
             onClick={restartGame}

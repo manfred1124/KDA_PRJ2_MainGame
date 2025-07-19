@@ -17,31 +17,31 @@ import { GuideMessageContext } from "../App";
 import { createChart, ColorType } from "lightweight-charts";
 
 const GUIDE_MSG =
-  "여기는 다양한 산업의 주식이 모여있는 투자판이네. 신중히 섹터를 골라 투자해보게!";
+  "여기는 다양한 산업의 주식이 모여있는 투자판이네.\n\n신중히 섹터를 골라 투자해보게!";
 
 const SECTOR_GUIDE = {
-  IT: "허허, IT·반도체 섹터는 첨단 기술과 혁신의 중심지구나. 빠르게 변화하는 트렌드를 이끄는 기업들이 모여 있으니, 그대가 신중하게 판단하시게.",
+  IT: "허허, IT·반도체 섹터는 첨단 기술과 혁신의 중심지구나.\n\n빠르게 변화하는 트렌드를 이끄는 기업들이 모여 있으니,\n그대가 신중하게 판단하시게.",
   반도체:
-    "반도체 섹터는 전자제품의 두뇌를 만드는 핵심 산업이구나. 첨단 기술과 글로벌 경쟁이 치열하니, 과인의 조언을 참고하시게.",
-  금융: "금융 섹터는 은행, 보험, 증권 등 자본의 흐름을 책임지는 곳이구나. 그대가 신중하게 판단하시게.",
+    "반도체 섹터는 전자제품의 두뇌를 만드는 핵심 산업이구나.\n\n첨단 기술과 글로벌 경쟁이 치열하니,\n과인의 조언을 참고하시게.",
+  금융: "금융 섹터는 은행, 보험, 증권 등 자본의 흐름을 책임지는 곳이구나.\n\n그대가 신중하게 판단하시게.",
   소비재:
-    "소비재·유통 섹터는 일상생활과 밀접한 기업들이 모여있구나. 경기 변동에 민감하니, 과인의 조언을 참고하시게.",
-  유통: "소비재·유통 섹터는 일상생활과 밀접한 기업들이 모여있구나. 경기 변동에 민감하니, 그대가 신중하게 판단하시게.",
+    "소비재·유통 섹터는 일상생활과 밀접한 기업들이 모여있구나.\n\n경기 변동에 민감하니,\n과인의 조언을 참고하시게.",
+  유통: "소비재·유통 섹터는 일상생활과 밀접한 기업들이 모여있구나.\n\n경기 변동에 민감하니,\n그대가 신중하게 판단하시게.",
   에너지:
-    "에너지 섹터는 산업의 동력을 공급하는 곳이구나. 원유, 가스, 발전 기업들이 이끌고 있으니, 이런 시기를 잘 활용하시게.",
+    "에너지 섹터는 산업의 동력을 공급하는 곳이구나.\n\n원유, 가스, 발전 기업들이 이끌고 있으니,\n이런 시기를 잘 활용하시게.",
   헬스케어:
-    "헬스케어·바이오 섹터는 건강과 생명을 지키는 기업들이 모여 있구나. 제약, 바이오, 의료기기 분야가 중심이니, 과인의 조언을 참고하시게.",
+    "헬스케어·바이오 섹터는 건강과 생명을 지키는 기업들이 모여 있구나.\n\n제약, 바이오, 의료기기 분야가 중심이니,\n과인의 조언을 참고하시게.",
   바이오:
-    "헬스케어 섹터는 건강과 생명을 지키는 기업들이 모여 있구나. 제약, 바이오, 의료기기 분야가 중심이니, 그대가 신중하게 판단하시게.",
+    "헬스케어 섹터는 건강과 생명을 지키는 기업들이 모여 있구나.\n\n제약, 바이오, 의료기기 분야가 중심이니,\n그대가 신중하게 판단하시게.",
   산업재:
-    "산업재 섹터는 사회의 기반을 다지는 기업들이 모여 있구나. 건설, 기계, 운송 등 다양한 산업이 속해 있으니, 과인의 조언을 참고하시게.",
-  소재: "소재·2차전지 섹터는 다양한 산업의 기초가 되는 원자재와 부품을 공급하는 곳이구나. 그대가 신중하게 판단하시게.",
+    "산업재 섹터는 사회의 기반을 다지는 기업들이 모여 있구나.\n\n건설, 기계, 운송 등 다양한 산업이 속해 있으니,\n과인의 조언을 참고하시게.",
+  소재: "소재·2차전지 섹터는 다양한 산업의 기초가 되는 원자재와 부품을 공급하는 곳이구나.\n\n그대가 신중하게 판단하시게.",
   "2차전지":
-    "2차전지 섹터는 미래 에너지 저장의 핵심이구나. 전기차와 친환경 산업의 성장동력이 되니, 이런 시기를 잘 활용하시게.",
+    "2차전지 섹터는 미래 에너지 저장의 핵심이구나.\n\n전기차와 친환경 산업의 성장동력이 되니,\n이런 시기를 잘 활용하시게.",
   커뮤니케이션:
-    "커뮤니케이션 섹터는 정보와 소통을 책임지는 기업들이 모여 있구나. 통신, 미디어, 인터넷 기업이 중심이니, 과인의 조언을 참고하시게.",
+    "커뮤니케이션 섹터는 정보와 소통을 책임지는 기업들이 모여 있구나.\n\n통신, 미디어, 인터넷 기업이 중심이니,\n과인의 조언을 참고하시게.",
   "공공·유틸리티":
-    "공공·유틸리티 섹터는 전기, 수도, 가스 등 생활에 꼭 필요한 서비스를 제공하는 곳이구나. 안정적인 수익이 특징이니, 그대가 신중하게 판단하시게.",
+    "공공·유틸리티 섹터는 전기, 수도, 가스 등 생활에 꼭 필요한 서비스를 제공하는 곳이구나.\n\n안정적인 수익이 특징이니,\n그대가 신중하게 판단하시게.",
   // 필요에 따라 섹터명을 추가하세요
 };
 
@@ -50,18 +50,18 @@ function getSectorGuide(sector) {
   for (const key of Object.keys(SECTOR_GUIDE)) {
     if (sector.includes(key)) return SECTOR_GUIDE[key];
   }
-  return `허허, ${sector} 섹터에 오신 것을 환영하구나! 그대가 신중하게 판단하시게.`;
+  return `허허, ${sector} 섹터에 오신 것을 환영하구나!\n\n그대가 신중하게 판단하시게.`;
 }
 
 const ROUND_TREND_GUIDE = {
   "2020Q1":
-    "2020년 1분기에는 코로나19의 영향으로 세계 증시가 큰 충격을 받았으니, 그대가 신중하게 판단하시게.",
+    "2020년 1분기에는 코로나19의 영향으로 세계 증시가 큰 충격을 받았으니,\n\n그대가 신중하게 판단하시게.",
   "2020Q2":
-    "2020년 2분기에는 여러 나라의 경기 부양책 덕분에 시장이 다시 살아나기 시작했으니, 과인의 조언을 참고하시게.",
+    "2020년 2분기에는 여러 나라의 경기 부양책 덕분에 시장이 다시 살아나기 시작했으니,\n\n과인의 조언을 참고하시게.",
   "2021Q1":
-    "2021년 1분기에는 백신이 퍼지면서 경기가 좋아질 거라는 기대감이 커졌으니, 이런 시기를 잘 활용하시게.",
+    "2021년 1분기에는 백신이 퍼지면서 경기가 좋아질 거라는 기대감이 커졌으니,\n\n이런 시기를 잘 활용하시게.",
   "2023H1":
-    "2023년 상반기에는 중국 경제가 다시 문을 열면서 세계가 성장할 거라는 기대감이 부풀었으니, 그대가 신중하게 판단하시게.",
+    "2023년 상반기에는 중국 경제가 다시 문을 열면서 세계가 성장할 거라는 기대감이 부풀었으니,\n\n그대가 신중하게 판단하시게.",
   // 필요에 따라 실제 period 값에 맞게 추가
 };
 
@@ -70,13 +70,13 @@ function getRoundTrendGuide(period) {
   if (period && period.length >= 4) {
     const year = period.slice(0, 4);
     if (year === "2020")
-      return "2020년대 초반에는 시장이 큰 변동성을 겪고 있으니, 그대가 조심하시게.";
+      return "2020년대 초반에는 시장이 큰 변동성을 겪고 있으니,\n\n그대가 조심하시게.";
     if (year === "2021")
-      return "2021년에는 경기 회복과 성장주에 대한 기대가 높아졌으니, 이런 시기를 잘 활용하시게.";
+      return "2021년에는 경기 회복과 성장주에 대한 기대가 높아졌으니,\n\n이런 시기를 잘 활용하시게.";
     if (year === "2022")
-      return "2022년에는 인플레이션과 금리 인상 이슈로 시장이 조정받고 있으니, 과인의 조언을 참고하시게.";
+      return "2022년에는 인플레이션과 금리 인상 이슈로 시장이 조정받고 있으니,\n\n과인의 조언을 참고하시게.";
     if (year === "2023")
-      return "2023년에는 글로벌 경제가 점차 안정을 찾아가고 있으니, 그대가 신중하게 판단하시게.";
+      return "2023년에는 글로벌 경제가 점차 안정을 찾아가고 있으니,\n\n그대가 신중하게 판단하시게.";
   }
   return "허허, 현재 시점의 시장 동향을 잘 살펴 투자 전략을 세워보시게!";
 }
@@ -396,13 +396,13 @@ const SelectSector = () => {
 
   return (
     <div
-      className="min-h-screen p-2 relative flex flex-row overflow-x-hidden"
+      className="p-2 relative flex flex-row overflow-x-hidden"
       style={{ fontFamily: "Jua, sans-serif" }}
     >
       {/* 메인 컨텐츠 */}
       <div className="flex-1">
         {/* 헤더와 백버튼을 flex로 묶어서 왼쪽에 배치 */}
-        <div className="max-w-3xl mx-auto w-full grid grid-cols-3 items-center mb-2">
+        <div className="max-w-2xl mx-auto w-full grid grid-cols-3 items-center mb-2">
           <button
             onClick={() => navigate(-1)}
             className="justify-self-start bg-[#bfa76a] hover:bg-[#a67c3c] text-white px-6 py-3 rounded-full shadow-lg transition-all duration-300 flex items-center space-x-2 text-lg border-2 border-[#e6d3a3]"
@@ -413,7 +413,7 @@ const SelectSector = () => {
           <div className="flex items-center justify-center mb-2 "></div>
           <div /> {/* 오른쪽 빈칸 */}
         </div>
-        <div className="max-w-3xl mx-auto relative">
+        <div className="max-w-2xl mx-auto relative">
           <div className="flex gap-4 p-4">
             {/* 왼쪽 섹터 버튼 영역 */}
             <div className="flex flex-col items-center gap-6 w-full">
@@ -643,10 +643,10 @@ const SelectSector = () => {
         {/* 뉴스 모달 */}
         {newsModal && (
           <div
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+            className="fixed inset-0 backdrop-blur-md flex items-center justify-center p-4 z-50"
             onClick={handleModalBackdropClick}
           >
-            <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[70vh] overflow-y-auto">
               <div className="p-6">
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-2xl font-bold text-gray-800">
@@ -722,10 +722,10 @@ const SelectSector = () => {
         {/* 주문 모달 */}
         {orderModal && (
           <div
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+            className="fixed inset-0 backdrop-blur-md flex items-center justify-center p-4 z-50"
             onClick={handleOrderModalBackdropClick}
           >
-            <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[70vh] overflow-y-auto">
               <div className="p-6">
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-2xl font-semibold text-gray-800">

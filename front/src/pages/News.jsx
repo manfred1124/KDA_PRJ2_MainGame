@@ -9,7 +9,7 @@ import { GuideMessageContext } from "../App";
 import ChatbotWidget from "../components/ChatbotWidget";
 
 const GUIDE_MSG =
-  "허허, 용사여! 이곳은 최신 시장 뉴스가 모이는 곳이구나. 뉴스를 잘 살펴 투자에 참고하시게!";
+  "허허, 용사여!\n이곳은 최신 시장 뉴스가 모이는 곳이구나.\n뉴스를 잘 살펴 투자에 참고하시게!";
 
 const ROUND_TREND_GUIDE = {
   "2020Q1":

@@ -16,7 +16,8 @@ const Login = () => {
 
   useEffect(() => {
     if (user) {
-      navigate("/news", { replace: true });
+      // 메인 페이지로 이동
+      navigate("/", { replace: true });
     }
   }, [user, navigate]);
 
@@ -26,8 +27,7 @@ const Login = () => {
 
     const success = await login(username, password);
     if (success) {
-      localStorage.setItem("showIntro", "true");
-      setShowIntro(true);
+      // 메인 페이지로 이동
       navigate("/");
     }
     setLoading(false);

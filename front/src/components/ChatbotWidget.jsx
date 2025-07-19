@@ -267,10 +267,11 @@ const ChatbotWidget = forwardRef(
                 {/* 말풍선 */}
                 {showSpeechBubble && (
                   <div className="absolute bottom-full right-0 transform translate-x-8 mb-4 animate-fadeIn">
-                    <div className="relative bg-black bg-opacity-50 rounded-3xl px-8 py-6 shadow-xl border-2 border-[#bfa76a] border-opacity-50 w-80 h-48 backdrop-blur-sm">
+                    <div className="relative bg-black bg-opacity-50 rounded-3xl px-8 py-6 shadow-xl border-2 border-[#bfa76a] border-opacity-50 w-[416px] h-[312px] backdrop-blur-sm">
                       <div
                         ref={messageContainerRef}
-                        className="text-white text-sm font-medium leading-relaxed h-full overflow-y-auto game-scrollbar"
+                        className="text-white font-medium leading-relaxed h-full overflow-y-auto game-scrollbar"
+                        style={{ fontSize: "19px" }}
                       >
                         <div className="whitespace-pre-wrap break-words">
                           {currentMessage
