@@ -18,6 +18,7 @@ import MyPage from "./pages/MyPage";
 import GameResult from "./pages/GameResult";
 import Review from "./pages/Review";
 import GameIntro from "./pages/GameIntro";
+import RoundIntro from "./pages/RoundIntro";
 import PrivateRoute from "./components/PrivateRoute";
 import ChatbotWidget from "./components/ChatbotWidget";
 import LoadingScreen from "./components/LoadingScreen";
@@ -56,6 +57,7 @@ function App() {
     "/my-page",
     "/game-result",
     "/review",
+    "/roundintro",
   ].includes(location.pathname);
 
   // 현재 라운드 계산
@@ -131,9 +133,17 @@ function App() {
                   🎮 투자 시뮬레이션 게임
                 </h2>
                 <p className="text-lg text-gray-600 mb-6 leading-relaxed">
-                  허허, 용사여!\n주식 투자의 세계로 떠나는 모험을 시작하시게나!
-                  <br />
-                  과인과 함께 현명한 투자자가 되어보지 않겠는가?
+                  {(() => {
+                    const messages = [
+                      "허허, 용사여!\n주식 투자의 세계로 떠나는 모험을 시작하시게나!\n과인과 함께 현명한 투자자가 되어보지 않겠는가?",
+                      "그대가 투자의 길에 발을 들여놓으셨구나!\n이곳은 위대한 투자 영웅이 탄생하는 곳이라네!",
+                      "투자 시뮬레이션의 세계로 오신 것을 환영하네!\n이곳에서 그대의 투자 지혜를 키워보시게!",
+                      "투자 모험의 세계에 발을 들여놓으셨구나!\n과인과 함께 현명한 투자 전략을 세워보시게!",
+                    ];
+                    return messages[
+                      Math.floor(Math.random() * messages.length)
+                    ];
+                  })()}
                 </p>
                 <button
                   onClick={handleCloseIntro}
@@ -171,7 +181,7 @@ function App() {
                       showBoardBg
                         ? {
                             backgroundImage: `url(${boardImage1})`,
-                            backgroundSize: "700px 600px",
+                            backgroundSize: "contain",
                             backgroundPosition: "center",
                             backgroundRepeat: "no-repeat",
                             maxHeight: 3500,
@@ -341,6 +351,22 @@ function App() {
                               }
                             >
                               <Review />
+                            </div>
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="/roundintro"
+                        element={
+                          <PrivateRoute>
+                            <div
+                              className={
+                                showGameBox
+                                  ? "flex-1 flex flex-col h-full w-full"
+                                  : ""
+                              }
+                            >
+                              <RoundIntro />
                             </div>
                           </PrivateRoute>
                         }

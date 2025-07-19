@@ -5,8 +5,32 @@ import { GuideMessageContext } from "../App";
 import { Play } from "lucide-react";
 import pathOfHeroLogo from "../assets/pathofhero.png";
 
-const GUIDE_MSG =
-  "허허, 용사여!\n투자 모험의 세계에 온 것을 환영하네!\n과인과 함께 현명한 투자자가 되어보지 않겠는가?";
+// 다양한 환영 메시지 배열
+const WELCOME_MESSAGES = [
+  "허허, 용사여!\n투자 모험의 세계에 온 것을 환영하네!\n과인과 함께 현명한 투자자가 되어보지 않겠는가?",
+
+  "그대가 투자의 길에 발을 들여놓으셨구나!\n이곳은 위대한 투자 영웅이 탄생하는 곳이라네!\n과인의 조언을 참고하시면 좋겠네!",
+
+  "투자 시뮬레이션의 세계로 오신 것을 환영하네!\n이곳에서 그대의 투자 지혜를 키워보시게!",
+
+  "투자 모험의 세계에 발을 들여놓으셨구나!\n과인과 함께 현명한 투자 전략을 세워보시게!",
+
+  "허허, 용사여!\n이곳은 투자의 지혜를 배우는 성소라네!\n그대가 신중하게 판단하시면 반드시 성공하리라!",
+
+  "그대가 투자의 길을 선택하신 것이 현명하구나!\n이곳에서 투자의 비밀을 배우고 영웅이 되어보시게!",
+
+  "투자 시뮬레이션의 세계에 온 것을 환영하네!\n과인의 조언을 참고하시면 좋겠네!",
+
+  "투자 모험의 세계로 오신 것을 환영하네!\n이곳에서 그대의 투자 실력을 향상시켜보시게!",
+];
+
+// 랜덤하게 환영 메시지 선택
+const getRandomWelcomeMessage = () => {
+  const randomIndex = Math.floor(Math.random() * WELCOME_MESSAGES.length);
+  return WELCOME_MESSAGES[randomIndex];
+};
+
+const GUIDE_MSG = getRandomWelcomeMessage();
 
 const GameIntro = () => {
   const [loading, setLoading] = useState(false);
@@ -26,8 +50,8 @@ const GameIntro = () => {
     // 인트로 페이지를 본 것으로 표시
     localStorage.setItem("hasSeenIntro", "true");
 
-    // 뉴스 페이지로 이동
-    navigate("/news");
+    // 라운드 소개 페이지로 이동
+    navigate("/roundintro?round=1");
   };
 
   if (loading) {

@@ -9,6 +9,8 @@ import { MessageCircle } from "lucide-react";
 import axios from "axios";
 import heroImage1 from "../assets/hero.png"; // 용사 이미지 1 (입 닫힌 상태)
 import heroImage2 from "../assets/hero2.png"; // 용사 이미지 2 (입 열린 상태)
+import heroThinking from "../assets/hero_thinking.png"; // 용사 이미지 3 (생각하는 상태)
+import heroThinking2 from "../assets/hero_thinking2.png"; // 용사 이미지 4 (생각하는 상태 2)
 
 const ChatbotWidget = forwardRef(
   ({ fixedPanel = false, currentRound = 1 }, ref) => {
@@ -21,10 +23,12 @@ const ChatbotWidget = forwardRef(
     const [activeTab, setActiveTab] = useState("recommended"); // "recommended" | "faq"
     const [showSpeechBubble, setShowSpeechBubble] = useState(false); // 말풍선 표시 여부
     const [heroAnimating, setHeroAnimating] = useState(false); // 캐릭터 애니메이션 여부
+    const [loadingAnimating, setLoadingAnimating] = useState(false); // 로딩 애니메이션 여부
 
     const typingIntervalRef = useRef(null);
     const speechTimeoutRef = useRef(null);
     const animationIntervalRef = useRef(null);
+    const loadingAnimationRef = useRef(null);
     const messageContainerRef = useRef(null);
 
     // 라운드별 추천 질문
@@ -87,6 +91,14 @@ const ChatbotWidget = forwardRef(
         }
       }
 
+      // 이전 타이핑 정리
+      if (typingIntervalRef.current) {
+        clearInterval(typingIntervalRef.current);
+      }
+      if (speechTimeoutRef.current) {
+        clearTimeout(speechTimeoutRef.current);
+      }
+
       setCurrentMessage("");
       setShowSpeechBubble(true);
       setIsTyping(true);
@@ -94,14 +106,13 @@ const ChatbotWidget = forwardRef(
       startHeroAnimation();
 
       let index = 0;
+      let currentText = ""; // 로컬 변수로 현재 텍스트 관리
+
       typingIntervalRef.current = setInterval(() => {
         if (index < cleanMessage.length && cleanMessage[index] !== undefined) {
           const char = cleanMessage[index];
-          setCurrentMessage((prev) => {
-            // 이전 메시지도 undefined 체크
-            const safePrev = prev || "";
-            return safePrev + char;
-          });
+          currentText += char; // 로컬 변수에 추가
+          setCurrentMessage(currentText); // 전체 텍스트를 한 번에 설정
           index++;
           // 타이핑될 때마다 스크롤을 아래로
           setTimeout(scrollToBottom, 10);
@@ -140,6 +151,24 @@ const ChatbotWidget = forwardRef(
       }
     };
 
+    // 로딩 애니메이션 시작
+    const startLoadingAnimation = () => {
+      setLoadingAnimating(true);
+      let toggle = false;
+      loadingAnimationRef.current = setInterval(() => {
+        toggle = !toggle;
+        setLoadingAnimating(toggle);
+      }, 600); // 600ms마다 이미지 변경
+    };
+
+    // 로딩 애니메이션 중지
+    const stopLoadingAnimation = () => {
+      if (loadingAnimationRef.current) {
+        clearInterval(loadingAnimationRef.current);
+        setLoadingAnimating(false);
+      }
+    };
+
     // 스크롤을 맨 아래로 이동
     const scrollToBottom = () => {
       if (messageContainerRef.current) {
@@ -174,14 +203,23 @@ const ChatbotWidget = forwardRef(
           }
         }
 
-        // 이전 타이핑이나 타이머 정리
+        // 이전 타이핑이나 타이머 정리 - 더 강력한 정리
         if (typingIntervalRef.current) {
           clearInterval(typingIntervalRef.current);
+          typingIntervalRef.current = null;
         }
         if (speechTimeoutRef.current) {
           clearTimeout(speechTimeoutRef.current);
+          speechTimeoutRef.current = null;
         }
         stopHeroAnimation();
+        stopLoadingAnimation();
+
+        // 현재 메시지와 말풍선 상태 초기화
+        setCurrentMessage("");
+        setShowSpeechBubble(false);
+        setIsTyping(false);
+        setIsSpeaking(false);
 
         // 새 메시지 타이핑 시작
         typeMessage(safeText);
@@ -200,6 +238,9 @@ const ChatbotWidget = forwardRef(
         if (animationIntervalRef.current) {
           clearInterval(animationIntervalRef.current);
         }
+        if (loadingAnimationRef.current) {
+          clearInterval(loadingAnimationRef.current);
+        }
       };
     }, []);
 
@@ -213,15 +254,24 @@ const ChatbotWidget = forwardRef(
     const sendMessage = async (message) => {
       setInput("");
       setLoading(true);
+      startLoadingAnimation(); // 로딩 애니메이션 시작
 
-      // 이전 메시지 정리
+      // 이전 메시지 정리 - 더 강력한 정리
       if (typingIntervalRef.current) {
         clearInterval(typingIntervalRef.current);
+        typingIntervalRef.current = null;
       }
       if (speechTimeoutRef.current) {
         clearTimeout(speechTimeoutRef.current);
+        speechTimeoutRef.current = null;
       }
       stopHeroAnimation();
+
+      // 현재 메시지와 말풍선 상태 초기화
+      setCurrentMessage("");
+      setShowSpeechBubble(false);
+      setIsTyping(false);
+      setIsSpeaking(false);
 
       try {
         const token = localStorage.getItem("token");
@@ -249,11 +299,256 @@ const ChatbotWidget = forwardRef(
         typeMessage("답변을 불러오지 못했습니다.");
       } finally {
         setLoading(false);
+        stopLoadingAnimation(); // 로딩 애니메이션 중지
       }
     };
 
     const handleQuestionClick = (question) => {
       sendMessage(question);
+    };
+
+    // 키워드 클릭 핸들러
+    const handleKeywordClick = async (keyword) => {
+      try {
+        setLoading(true);
+        startLoadingAnimation(); // 로딩 애니메이션 시작
+
+        // 이전 메시지 정리 - 더 강력한 정리
+        if (typingIntervalRef.current) {
+          clearInterval(typingIntervalRef.current);
+          typingIntervalRef.current = null;
+        }
+        if (speechTimeoutRef.current) {
+          clearTimeout(speechTimeoutRef.current);
+          speechTimeoutRef.current = null;
+        }
+        stopHeroAnimation();
+
+        // 현재 메시지와 말풍선 상태 초기화
+        setCurrentMessage("");
+        setShowSpeechBubble(false);
+        setIsTyping(false);
+        setIsSpeaking(false);
+
+        // 해당 라운드의 키워드 관련 뉴스 정보를 요청
+        const token = localStorage.getItem("token");
+        const response = await axios.post(
+          "/api/chatbot/keyword-analysis",
+          {
+            keyword: keyword,
+            round: currentRound,
+          },
+          {
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+          }
+        );
+
+        console.log("API Response:", response);
+        console.log("Response data:", response.data);
+        console.log("Analysis field:", response.data?.analysis);
+
+        if (response.data && response.data.analysis) {
+          const analysis = response.data.analysis;
+          console.log("Analysis content:", analysis);
+          console.log("Analysis type:", typeof analysis);
+          console.log("Analysis length:", analysis?.length);
+
+          // 응답이 이상한 경우 기본 질문으로 대체
+          if (
+            analysis &&
+            typeof analysis === "string" &&
+            analysis.length > 10 &&
+            !analysis.includes("허허") &&
+            !analysis.includes("과인이") &&
+            !analysis.includes("그대가")
+          ) {
+            console.log("Detected abnormal response, using fallback question");
+            // 이상한 응답인 경우 기본 질문으로 대체
+            const questions = [
+              `${keyword}에 대해 자세히 설명해주세요.`,
+              `${keyword}가 투자에 미치는 영향은?`,
+              `${keyword} 관련 투자 전략은?`,
+              `${keyword}가 시장에 미치는 영향은?`,
+              `${keyword} 관련 주목할 만한 기업은?`,
+            ];
+            const randomQuestion =
+              questions[Math.floor(Math.random() * questions.length)];
+            sendMessage(randomQuestion);
+          } else {
+            console.log("Using normal response:", analysis);
+            typeMessage(analysis);
+          }
+        } else {
+          console.log("No analysis field in response, using fallback question");
+          // API 응답이 없을 경우 기본 질문으로 대체
+          const questions = [
+            `${keyword}에 대해 자세히 설명해주세요.`,
+            `${keyword}가 투자에 미치는 영향은?`,
+            `${keyword} 관련 투자 전략은?`,
+            `${keyword}가 시장에 미치는 영향은?`,
+            `${keyword} 관련 주목할 만한 기업은?`,
+          ];
+          const randomQuestion =
+            questions[Math.floor(Math.random() * questions.length)];
+          sendMessage(randomQuestion);
+        }
+      } catch (error) {
+        console.error("키워드 분석 요청 실패:", error);
+        console.error("Error details:", {
+          message: error.message,
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          config: error.config,
+        });
+        // 에러 발생 시 기본 질문으로 대체
+        const questions = [
+          `${keyword}에 대해 자세히 설명해주세요.`,
+          `${keyword}가 투자에 미치는 영향은?`,
+          `${keyword} 관련 투자 전략은?`,
+          `${keyword}가 시장에 미치는 영향은?`,
+          `${keyword} 관련 주목할 만한 기업은?`,
+        ];
+        const randomQuestion =
+          questions[Math.floor(Math.random() * questions.length)];
+        sendMessage(randomQuestion);
+      } finally {
+        setLoading(false);
+        stopLoadingAnimation(); // 로딩 애니메이션 중지
+      }
+    };
+
+    // 키워드 강조 및 클릭 가능한 텍스트로 변환
+    const highlightKeywords = (text) => {
+      if (!text) return "";
+
+      // 키워드 목록 (긴 키워드부터 정렬하여 우선 매칭)
+      const keywords = [
+        "블록체인/암호화폐",
+        "AI/인공지능",
+        "디지털/메타버스",
+        "기술 혁신",
+        "경제 충격",
+        "에너지 위기",
+        "식량 위기",
+        "금리 변동",
+        "환율 변동",
+        "물가 상승",
+        "경기부양책",
+        "경기 회복",
+        "IT 기술",
+        "바이오/제약",
+        "친환경/ESG",
+        "원유/석유",
+        "중국 경제",
+        "미국 경제",
+        "유럽 경제",
+        "통신/5G",
+        "소비/유통",
+        "건설/인프라",
+        "화학/소재",
+        "조선/해운",
+        "게임/엔터",
+        "보험/증권",
+        "고용/실업",
+        "무역/수출",
+        "투자/자본",
+        "규제/정책",
+        "합작/M&A",
+        "배당/주주",
+        "실적/수익",
+        "클라우드",
+        "보안/사이버",
+        "의료/헬스케어",
+        "식품/농업",
+        "자동차/모빌리티",
+        "항공/여행",
+        "리테일/온라인",
+        "물류/배송",
+        "재생에너지",
+        "배터리/2차전지",
+        "반도체장비",
+        "파운드리/팹리스",
+        "전쟁",
+        "인플레이션",
+        "코로나19",
+        "백신 보급",
+        "성장주",
+        "반도체",
+        "전기차",
+        "부동산",
+        "금융권",
+        "교육",
+        "디스플레이",
+        "메모리",
+      ];
+
+      // 모든 매칭을 찾아서 위치별로 정렬
+      const matches = [];
+      keywords.forEach((keyword) => {
+        const regex = new RegExp(
+          keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+          "gi"
+        );
+        let match;
+        while ((match = regex.exec(text)) !== null) {
+          matches.push({
+            keyword,
+            start: match.index,
+            end: regex.lastIndex,
+            text: match[0],
+          });
+        }
+      });
+
+      // 시작 위치로 정렬하고 중복 제거
+      matches.sort((a, b) => a.start - b.start);
+
+      const filteredMatches = [];
+      for (const match of matches) {
+        // 이미 포함된 범위와 겹치는지 확인
+        const isOverlapping = filteredMatches.some(
+          (existing) =>
+            (match.start >= existing.start && match.start < existing.end) ||
+            (match.end > existing.start && match.end <= existing.end) ||
+            (match.start <= existing.start && match.end >= existing.end)
+        );
+
+        if (!isOverlapping) {
+          filteredMatches.push(match);
+        }
+      }
+
+      // React 요소로 변환
+      const parts = [];
+      let lastIndex = 0;
+
+      filteredMatches.forEach((match) => {
+        // 매칭 이전 텍스트 추가
+        if (match.start > lastIndex) {
+          parts.push(text.slice(lastIndex, match.start));
+        }
+
+        // 키워드 추가 (클릭 가능한 span)
+        parts.push(
+          <span
+            key={`${match.keyword}-${match.start}`}
+            className="keyword-highlight cursor-pointer hover:bg-[#bfa76a] hover:bg-opacity-30 px-1 rounded transition-colors duration-200"
+            onClick={() => handleKeywordClick(match.keyword)}
+          >
+            {match.text}
+          </span>
+        );
+
+        lastIndex = match.end;
+      });
+
+      // 남은 텍스트 추가
+      if (lastIndex < text.length) {
+        parts.push(text.slice(lastIndex));
+      }
+
+      return parts.length > 0 ? parts : text;
     };
 
     return (
@@ -271,16 +566,18 @@ const ChatbotWidget = forwardRef(
                       <div
                         ref={messageContainerRef}
                         className="text-white font-medium leading-relaxed h-full overflow-y-auto game-scrollbar"
-                        style={{ fontSize: "19px" }}
+                        style={{ fontSize: "19px", fontFamily: "serif" }}
                       >
                         <div className="whitespace-pre-wrap break-words">
                           {currentMessage
-                            ? currentMessage
-                                .replace(/undefined/g, "")
-                                .replace(/null/g, "")
+                            ? highlightKeywords(
+                                currentMessage
+                                  .replace(/undefined/g, "")
+                                  .replace(/null/g, "")
+                              )
                             : ""}
-                          {isTyping && <span className="animate-pulse">|</span>}
                         </div>
+                        {isTyping && <span className="animate-pulse">|</span>}
                       </div>
                     </div>
                   </div>
@@ -289,7 +586,15 @@ const ChatbotWidget = forwardRef(
                 {/* 용사 캐릭터 이미지 */}
                 <div className="relative transform translate-x-16">
                   <img
-                    src={isSpeaking && heroAnimating ? heroImage2 : heroImage1}
+                    src={
+                      loading
+                        ? loadingAnimating
+                          ? heroThinking
+                          : heroThinking2
+                        : isSpeaking && heroAnimating
+                        ? heroImage2
+                        : heroImage1
+                    }
                     alt="용사"
                     className="w-80 h-80 object-contain transition-all duration-200"
                     style={{
@@ -297,13 +602,6 @@ const ChatbotWidget = forwardRef(
                       transform: isSpeaking ? "scale(1.05)" : "scale(1)",
                     }}
                   />
-
-                  {/* 로딩 스피너 */}
-                  {loading && (
-                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#bfa76a]"></div>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>

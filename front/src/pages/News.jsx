@@ -37,15 +37,128 @@ function getRoundTrendGuide(period, macroNews = null) {
   if (ROUND_TREND_GUIDE[period]) return ROUND_TREND_GUIDE[period];
 
   if (macroNews && macroNews.length > 0) {
-    // 최대 5개의 뉴스 제목을 요약
-    const newsTitles = macroNews
-      .slice(0, 5)
-      .map((news) => news.title.replace(/ 주요 이슈: /, "")); // "주요 이슈: " 부분 제거
-    const summary = `${formattedPeriod}에는 이런 소식들이 있었네: "${newsTitles.join(
-      '", "'
-    )}".`;
+    // 주요 키워드 추출 및 요약
+    const keywords = new Set();
+    macroNews.slice(0, 5).forEach((news) => {
+      const title = news.title.replace(/ 주요 이슈: /, "");
+      // 주요 키워드 추출 (더 많은 키워드 적용)
+      if (title.includes("전쟁")) keywords.add("전쟁");
+      if (title.includes("경제")) keywords.add("경제 충격");
+      if (title.includes("금리")) keywords.add("금리 변동");
+      if (title.includes("인플레이션")) keywords.add("인플레이션");
+      if (title.includes("에너지")) keywords.add("에너지 위기");
+      if (title.includes("식량")) keywords.add("식량 위기");
+      if (title.includes("코로나") || title.includes("COVID"))
+        keywords.add("코로나19");
+      if (title.includes("백신")) keywords.add("백신 보급");
+      if (title.includes("부양책") || title.includes("경기부양"))
+        keywords.add("경기부양책");
+      if (title.includes("회복") || title.includes("반등"))
+        keywords.add("경기 회복");
+      if (title.includes("성장")) keywords.add("성장주");
+      if (title.includes("반도체")) keywords.add("반도체");
+      if (title.includes("IT") || title.includes("기술"))
+        keywords.add("IT 기술");
+      if (title.includes("바이오") || title.includes("제약"))
+        keywords.add("바이오/제약");
+      if (title.includes("전기차") || title.includes("EV"))
+        keywords.add("전기차");
+      if (title.includes("친환경") || title.includes("ESG"))
+        keywords.add("친환경/ESG");
+      if (title.includes("원유") || title.includes("석유"))
+        keywords.add("원유/석유");
+      if (title.includes("달러") || title.includes("환율"))
+        keywords.add("환율 변동");
+      if (title.includes("중국") || title.includes("화웨이"))
+        keywords.add("중국 경제");
+      if (title.includes("미국") || title.includes("연준"))
+        keywords.add("미국 경제");
+      if (title.includes("유럽") || title.includes("ECB"))
+        keywords.add("유럽 경제");
+      if (title.includes("부동산") || title.includes("주택"))
+        keywords.add("부동산");
+      if (title.includes("은행") || title.includes("금융"))
+        keywords.add("금융권");
+      if (title.includes("통신") || title.includes("5G"))
+        keywords.add("통신/5G");
+      if (title.includes("소비") || title.includes("유통"))
+        keywords.add("소비/유통");
+      if (title.includes("건설") || title.includes("인프라"))
+        keywords.add("건설/인프라");
+      if (title.includes("화학") || title.includes("소재"))
+        keywords.add("화학/소재");
+      if (title.includes("조선") || title.includes("해운"))
+        keywords.add("조선/해운");
+      if (title.includes("게임") || title.includes("엔터"))
+        keywords.add("게임/엔터");
+      if (title.includes("교육") || title.includes("에듀"))
+        keywords.add("교육");
+      if (title.includes("보험") || title.includes("증권"))
+        keywords.add("보험/증권");
+      if (title.includes("물가") || title.includes("CPI"))
+        keywords.add("물가 상승");
+      if (title.includes("고용") || title.includes("실업"))
+        keywords.add("고용/실업");
+      if (title.includes("무역") || title.includes("수출"))
+        keywords.add("무역/수출");
+      if (title.includes("투자") || title.includes("자본"))
+        keywords.add("투자/자본");
+      if (title.includes("규제") || title.includes("정책"))
+        keywords.add("규제/정책");
+      if (title.includes("합작") || title.includes("M&A"))
+        keywords.add("합작/M&A");
+      if (title.includes("배당") || title.includes("주주"))
+        keywords.add("배당/주주");
+      if (title.includes("실적") || title.includes("수익"))
+        keywords.add("실적/수익");
+      if (title.includes("혁신") || title.includes("신기술"))
+        keywords.add("기술 혁신");
+      if (title.includes("디지털") || title.includes("메타버스"))
+        keywords.add("디지털/메타버스");
+      if (title.includes("AI") || title.includes("인공지능"))
+        keywords.add("AI/인공지능");
+      if (title.includes("블록체인") || title.includes("암호화폐"))
+        keywords.add("블록체인/암호화폐");
+      if (title.includes("클라우드") || title.includes("클라우드"))
+        keywords.add("클라우드");
+      if (title.includes("보안") || title.includes("사이버"))
+        keywords.add("보안/사이버");
+      if (title.includes("의료") || title.includes("헬스케어"))
+        keywords.add("의료/헬스케어");
+      if (title.includes("식품") || title.includes("농업"))
+        keywords.add("식품/농업");
+      if (title.includes("자동차") || title.includes("모빌리티"))
+        keywords.add("자동차/모빌리티");
+      if (title.includes("항공") || title.includes("여행"))
+        keywords.add("항공/여행");
+      if (title.includes("리테일") || title.includes("온라인"))
+        keywords.add("리테일/온라인");
+      if (title.includes("물류") || title.includes("배송"))
+        keywords.add("물류/배송");
+      if (title.includes("재생에너지") || title.includes("태양광"))
+        keywords.add("재생에너지");
+      if (title.includes("배터리") || title.includes("2차전지"))
+        keywords.add("배터리/2차전지");
+      if (title.includes("반도체장비") || title.includes("장비"))
+        keywords.add("반도체장비");
+      if (title.includes("디스플레이") || title.includes("OLED"))
+        keywords.add("디스플레이");
+      if (title.includes("메모리") || title.includes("DRAM"))
+        keywords.add("메모리");
+      if (title.includes("파운드리") || title.includes("팹리스"))
+        keywords.add("파운드리/팹리스");
+    });
+
+    const keywordList = Array.from(keywords).slice(0, 3); // 최대 3개 키워드
+    const summary =
+      keywordList.length > 0
+        ? `${formattedPeriod}에는 ${keywordList.join(
+            ", "
+          )} 등의 이슈가 있었구나.`
+        : `${formattedPeriod}에는 다양한 경제 이슈들이 있었구나.`;
+
     const tip =
-      "허허, 이러한 시장의 흐름을 잘 읽고, 어떤 산업이 유망할지 신중하게 판단해서 투자해보시게. 과인의 조언을 참고하시면, 기회는 언제나 위기 속에 숨어있는 법이지.";
+      "허허, 이런 시장 상황을 잘 파악하고 어떤 산업이 기회가 될지 신중하게 판단해보시게. 위기 속에 기회가 숨어있는 법이지!";
     return `${summary} ${tip}`;
   }
 

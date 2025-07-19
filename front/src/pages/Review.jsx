@@ -143,8 +143,8 @@ const Review = () => {
         })
       );
 
-      // 다음 라운드로 이동
-      navigate("/news");
+      // 다음 라운드 소개 페이지로 이동
+      navigate(`/roundintro?round=${response.data.new_round_idx + 1}`);
     } catch (error) {
       console.error("라운드 진행 실패:", error);
 

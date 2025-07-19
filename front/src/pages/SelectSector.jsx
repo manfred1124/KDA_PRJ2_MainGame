@@ -725,7 +725,7 @@ const SelectSector = () => {
             className="fixed inset-0 backdrop-blur-md flex items-center justify-center p-4 z-50"
             onClick={handleOrderModalBackdropClick}
           >
-            <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[70vh] overflow-y-auto">
+            <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full h-[80vh] overflow-y-auto">
               <div className="p-6">
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-2xl font-semibold text-gray-800">
@@ -740,14 +740,16 @@ const SelectSector = () => {
                 </div>
 
                 <div className="grid grid-cols-1 gap-6">
-                  {/* 주문 폼 */}
-                  <div className="space-y-4">
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <div className="text-lg font-semibold text-gray-800 mb-2">
-                        {orderModal.stock.name}
-                      </div>
-                      <div className="text-sm text-gray-600 mb-2">
-                        {orderModal.stock.symbol}
+                  {/* 주식 정보 */}
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="text-xl font-semibold text-gray-800">
+                          {orderModal.stock.name}
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          ({orderModal.stock.symbol})
+                        </div>
                       </div>
                       <div
                         className={`text-xl font-medium ${
@@ -756,89 +758,6 @@ const SelectSector = () => {
                       >
                         {orderModal.stock.current_price.toLocaleString()}원
                       </div>
-                    </div>
-
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-normal text-gray-700 mb-2">
-                          거래 유형
-                        </label>
-                        <div className="flex space-x-4">
-                          <button
-                            onClick={() => setOrderType("buy")}
-                            className={`px-4 py-2 rounded-lg font-normal ${
-                              orderType === "buy"
-                                ? "bg-red-600 text-white"
-                                : "bg-gray-200 text-gray-700"
-                            }`}
-                          >
-                            구매하기
-                          </button>
-                          <button
-                            onClick={() => setOrderType("sell")}
-                            className={`px-4 py-2 rounded-lg font-normal ${
-                              orderType === "sell"
-                                ? "bg-blue-600 text-white"
-                                : "bg-gray-200 text-gray-700"
-                            }`}
-                          >
-                            판매하기
-                          </button>
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          수량
-                        </label>
-                        <div className="flex space-x-2">
-                          <input
-                            type="number"
-                            value={orderQty}
-                            onChange={(e) =>
-                              setOrderQty(parseInt(e.target.value) || 1)
-                            }
-                            className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            min="1"
-                          />
-                          <button
-                            onClick={handleMaxQuantity}
-                            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
-                          >
-                            최대
-                          </button>
-                        </div>
-                      </div>
-
-                      <div
-                        className={`${
-                          orderType === "buy" ? "bg-red-50" : "bg-blue-50"
-                        } rounded-lg p-4`}
-                      >
-                        <div className="text-sm text-gray-600">
-                          총 거래 금액
-                        </div>
-                        <div
-                          className={`text-xl font-bold ${
-                            orderType === "buy"
-                              ? "text-red-600"
-                              : "text-blue-600"
-                          }`}
-                        >
-                          {totalAmount.toLocaleString()}원
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={handleOrder}
-                        className={`w-full py-3 rounded-lg font-bold text-white ${
-                          orderType === "buy"
-                            ? "bg-red-600 hover:bg-red-700"
-                            : "bg-blue-600 hover:bg-blue-700"
-                        }`}
-                      >
-                        {orderType === "buy" ? "구매하기" : "판매하기"}
-                      </button>
                     </div>
                   </div>
 
@@ -883,21 +802,155 @@ const SelectSector = () => {
                             재무지표
                           </button>
                         )}
+                        <button
+                          className={`px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 border-2 ${
+                            orderTab === "trade"
+                              ? "bg-[#bfa76a] text-white border-[#a67c3c]"
+                              : "bg-white text-[#7c5c2b] border-[#e6d3a3]"
+                          }`}
+                          style={{ fontFamily: "Jua, sans-serif" }}
+                          onClick={() => setOrderTab("trade")}
+                        >
+                          매매하기
+                        </button>
                       </div>
                     )}
 
                     {/* 탭 내용 */}
-                    {/* 1라운드: 차트만 표시 */}
+                    {/* 1라운드: 차트와 매매하기 탭 표시 */}
                     {(user?.current_round_idx ?? 0) === 0 && (
-                      <div>
-                        <h3 className="text-lg font-bold text-gray-800 mb-4">
-                          주가 차트
-                        </h3>
-                        <TradingViewChart
-                          stock={orderModal.stock}
-                          period={user?.current_period}
-                        />
-                      </div>
+                      <>
+                        {/* 1라운드에서도 탭 버튼 표시 */}
+                        <div className="flex gap-2 mb-4">
+                          <button
+                            className={`px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 border-2 ${
+                              orderTab === "chart"
+                                ? "bg-[#bfa76a] text-white border-[#a67c3c]"
+                                : "bg-white text-[#7c5c2b] border-[#e6d3a3]"
+                            }`}
+                            style={{ fontFamily: "Jua, sans-serif" }}
+                            onClick={() => setOrderTab("chart")}
+                          >
+                            주가 차트
+                          </button>
+                          <button
+                            className={`px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 border-2 ${
+                              orderTab === "trade"
+                                ? "bg-[#bfa76a] text-white border-[#a67c3c]"
+                                : "bg-white text-[#7c5c2b] border-[#e6d3a3]"
+                            }`}
+                            style={{ fontFamily: "Jua, sans-serif" }}
+                            onClick={() => setOrderTab("trade")}
+                          >
+                            매매하기
+                          </button>
+                        </div>
+
+                        {/* 탭 내용 */}
+                        {orderTab === "chart" && (
+                          <div>
+                            <h3 className="text-lg font-bold text-gray-800 mb-4">
+                              주가 차트
+                            </h3>
+                            <TradingViewChart
+                              stock={orderModal.stock}
+                              period={user?.current_period}
+                            />
+                          </div>
+                        )}
+
+                        {orderTab === "trade" && (
+                          <div>
+                            <h3 className="text-lg font-bold text-gray-800 mb-4">
+                              주식 거래
+                            </h3>
+                            <div className="space-y-4">
+                              <div>
+                                <label className="block text-sm font-normal text-gray-700 mb-2">
+                                  거래 유형
+                                </label>
+                                <div className="flex space-x-4">
+                                  <button
+                                    onClick={() => setOrderType("buy")}
+                                    className={`px-4 py-2 rounded-lg font-normal ${
+                                      orderType === "buy"
+                                        ? "bg-red-600 text-white"
+                                        : "bg-gray-200 text-gray-700"
+                                    }`}
+                                  >
+                                    구매하기
+                                  </button>
+                                  <button
+                                    onClick={() => setOrderType("sell")}
+                                    className={`px-4 py-2 rounded-lg font-normal ${
+                                      orderType === "sell"
+                                        ? "bg-blue-600 text-white"
+                                        : "bg-gray-200 text-gray-700"
+                                    }`}
+                                  >
+                                    판매하기
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                  수량
+                                </label>
+                                <div className="flex space-x-2">
+                                  <input
+                                    type="number"
+                                    value={orderQty}
+                                    onChange={(e) =>
+                                      setOrderQty(parseInt(e.target.value) || 1)
+                                    }
+                                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    min="1"
+                                  />
+                                  <button
+                                    onClick={handleMaxQuantity}
+                                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                                  >
+                                    최대
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div
+                                className={`${
+                                  orderType === "buy"
+                                    ? "bg-red-50"
+                                    : "bg-blue-50"
+                                } rounded-lg p-4`}
+                              >
+                                <div className="text-sm text-gray-600">
+                                  총 거래 금액
+                                </div>
+                                <div
+                                  className={`text-xl font-bold ${
+                                    orderType === "buy"
+                                      ? "text-red-600"
+                                      : "text-blue-600"
+                                  }`}
+                                >
+                                  {totalAmount.toLocaleString()}원
+                                </div>
+                              </div>
+
+                              <button
+                                onClick={handleOrder}
+                                className={`w-full py-3 rounded-lg font-bold text-white ${
+                                  orderType === "buy"
+                                    ? "bg-red-600 hover:bg-red-700"
+                                    : "bg-blue-600 hover:bg-blue-700"
+                                }`}
+                              >
+                                {orderType === "buy" ? "구매하기" : "판매하기"}
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </>
                     )}
 
                     {/* 2라운드 이상: 탭으로 전환 */}
@@ -925,18 +978,18 @@ const SelectSector = () => {
                                 stockNews.map((news, index) => (
                                   <div
                                     key={index}
-                                    className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 shadow-sm"
+                                    className="bg-gradient-to-br from-[#f7e6b6] to-[#f3e7c4] rounded-xl p-4 shadow-md border-2 border-[#e6d3a3]"
                                   >
-                                    <div className="text-sm font-normal text-gray-800 mb-2">
+                                    <div className="text-lg font-medium text-[#7c5c2b] mb-3">
                                       {news.title}
                                     </div>
-                                    <div className="text-sm text-gray-600">
+                                    <div className="text-base text-[#a67c3c] leading-relaxed">
                                       {news.content}
                                     </div>
                                   </div>
                                 ))
                               ) : (
-                                <div className="text-gray-500 text-center py-8">
+                                <div className="text-[#a67c3c] text-center py-8 text-base">
                                   관련 뉴스가 없습니다.
                                 </div>
                               )}
@@ -964,6 +1017,99 @@ const SelectSector = () => {
                               </div>
                             </div>
                           )}
+
+                        {/* 매매하기 탭 */}
+                        {orderTab === "trade" && (
+                          <div>
+                            <h3 className="text-lg font-bold text-gray-800 mb-4">
+                              주식 거래
+                            </h3>
+                            <div className="space-y-4">
+                              <div>
+                                <label className="block text-sm font-normal text-gray-700 mb-2">
+                                  거래 유형
+                                </label>
+                                <div className="flex space-x-4">
+                                  <button
+                                    onClick={() => setOrderType("buy")}
+                                    className={`px-4 py-2 rounded-lg font-normal ${
+                                      orderType === "buy"
+                                        ? "bg-red-600 text-white"
+                                        : "bg-gray-200 text-gray-700"
+                                    }`}
+                                  >
+                                    구매하기
+                                  </button>
+                                  <button
+                                    onClick={() => setOrderType("sell")}
+                                    className={`px-4 py-2 rounded-lg font-normal ${
+                                      orderType === "sell"
+                                        ? "bg-blue-600 text-white"
+                                        : "bg-gray-200 text-gray-700"
+                                    }`}
+                                  >
+                                    판매하기
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                  수량
+                                </label>
+                                <div className="flex space-x-2">
+                                  <input
+                                    type="number"
+                                    value={orderQty}
+                                    onChange={(e) =>
+                                      setOrderQty(parseInt(e.target.value) || 1)
+                                    }
+                                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    min="1"
+                                  />
+                                  <button
+                                    onClick={handleMaxQuantity}
+                                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                                  >
+                                    최대
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div
+                                className={`${
+                                  orderType === "buy"
+                                    ? "bg-red-50"
+                                    : "bg-blue-50"
+                                } rounded-lg p-4`}
+                              >
+                                <div className="text-sm text-gray-600">
+                                  총 거래 금액
+                                </div>
+                                <div
+                                  className={`text-xl font-bold ${
+                                    orderType === "buy"
+                                      ? "text-red-600"
+                                      : "text-blue-600"
+                                  }`}
+                                >
+                                  {totalAmount.toLocaleString()}원
+                                </div>
+                              </div>
+
+                              <button
+                                onClick={handleOrder}
+                                className={`w-full py-3 rounded-lg font-bold text-white ${
+                                  orderType === "buy"
+                                    ? "bg-red-600 hover:bg-red-700"
+                                    : "bg-blue-600 hover:bg-blue-700"
+                                }`}
+                              >
+                                {orderType === "buy" ? "구매하기" : "판매하기"}
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </>
                     )}
                   </div>
@@ -1276,9 +1422,6 @@ const TradingViewChart = ({ stock, period }) => {
         className="w-full border border-gray-200 rounded"
         style={{ height: "300px" }}
       />
-      <div className="mt-2 text-xs text-gray-500 text-center">
-        🔍 마우스 휠: 확대/축소 | 드래그: 이동 | 호버: 상세정보
-      </div>
     </div>
   );
 };

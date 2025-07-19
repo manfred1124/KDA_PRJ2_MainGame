@@ -412,6 +412,186 @@ async def chatbot(
 
     return {"answer": answer}
 
+@app.post("/api/chatbot/keyword-analysis")
+async def keyword_analysis(
+    keyword_data: dict = Body(...),
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: AsyncSession = Depends(get_db)
+):
+    """키워드 관련 뉴스를 기반으로 해당 라운드의 사건과 영향을 분석"""
+    try:
+        user_id = auth_service.verify_token(credentials.credentials)
+        user = await db.execute(select(User).where(User.id == user_id))
+        user = user.scalar_one_or_none()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        keyword = keyword_data.get("keyword")
+        round_number = keyword_data.get("round", 1)
+        
+        print(f"Keyword analysis request - keyword: {keyword}, round: {round_number}")
+        
+        if not keyword:
+            raise HTTPException(status_code=400, detail="Keyword is required")
+        
+        # 사용자의 라운드 기간 가져오기
+        periods = json.loads(user.round_periods)
+        if round_number > 0 and round_number <= len(periods):
+            target_period = periods[round_number - 1]
+        else:
+            target_period = periods[0] if periods else "2021년 상반기"
+        
+        print(f"Target period: {target_period}")
+        
+        # 해당 기간의 뉴스 데이터 가져오기 (더 넓은 범위로 검색)
+        all_news = await news_service.get_news_until_period(db, target_period)
+        print(f"Found {len(all_news)} total news for period {target_period}")
+        
+        # 키워드 검색을 위해 전체 뉴스에서도 검색 (기간 제한 없이)
+        if not all_news or len(all_news) < 10:  # 뉴스가 적으면 전체 검색
+            result = await db.execute(select(News).order_by(News.period, News.date))
+            all_news = result.scalars().all()
+            print(f"Expanded search: Found {len(all_news)} total news from all periods")
+        
+        # 디버깅: 처음 몇 개 뉴스 제목 출력
+        if all_news:
+            print("Sample news titles:")
+            for i, news in enumerate(all_news[:5]):
+                print(f"  {i+1}. {news.title}")
+        else:
+            print("No news found for this period")
+        
+        # 키워드와 관련된 뉴스 필터링
+        related_news = []
+        
+        # 키워드별 관련 단어 매핑
+        keyword_mappings = {
+            "전쟁": ["전쟁", "러시아", "우크라이나", "분쟁", "군사", "국제정세"],
+            "금리 변동": ["금리", "연준", "한국은행", "기준금리", "인상", "인하"],
+            "금융권": ["금융", "은행", "증권", "보험", "금융권"],
+            "경기 회복": ["경기", "회복", "성장", "V자", "부양"],
+            "인플레이션": ["인플레이션", "물가", "CPI", "물가상승"],
+            "반도체": ["반도체", "메모리", "SK하이닉스", "삼성전자"],
+            "전기차": ["전기차", "테슬라", "EV", "배터리"],
+            "바이오/제약": ["바이오", "제약", "백신", "신약"],
+            "IT 기술": ["IT", "기술", "디지털", "클라우드"],
+            "부동산": ["부동산", "아파트", "집값", "정책"]
+        }
+        
+        # 키워드에 해당하는 관련 단어들 가져오기
+        related_terms = keyword_mappings.get(keyword, [keyword])
+        
+        for news in all_news:
+            # 제목과 요약에서 관련 단어 검색
+            title_lower = news.title.lower()
+            summary_lower = news.summary.lower() if news.summary else ""
+            
+            for term in related_terms:
+                if term.lower() in title_lower or term.lower() in summary_lower:
+                    related_news.append(news)
+                    break  # 한 번 매칭되면 중복 추가 방지
+        
+        print(f"Searching for keyword '{keyword}' with related terms: {related_terms}")
+        print(f"Found {len(related_news)} related news for keyword '{keyword}'")
+        
+        # 관련 뉴스가 없으면 전체 뉴스에서 키워드 검색
+        if not related_news:
+            for news in all_news:
+                if keyword.lower() in news.title.lower():
+                    related_news.append(news)
+        
+        print(f"Found {len(related_news)} related news for keyword '{keyword}'")
+        
+        # 뉴스 제목들을 추출하여 컨텍스트 생성
+        news_titles = [news.title for news in related_news[:5]]  # 최대 5개
+        news_context = "관련 뉴스: " + ", ".join(news_titles) if news_titles else "관련 뉴스가 없습니다."
+        
+        print(f"News context: {news_context}")
+        
+        # LLM을 사용하여 뉴스 데이터를 분석하고 해석
+        if related_news:
+            # 관련 뉴스 정보 수집
+            news_info = []
+            for news in related_news[:5]:  # 최대 5개 뉴스
+                news_info.append({
+                    "title": news.title,
+                    "summary": news.summary if news.summary else "",
+                    "period": news.period,
+                    "category": news.category
+                })
+            
+            # LLM에 전달할 컨텍스트 생성
+            context = f"""
+            키워드: {keyword}
+            분석 기간: {target_period}
+            
+            관련 뉴스 정보:
+            """
+            for i, news in enumerate(news_info, 1):
+                context += f"""
+            {i}. 제목: {news['title']}
+               요약: {news['summary']}
+               기간: {news['period']}
+               카테고리: {news['category']}
+            """
+            
+            context += f"""
+            
+            위의 뉴스 정보를 바탕으로 {keyword}에 대해 간결하게 분석해주세요. 
+            세종대왕의 말투로 답변하되, 다음 사항을 포함하되 한 문단으로 제한해주세요:
+            1. {keyword}가 해당 기간에 어떤 영향을 미쳤는지
+            2. 투자자에게 어떤 의미가 있는지 (간단히)
+            
+            "너는 주식 투자 시뮬레이션 게임의 챗봇이야.\n"
+            "너는 주식 투자 게임을 통해 모험을 떠나는 용사를 위해 조언을 해주는 조언 용사야.\n"
+            "너의 말투는 세종대왕의 어투를 정확히 모방해라.\n"
+            "답변 시작할 때는 반드시 '허허,', '과인이 생각하기에는,', '그대의 질문이 심오하구나,', '좋은 접근이군,' 같은 표현으로 시작해라.\n"
+            "문장 끝에는 '~하시게', '~하시는 것이 좋겠네', '~하는 것이 현명하리라' 같은 표현을 사용해라.\n"
+            "투자 조언을 줄 때는 '그대가 신중하게 판단하시게', '과인의 조언을 참고하시게', '이런 관점도 있으니 생각해보시게' 같은 표현을 사용해라.\n"
+            "예시: '허허, 그대의 질문이 심오하구나. 글로벌 부채 급증은 경제에 큰 부담을 주는 것이니, 그대가 신중하게 판단하시게. 과인의 조언을 참고하시면, 이런 시기에는 안전자산에 눈을 돌리는 것이 현명하리라.'\n"
+            최대 2-3문장으로 간결하게 답변해주세요.
+            """
+            
+            try:
+                # LLM 호출
+                llm = ChatOpenAI(
+                    model_name="gpt-3.5-turbo",
+                    temperature=0.3,  # 더 일관된 답변을 위해 낮춤
+                    openai_api_key=os.getenv("OPENAI_API_KEY")
+                )
+                
+                messages = [
+                    SystemMessage(content="당신은 세종대왕의 말투를 사용하는 현명한 투자 조언자입니다. 뉴스 데이터를 바탕으로 키워드에 대한 심층 분석을 제공합니다."),
+                    HumanMessage(content=context)
+                ]
+                
+                response = llm(messages)
+                answer = response.content
+                
+                print(f"LLM generated answer: {answer}")
+                
+            except Exception as llm_error:
+                print(f"LLM call failed: {llm_error}")
+                # LLM 실패 시 기본 응답
+                news_titles = [news.title for news in related_news[:3]]
+                news_summary = ", ".join(news_titles)
+                answer = f"허허, {target_period}에는 {keyword}와 관련하여 {news_summary} 등의 소식이 있었구나. 이런 시장 상황을 잘 파악하고 투자에 활용하시게."
+        else:
+            # 관련 뉴스가 없는 경우
+            answer = f"허허, {target_period}에는 {keyword}와 관련한 뉴스가 적었구나. 그대가 직접 시장을 관찰하고 정보를 수집하시는 것이 현명하리라."
+        
+        print(f"Generated analysis: {answer}")
+        print(f"Response data structure: {type(answer)}, length: {len(answer) if answer else 0}")
+        return {"analysis": answer}
+        
+    except Exception as e:
+        print(f"Keyword analysis error: {e}")
+        import traceback
+        traceback.print_exc()
+        # 에러 발생 시 기본 응답
+        default_response = f"허허, {keyword_data.get('keyword', '이 키워드')}에 대한 정보를 찾기 어려우니, 그대가 직접 시장을 관찰하시는 것이 좋겠네."
+        return {"analysis": default_response}
+
 @app.get("/api/portfolio/transactions")
 async def get_transaction_history(
     credentials: HTTPAuthorizationCredentials = Depends(security),

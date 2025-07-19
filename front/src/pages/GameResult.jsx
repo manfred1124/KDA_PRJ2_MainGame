@@ -66,7 +66,7 @@ const GameResult = () => {
         // 네비게이션 바 업데이트를 위한 이벤트 발생
         window.dispatchEvent(new Event("transactionComplete"));
 
-        navigate("/");
+        navigate("/roundintro?round=1");
       } else {
         // 백업: 사용자 정보 직접 조회
         try {
@@ -81,7 +81,7 @@ const GameResult = () => {
 
           window.dispatchEvent(new Event("transactionComplete"));
 
-          navigate("/");
+          navigate("/roundintro?round=1");
         } catch (userError) {
           console.error("사용자 정보 업데이트 실패:", userError);
           window.location.reload();
