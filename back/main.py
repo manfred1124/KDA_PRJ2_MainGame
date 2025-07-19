@@ -430,25 +430,55 @@ async def keyword_analysis(
         round_number = keyword_data.get("round", 1)
         
         print(f"Keyword analysis request - keyword: {keyword}, round: {round_number}")
+        print(f"Keyword type: {type(keyword)}")
         
         if not keyword:
             raise HTTPException(status_code=400, detail="Keyword is required")
         
         # 사용자의 라운드 기간 가져오기
-        periods = json.loads(user.round_periods)
-        if round_number > 0 and round_number <= len(periods):
-            target_period = periods[round_number - 1]
+        periods = None
+        try:
+            if user.round_periods:
+                periods = json.loads(user.round_periods)
+                print(f"Successfully parsed user periods: {periods}")
+            else:
+                print("User round_periods is None or empty")
+        except Exception as e:
+            print(f"Error parsing user.round_periods: {e}")
+            periods = None
+        
+        print(f"User periods: {periods}")
+        print(f"User current_round_idx: {user.current_round_idx}")
+        print(f"Requested round_number: {round_number}")
+        
+        # 기간이 없거나 유효하지 않으면 기본 기간 사용
+        if not periods or len(periods) == 0:
+            # 기본 기간 설정 (라운드별로 다른 기간)
+            default_periods = ["2020 H1", "2020 H2", "2021 H1", "2021 H2", "2022 H1", "2022 H2", "2023 H1", "2023 H2", "2024 H1", "2024 H2"]
+            if round_number > 0 and round_number <= len(default_periods):
+                target_period = default_periods[round_number - 1]
+            else:
+                target_period = "2021 H1"  # 기본값
+            print(f"Using default period: {target_period}")
         else:
-            target_period = periods[0] if periods else "2021년 상반기"
+            # 라운드 번호가 1부터 시작하므로 인덱스 조정
+            if round_number > 0 and round_number <= len(periods):
+                target_period = periods[round_number - 1]
+            else:
+                # 라운드 번호가 범위를 벗어나면 현재 라운드 사용
+                current_round_idx = user.current_round_idx
+                if current_round_idx < len(periods):
+                    target_period = periods[current_round_idx]
+                else:
+                    target_period = periods[0] if periods else "2021 H1"
+            print(f"Target period: {target_period}")
         
-        print(f"Target period: {target_period}")
-        
-        # 해당 기간의 뉴스 데이터 가져오기 (더 넓은 범위로 검색)
+        # 해당 기간의 뉴스 데이터 가져오기
         all_news = await news_service.get_news_until_period(db, target_period)
         print(f"Found {len(all_news)} total news for period {target_period}")
         
-        # 키워드 검색을 위해 전체 뉴스에서도 검색 (기간 제한 없이)
-        if not all_news or len(all_news) < 10:  # 뉴스가 적으면 전체 검색
+        # 뉴스가 적으면 전체 뉴스에서 검색
+        if not all_news or len(all_news) < 10:
             result = await db.execute(select(News).order_by(News.period, News.date))
             all_news = result.scalars().all()
             print(f"Expanded search: Found {len(all_news)} total news from all periods")
@@ -461,44 +491,113 @@ async def keyword_analysis(
         else:
             print("No news found for this period")
         
+        # 디버깅: 처음 몇 개 뉴스 제목 출력
+        if all_news:
+            print("Sample news titles:")
+            for i, news in enumerate(all_news[:5]):
+                print(f"  {i+1}. {news.title}")
+        else:
+            print("No news found for this period")
+        
         # 키워드와 관련된 뉴스 필터링
         related_news = []
         
-        # 키워드별 관련 단어 매핑
+        # 키워드별 관련 단어 매핑 (프론트엔드 키워드와 정확히 일치)
         keyword_mappings = {
+            "블록체인/암호화폐": ["블록체인", "암호화폐", "비트코인", "이더리움", "가상화폐", "디지털자산"],
+            "AI/인공지능": ["AI", "인공지능", "머신러닝", "딥러닝", "자동화", "스마트"],
+            "디지털/메타버스": ["디지털", "메타버스", "가상현실", "VR", "AR", "온라인"],
+            "기술 혁신": ["기술", "혁신", "신기술", "개발", "연구", "특허"],
+            "경제 충격": ["경제", "충격", "위기", "불황", "침체", "경기"],
+            "에너지 위기": ["에너지", "위기", "전력", "원유", "석유", "가스"],
+            "식량 위기": ["식량", "위기", "농산물", "곡물", "식품", "농업"],
+            "금리 변동": ["금리", "변동", "연준", "한국은행", "기준금리", "인상", "인하"],
+            "환율 변동": ["환율", "변동", "달러", "원화", "외환", "통화"],
+            "물가 상승": ["물가", "상승", "CPI", "인플레이션", "물가상승률"],
+            "경기부양책": ["경기부양", "부양책", "경제부양", "재정정책", "통화정책"],
+            "경기 회복": ["경기", "회복", "성장", "V자", "부양", "경제회복"],
+            "IT 기술": ["IT", "기술", "정보기술", "소프트웨어", "하드웨어"],
+            "바이오/제약": ["바이오", "제약", "백신", "신약", "바이오기업", "제약업계"],
+            "친환경/ESG": ["친환경", "ESG", "환경", "사회", "지배구조", "탄소중립"],
+            "원유/석유": ["원유", "석유", "에너지", "가스", "연료"],
+            "중국 경제": ["중국", "경제", "화웨이", "알리바바", "바이두"],
+            "미국 경제": ["미국", "경제", "연준", "달러", "월가"],
+            "유럽 경제": ["유럽", "경제", "ECB", "유로", "EU"],
+            "통신/5G": ["통신", "5G", "네트워크", "SKT", "KT", "LG유플러스"],
+            "소비/유통": ["소비", "유통", "리테일", "온라인", "오프라인"],
+            "건설/인프라": ["건설", "인프라", "부동산", "아파트", "건축"],
+            "화학/소재": ["화학", "소재", "LG화학", "롯데케미칼", "한화솔루션"],
+            "조선/해운": ["조선", "해운", "선박", "현대중공업", "삼성중공업"],
+            "게임/엔터": ["게임", "엔터", "넥슨", "넷마블", "엔씨소프트"],
+            "보험/증권": ["보험", "증권", "삼성생명", "교보생명", "한화생명"],
+            "고용/실업": ["고용", "실업", "취업", "노동시장", "일자리"],
+            "무역/수출": ["무역", "수출", "수입", "무역협정", "관세"],
+            "투자/자본": ["투자", "자본", "벤처", "스타트업", "M&A"],
+            "규제/정책": ["규제", "정책", "법안", "제도", "정부", "규제정책", "법률"],
+            "합작/M&A": ["합작", "M&A", "인수", "합병", "제휴"],
+            "배당/주주": ["배당", "주주", "배당금", "주주환원", "자사주"],
+            "실적/수익": ["실적", "수익", "매출", "영업이익", "당기순이익"],
+            "클라우드": ["클라우드", "AWS", "Azure", "구글클라우드", "네이버클라우드"],
+            "보안/사이버": ["보안", "사이버", "해킹", "바이러스", "방화벽"],
+            "의료/헬스케어": ["의료", "헬스케어", "병원", "의약품", "진단"],
+            "식품/농업": ["식품", "농업", "농산물", "곡물", "축산"],
+            "자동차/모빌리티": ["자동차", "모빌리티", "현대차", "기아", "테슬라"],
+            "항공/여행": ["항공", "여행", "대한항공", "아시아나", "제주항공"],
+            "리테일/온라인": ["리테일", "온라인", "쿠팡", "배달", "이커머스"],
+            "물류/배송": ["물류", "배송", "CJ대한통운", "한진", "로젠"],
+            "재생에너지": ["재생에너지", "태양광", "풍력", "수력", "친환경"],
+            "배터리/2차전지": ["배터리", "2차전지", "LG에너지솔루션", "삼성SDI", "SK온"],
+            "반도체장비": ["반도체장비", "장비", "ASML", "라미리서치", "케이엘에이"],
+            "파운드리/팹리스": ["파운드리", "팹리스", "TSMC", "삼성전자", "SK하이닉스"],
             "전쟁": ["전쟁", "러시아", "우크라이나", "분쟁", "군사", "국제정세"],
-            "금리 변동": ["금리", "연준", "한국은행", "기준금리", "인상", "인하"],
-            "금융권": ["금융", "은행", "증권", "보험", "금융권"],
-            "경기 회복": ["경기", "회복", "성장", "V자", "부양"],
             "인플레이션": ["인플레이션", "물가", "CPI", "물가상승"],
-            "반도체": ["반도체", "메모리", "SK하이닉스", "삼성전자"],
-            "전기차": ["전기차", "테슬라", "EV", "배터리"],
-            "바이오/제약": ["바이오", "제약", "백신", "신약"],
-            "IT 기술": ["IT", "기술", "디지털", "클라우드"],
-            "부동산": ["부동산", "아파트", "집값", "정책"]
+            "코로나19": ["코로나", "COVID", "팬데믹", "백신", "확산"],
+            "백신 보급": ["백신", "보급", "화이자", "모더나", "아스트라제네카"],
+            "성장주": ["성장주", "성장", "기술주", "신기술", "혁신"],
+            "반도체": ["반도체", "메모리", "SK하이닉스", "삼성전자", "칩"],
+            "전기차": ["전기차", "테슬라", "EV", "배터리", "전기자동차"],
+            "부동산": ["부동산", "아파트", "집값", "정책", "주택"],
+            "금융권": ["금융", "은행", "증권", "보험", "금융권"],
+            "교육": ["교육", "에듀", "학원", "온라인교육", "스킬업"],
+            "디스플레이": ["디스플레이", "OLED", "LCD", "LG디스플레이", "삼성디스플레이"],
+            "메모리": ["메모리", "DRAM", "NAND", "SK하이닉스", "삼성전자"]
         }
         
         # 키워드에 해당하는 관련 단어들 가져오기
         related_terms = keyword_mappings.get(keyword, [keyword])
         
+        # 더 포괄적인 검색을 위해 키워드 자체도 추가
+        if keyword not in related_terms:
+            related_terms.append(keyword)
+        
+        print(f"Searching for keyword '{keyword}' with related terms: {related_terms}")
+        
         for news in all_news:
-            # 제목과 요약에서 관련 단어 검색
+            # 제목, 요약에서 관련 단어 검색 (대소문자 무시)
             title_lower = news.title.lower()
             summary_lower = news.summary.lower() if news.summary else ""
             
             for term in related_terms:
-                if term.lower() in title_lower or term.lower() in summary_lower:
+                term_lower = term.lower()
+                if (term_lower in title_lower or 
+                    term_lower in summary_lower):
+                    print(f"  Found match: '{term}' in news: {news.title[:50]}...")
                     related_news.append(news)
                     break  # 한 번 매칭되면 중복 추가 방지
         
-        print(f"Searching for keyword '{keyword}' with related terms: {related_terms}")
         print(f"Found {len(related_news)} related news for keyword '{keyword}'")
         
-        # 관련 뉴스가 없으면 전체 뉴스에서 키워드 검색
+        # 관련 뉴스가 없으면 더 넓은 범위로 검색
         if not related_news:
+            print(f"No news found with keyword mapping, trying broader search...")
             for news in all_news:
-                if keyword.lower() in news.title.lower():
-                    related_news.append(news)
+                # 키워드의 일부 단어로도 검색
+                keyword_words = keyword.split()
+                for word in keyword_words:
+                    if len(word) > 1 and word.lower() in news.title.lower():
+                        print(f"  Found partial match: '{word}' in news: {news.title[:50]}...")
+                        related_news.append(news)
+                        break
         
         print(f"Found {len(related_news)} related news for keyword '{keyword}'")
         
@@ -577,8 +676,8 @@ async def keyword_analysis(
                 news_summary = ", ".join(news_titles)
                 answer = f"허허, {target_period}에는 {keyword}와 관련하여 {news_summary} 등의 소식이 있었구나. 이런 시장 상황을 잘 파악하고 투자에 활용하시게."
         else:
-            # 관련 뉴스가 없는 경우
-            answer = f"허허, {target_period}에는 {keyword}와 관련한 뉴스가 적었구나. 그대가 직접 시장을 관찰하고 정보를 수집하시는 것이 현명하리라."
+            # 관련 뉴스가 없는 경우 - 더 구체적인 안내
+            answer = f"허허, {target_period}에는 {keyword}와 관련한 뉴스가 특별히 주목받지 못했구나. 하지만 이런 시기에는 다른 관점에서 시장을 바라보는 것이 중요하니, 다른 키워드나 섹터의 뉴스를 살펴보시는 것이 현명하리라."
         
         print(f"Generated analysis: {answer}")
         print(f"Response data structure: {type(answer)}, length: {len(answer) if answer else 0}")

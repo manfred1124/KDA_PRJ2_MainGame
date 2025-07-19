@@ -22,12 +22,25 @@ const GameResult = () => {
   const [gameState, setGameState] = useState(null);
   const [ranking, setRanking] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showGif, setShowGif] = useState(true);
+  const [gifLoaded, setGifLoaded] = useState(false);
   const { addGuideMessage } = useContext(GuideMessageContext);
 
   useEffect(() => {
     addGuideMessage(GUIDE_MSG);
     fetchGameResult();
   }, []);
+
+  useEffect(() => {
+    if (gifLoaded) {
+      // GIF 로드 완료 후 3초 뒤에 GIF 오버레이 숨김
+      const timer = setTimeout(() => {
+        setShowGif(false);
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [gifLoaded]);
 
   const fetchGameResult = async () => {
     try {
@@ -97,6 +110,20 @@ const GameResult = () => {
     navigate("/");
   };
 
+  // GIF 오버레이
+  const gifOverlay = showGif && (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="text-center">
+        <img
+          src="/result.gif"
+          alt="결과 애니메이션"
+          className="max-w-full max-h-screen object-contain"
+          onLoad={() => setGifLoaded(true)}
+        />
+      </div>
+    </div>
+  );
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -132,6 +159,7 @@ const GameResult = () => {
 
   return (
     <div className="min-h-screen p-6" style={{ fontFamily: "serif" }}>
+      {gifOverlay}
       <div className="max-w-6xl mx-auto">
         {/* 헤더 */}
         <div className="text-center mb-8">

@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import { GuideMessageContext } from "../App";
 import axios from "axios";
 import { toast } from "react-hot-toast";
 
@@ -28,6 +29,17 @@ const RoundIntro = () => {
   const { user } = useAuth();
   const [currentRound, setCurrentRound] = useState(1);
   const [loading, setLoading] = useState(true);
+  const { addGuideMessage } = useContext(GuideMessageContext);
+
+  // 라운드별 용사 조언
+  const getHeroAdvice = (round) => {
+    const adviceData = {
+      1: "허허, 1라운드에서는 차트 분석 기초 마스터에 집중하시게!\n\n차트 정보를 적절히 활용하여 현명한 투자 결정을 내리시길 바라네.",
+      2: "허허, 2라운드에서는 뉴스와 차트 종합 분석에 집중하시게!\n\n차트와 뉴스 정보를 적절히 활용하여 현명한 투자 결정을 내리시길 바라네.",
+      3: "허허, 3라운드에서는 완전한 투자 분석 마스터에 집중하시게!\n\n차트와 뉴스, 재무정보를 적절히 활용하여 현명한 투자 결정을 내리시길 바라네.",
+    };
+    return adviceData[round] || adviceData[1];
+  };
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -44,6 +56,17 @@ const RoundIntro = () => {
 
     setLoading(false);
   }, [location.search, user]);
+
+  // 라운드가 변경될 때 용사의 조언을 채팅창에 표시
+  useEffect(() => {
+    if (!loading) {
+      const heroAdvice = getHeroAdvice(currentRound);
+      // 1초 후에 용사의 조언을 표시
+      setTimeout(() => {
+        addGuideMessage(heroAdvice);
+      }, 1000);
+    }
+  }, [currentRound, loading, addGuideMessage]);
 
   // 라운드별 설명 데이터
   const getRoundInfo = (round) => {
@@ -175,12 +198,15 @@ const RoundIntro = () => {
               🗡️ 용사의 조언
             </h2>
             <p
-              className="text-[#7c5c2b] text-lg leading-relaxed mb-4 text-center"
+              className="text-[#7c5c2b] text-lg leading-relaxed mb-4 text-center whitespace-pre-line"
               style={{ fontFamily: "serif" }}
             >
-              "허허, {roundInfo.period}에서는 {roundInfo.roundObjective}에
-              집중하시게! 차트와 뉴스, 재무정보를 적절히 활용하여 현명한 투자
-              결정을 내리시길 바라네."
+              {currentRound === 1 &&
+                `"허허, 1라운드에서는 차트 분석 기초 마스터에 집중하시게!\n차트 정보를 적절히 활용하여 현명한 투자 결정을 내리시길 바라네."`}
+              {currentRound === 2 &&
+                `"허허, 2라운드에서는 뉴스와 차트 종합 분석에 집중하시게!\n차트와 뉴스 정보를 적절히 활용하여 현명한 투자 결정을 내리시길 바라네."`}
+              {currentRound === 3 &&
+                `"허허, 3라운드에서는 완전한 투자 분석 마스터에 집중하시게!\n차트와 뉴스, 재무정보를 적절히 활용하여 현명한 투자 결정을 내리시길 바라네."`}
             </p>
 
             {/* 팁 섹션 */}
