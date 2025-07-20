@@ -418,7 +418,7 @@ const Review = () => {
 
   return (
     <div
-      className="w-full h-full flex flex-col"
+      className="w-full h-full flex flex-col relative"
       style={{ fontFamily: "Jua, sans-serif" }}
     >
       <div className="flex-1 p-6 bg-gradient-to-br from-[#f9f6ef]/30 to-[#f3e7c4]/30">
@@ -455,24 +455,23 @@ const Review = () => {
                 </p>
               </div>
               {/* 우상단 라운드 진행 버튼 */}
-              {selectedPeriod === currentPeriod &&
-                (isLastRound ? (
-                  <button
-                    onClick={handleShowFinalResult}
-                    className="bg-gradient-to-r from-[#3b7c2b] to-[#2d5a21] hover:from-[#2d5a21] hover:to-[#1e3d16] text-white px-6 py-3 rounded-xl transition-all duration-300 font-bold text-base shadow-lg border-2 border-[#4ade80]"
-                    style={{ fontFamily: "Jua, sans-serif" }}
-                  >
-                    최종 결과 확인
-                  </button>
-                ) : (
-                  <button
-                    onClick={handleNextRound}
-                    className="bg-gradient-to-r from-[#3b7c2b] to-[#2d5a21] hover:from-[#2d5a21] hover:to-[#1e3d16] text-white px-6 py-3 rounded-xl transition-all duration-300 font-bold text-base shadow-lg border-2 border-[#4ade80]"
-                    style={{ fontFamily: "Jua, sans-serif" }}
-                  >
-                    다음 라운드
-                  </button>
-                ))}
+              {selectedPeriod === currentPeriod && (
+                <button
+                  className={`justify-self-end ${
+                    isLastRound
+                      ? "bg-[#bfa76a] hover:bg-[#a67c3c]"
+                      : "bg-[#7c5c2b] hover:bg-[#a67c3c]"
+                  } text-white font-normal py-3 px-8 rounded-full text-lg shadow-lg transition-all duration-200 border-2 border-[#e6d3a3]`}
+                  style={{
+                    fontFamily: "Jua, sans-serif",
+                  }}
+                  onClick={
+                    isLastRound ? handleShowFinalResult : handleNextRound
+                  }
+                >
+                  {isLastRound ? "결과 보기" : "결과 확인"}
+                </button>
+              )}
             </div>
           </div>
 
@@ -638,7 +637,7 @@ const Review = () => {
           </h3>
 
           {/* LLM 분석 결과 */}
-          {tradingHistory.length > 0 && (
+          {tradingHistory.length > 0 ? (
             <div className="mb-6 p-4 bg-gradient-to-br from-[#f9f6ef] to-[#f3e7c4] rounded-lg border border-[#e6d3a3]">
               <h4
                 className="text-lg font-bold text-[#7c5c2b] mb-3 flex items-center"
@@ -774,6 +773,31 @@ const Review = () => {
                   </p>
                 </div>
               )}
+            </div>
+          ) : (
+            <div className="mb-6 p-6 bg-gradient-to-br from-[#f9f6ef] to-[#f3e7c4] rounded-lg border border-[#e6d3a3] text-center">
+              <h4
+                className="text-lg font-bold text-[#7c5c2b] mb-4"
+                style={{ fontFamily: "Jua, sans-serif" }}
+              >
+                용사의 조언
+              </h4>
+              <div className="bg-gradient-to-br from-[#fef3c7] to-[#fde68a] p-4 rounded-lg border border-[#f59e0b]">
+                <p
+                  className="text-[#92400e] leading-relaxed text-lg"
+                  style={{ fontFamily: "Jua, sans-serif" }}
+                >
+                  허허, {formatPeriod(selectedPeriod)} 라운드에서는 거래 기록이
+                  없구나!
+                </p>
+                <p
+                  className="text-[#92400e] leading-relaxed mt-2"
+                  style={{ fontFamily: "Jua, sans-serif" }}
+                >
+                  다음 라운드에서는 용감하게 투자에 도전해보시게. 과인의 조언을
+                  참고하여 현명한 투자 결정을 내려보시게!
+                </p>
+              </div>
             </div>
           )}
         </div>
