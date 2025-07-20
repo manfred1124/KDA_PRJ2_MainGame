@@ -544,7 +544,7 @@ const SelectSector = () => {
               {/* 안내/정보 영역: 안내 박스는 버튼 5개 아래에만 렌더링, 기존 오른쪽 안내 박스 완전 삭제 */}
               <div className="w-full">
                 {selected ? (
-                  <div className="bg-gradient-to-br from-[#f7e6b6] to-[#f3e7c4] rounded-xl p-6 shadow-lg border-2 border-[#e6d3a3] min-h-[500px] max-h-[calc(100vh-200px)] w-full flex flex-col">
+                  <div className="bg-gradient-to-br from-[#f7e6b6] to-[#f3e7c4] rounded-xl p-6 shadow-lg border-2 border-[#e6d3a3] min-h-[512px] max-h-[calc(100vh-200px)] w-full flex flex-col">
                     <h3
                       className="text-2xl font-medium text-[#7c5c2b] mb-6 flex-shrink-0"
                       style={{ fontFamily: "Jua, sans-serif" }}
