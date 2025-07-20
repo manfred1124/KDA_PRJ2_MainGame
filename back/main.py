@@ -27,7 +27,7 @@ from schemas import (
 )
 from services import (
     auth_service, stock_service, portfolio_service,
-    news_service, game_service
+    news_service, game_service, financial_service
 )
 from services.game_service import period_to_date
 from services.period_utils import period_to_date
@@ -1871,6 +1871,95 @@ async def analyze_trading_performance(
     except Exception as e:
         print(f"분석 오류: {e}")
         raise HTTPException(status_code=500, detail="분석 중 오류가 발생했습니다.")
+
+# 재무제표 관련 엔드포인트
+@app.get("/api/financial/period/{period}")
+async def get_financial_data_by_period(
+    period: str,
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: AsyncSession = Depends(get_db)
+):
+    """특정 기간의 재무제표 데이터 조회"""
+    user_id = auth_service.verify_token(credentials.credentials)
+    user = await db.execute(select(User).where(User.id == user_id))
+    user = user.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # 3라운드(2024 H1)에만 재무제표 데이터 제공
+    if not financial_service.is_financial_data_available(period):
+        return {
+            "message": "재무제표 데이터는 3라운드(2024 H1)에서만 제공됩니다.",
+            "data": []
+        }
+    
+    financial_data = await financial_service.get_financial_data_by_period(db, period)
+    return {
+        "period": period,
+        "data": financial_data
+    }
+
+@app.get("/api/financial/stock/{symbol}")
+async def get_financial_data_by_stock(
+    symbol: str,
+    period: str = None,
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: AsyncSession = Depends(get_db)
+):
+    """특정 종목의 재무제표 데이터 조회"""
+    user_id = auth_service.verify_token(credentials.credentials)
+    user = await db.execute(select(User).where(User.id == user_id))
+    user = user.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # 기간이 없으면 사용자의 현재 기간 사용
+    if not period:
+        periods = json.loads(user.round_periods)
+        if user.current_round_idx >= len(periods):
+            period = periods[-1]
+        else:
+            period = periods[user.current_round_idx]
+    
+    # 3라운드(2024 H1)에만 재무제표 데이터 제공
+    if not financial_service.is_financial_data_available(period):
+        return {
+            "message": "재무제표 데이터는 3라운드(2024 H1)에서만 제공됩니다.",
+            "data": None
+        }
+    
+    financial_data = await financial_service.get_financial_data_by_stock(db, symbol, period)
+    return {
+        "symbol": symbol,
+        "period": period,
+        "data": financial_data
+    }
+
+@app.get("/api/financial/summary/{period}")
+async def get_financial_summary(
+    period: str,
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: AsyncSession = Depends(get_db)
+):
+    """특정 기간의 재무제표 요약 정보 조회"""
+    user_id = auth_service.verify_token(credentials.credentials)
+    user = await db.execute(select(User).where(User.id == user_id))
+    user = user.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # 3라운드(2024 H1)에만 재무제표 데이터 제공
+    if not financial_service.is_financial_data_available(period):
+        return {
+            "message": "재무제표 데이터는 3라운드(2024 H1)에서만 제공됩니다.",
+            "summary": {}
+        }
+    
+    summary = await financial_service.get_financial_summary_by_period(db, period)
+    return {
+        "period": period,
+        "summary": summary
+    }
 
 @app.get("/api/stocks/{symbol}/price-history")
 async def get_stock_price_history(

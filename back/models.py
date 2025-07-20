@@ -118,4 +118,42 @@ class RoundReview(Base):
     sector_reviews = Column(JSON)  # JSON 형식으로 섹터별 리뷰 저장
     stocks_review = Column(Text)
     final_review = Column(Text)
-    created_at = Column(DateTime(timezone=True), server_default=func.now()) 
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class FinancialStatement(Base):
+    __tablename__ = "financial_statements"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    symbol = Column(String(10), ForeignKey("stocks.symbol"), nullable=False)
+    date = Column(String(20), nullable=False)  # 예: "2024.12", "2024.6"
+    revenue = Column(Float, nullable=True)  # 매출액
+    operating_income = Column(Float, nullable=True)  # 영업이익
+    net_income = Column(Float, nullable=True)  # 당기순이익
+    roe = Column(Float, nullable=True)  # ROE
+    per = Column(Float, nullable=True)  # PER
+    debt_ratio = Column(Float, nullable=True)  # 부채비율
+    eps = Column(Float, nullable=True)  # EPS(기본주당순이익)
+    total_debt = Column(Float, nullable=True)  # 부채총계
+    total_equity = Column(Float, nullable=True)  # 자본총계
+    pbr = Column(Float, nullable=True)  # PBR
+    created_at = Column(DateTime, default=func.now())
+    
+    # 관계
+    stock = relationship("Stock")
+    
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "symbol": self.symbol,
+            "date": self.date,
+            "revenue": self.revenue,
+            "operating_income": self.operating_income,
+            "net_income": self.net_income,
+            "roe": self.roe,
+            "per": self.per,
+            "debt_ratio": self.debt_ratio,
+            "eps": self.eps,
+            "total_debt": self.total_debt,
+            "total_equity": self.total_equity,
+            "pbr": self.pbr
+        } 
