@@ -17,7 +17,6 @@ import {
 import faceImage from "../assets/face.png";
 import { GuideMessageContext } from "../App";
 
-
 const MyPage = () => {
   const { user, updateUser } = useAuth();
   const navigate = useNavigate();
@@ -51,12 +50,10 @@ const MyPage = () => {
           }
         }
       }, 1500);
-      
+
       return () => clearTimeout(timer);
     }
   }, [portfolio, user, loading, addGuideMessage]);
-
-
 
   const fetchPortfolio = async () => {
     try {
@@ -116,34 +113,40 @@ const MyPage = () => {
 
     // 수익률에 따른 간단한 격려
     if (totalProfitPercentage >= 20) {
-      feedback += "훌륭한 성과로다! 20% 이상의 수익률을 달성하셨으니 진정한 투자 고수라 할 수 있겠나이다.";
+      feedback +=
+        "훌륭한 성과로다! 20% 이상의 수익률을 달성하셨으니 진정한 투자 고수라 할 수 있겠나이다.";
     } else if (totalProfitPercentage >= 10) {
-      feedback += "좋은 성과로다! 10% 이상의 수익률로 안정적인 투자를 보여주셨으니 현명한 투자자라 할 수 있겠나이다.";
+      feedback +=
+        "좋은 성과로다! 10% 이상의 수익률로 안정적인 투자를 보여주셨으니 현명한 투자자라 할 수 있겠나이다.";
     } else if (totalProfitPercentage >= 0) {
-      feedback += "양호한 성과로다. 손실 없이 투자를 마무리하셨으니 신중한 투자라 할 수 있겠나이다.";
+      feedback +=
+        "양호한 성과로다. 손실 없이 투자를 마무리하셨으니 신중한 투자라 할 수 있겠나이다.";
     } else {
-      feedback += "손실이 있으나 이는 투자의 길에서 반드시 겪어야 할 시련이라 할 수 있겠나이다.";
+      feedback +=
+        "손실이 있으나 이는 투자의 길에서 반드시 겪어야 할 시련이라 할 수 있겠나이다.";
     }
 
     // 가장 중요한 한 가지 조언 (우선순위 순서)
     if (totalProfitPercentage < 0) {
-      feedback += " 과인의 조언: 다음 라운드에서는 분산 투자와 리스크 관리에 집중하시게.";
+      feedback +=
+        " 과인의 조언: 다음 라운드에서는 분산 투자와 리스크 관리에 집중하시게.";
     } else if (cashRatio > 30) {
-      feedback += " 과인의 조언: 현금 비중이 높으니 적극적인 투자 기회를 찾아보시게.";
+      feedback +=
+        " 과인의 조언: 현금 비중이 높으니 적극적인 투자 기회를 찾아보시게.";
     } else if (cashRatio < 10) {
-      feedback += " 과인의 조언: 현금 비중이 낮으니 현금 유동성을 확보하는 것도 고려해보시게.";
+      feedback +=
+        " 과인의 조언: 현금 비중이 낮으니 현금 유동성을 확보하는 것도 고려해보시게.";
     } else if (tradeHistory.length > 10) {
       feedback += " 과인의 조언: 거래가 빈번하니 신중한 매매를 하시게.";
     } else if (tradeHistory.length < 3) {
       feedback += " 과인의 조언: 더 적극적인 투자 기회를 찾아보시게.";
     } else {
-      feedback += " 과인의 조언: 현재 전략을 유지하되 더욱 신중하게 접근하시게.";
+      feedback +=
+        " 과인의 조언: 현재 전략을 유지하되 더욱 신중하게 접근하시게.";
     }
 
     return feedback;
   };
-
-
 
   if (loading) {
     return (
@@ -177,9 +180,9 @@ const MyPage = () => {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-4">
             <div className="p-3 bg-[#e6d3a3] bg-opacity-80 rounded-full border-2 border-[#bfa76a] overflow-hidden">
-              <img 
-                src={faceImage} 
-                alt="User Avatar" 
+              <img
+                src={faceImage}
+                alt="User Avatar"
                 className="w-8 h-8 object-cover"
               />
             </div>
@@ -243,7 +246,9 @@ const MyPage = () => {
         >
           <div className="flex items-center justify-between">
             <div className="w-full">
-              <p className="text-xs font-medium text-[#a67c3c] mb-1">보유 현금</p>
+              <p className="text-xs font-medium text-[#a67c3c] mb-1">
+                보유 현금
+              </p>
               <p className="text-sm font-bold text-[#7c5c2b] whitespace-nowrap overflow-hidden text-ellipsis">
                 {portfolio.total_balance.toLocaleString()}원
               </p>
@@ -271,7 +276,9 @@ const MyPage = () => {
         >
           <div className="flex items-center justify-between">
             <div className="w-full">
-              <p className="text-xs font-medium text-[#a67c3c] mb-1">미실현 손익</p>
+              <p className="text-xs font-medium text-[#a67c3c] mb-1">
+                미실현 손익
+              </p>
               <p
                 className={`text-sm font-bold whitespace-nowrap overflow-hidden text-ellipsis ${
                   portfolio.total_profit_loss >= 0
@@ -291,7 +298,9 @@ const MyPage = () => {
         >
           <div className="flex items-center justify-between">
             <div className="w-full">
-              <p className="text-xs font-medium text-[#a67c3c] mb-1">실현 수익</p>
+              <p className="text-xs font-medium text-[#a67c3c] mb-1">
+                실현 수익
+              </p>
               <p
                 className={`text-sm font-bold whitespace-nowrap overflow-hidden text-ellipsis ${
                   portfolio.realized_profit >= 0
@@ -331,7 +340,9 @@ const MyPage = () => {
         >
           <div className="flex items-center justify-between">
             <div className="w-full">
-              <p className="text-xs font-medium text-[#a67c3c] mb-1">총 수익률</p>
+              <p className="text-xs font-medium text-[#a67c3c] mb-1">
+                총 수익률
+              </p>
               <p
                 className={`text-sm font-bold whitespace-nowrap overflow-hidden text-ellipsis ${
                   portfolio.total_profit_percentage >= 0
@@ -520,32 +531,41 @@ const MyPage = () => {
                   let currentPrice = tx.current_price;
                   let profitRate = null;
                   let opportunityCost = null;
-                  
+
                   // 매수 거래의 경우: 해당 기간의 현재가와 비교하여 수익률 계산
-                  if (tx.transaction_type === "buy" && currentPrice !== null && currentPrice > 0) {
+                  if (
+                    tx.transaction_type === "buy" &&
+                    currentPrice !== null &&
+                    currentPrice > 0
+                  ) {
                     profitRate = ((currentPrice - tx.price) / tx.price) * 100;
                   }
-                  
+
                   // 매도 거래의 경우: 매도가와 매수가 비교하여 실현 수익률 계산
                   if (tx.transaction_type === "sell") {
                     // 매도 거래는 이미 실현된 거래이므로 수익률 계산
                     // 매도가가 거래가격이므로, 매수가는 이전 매수 거래에서 찾아야 함
-                    const buyTransaction = tradeHistory.find(t => 
-                      t.stock_id === tx.stock_id && 
-                      t.transaction_type === "buy" && 
-                      t.round_number < tx.round_number
+                    const buyTransaction = tradeHistory.find(
+                      (t) =>
+                        t.stock_id === tx.stock_id &&
+                        t.transaction_type === "buy" &&
+                        t.round_number < tx.round_number
                     );
                     if (buyTransaction) {
-                      profitRate = ((tx.price - buyTransaction.price) / buyTransaction.price) * 100;
+                      profitRate =
+                        ((tx.price - buyTransaction.price) /
+                          buyTransaction.price) *
+                        100;
                     }
-                    
+
                     // 기회비용 계산: 매도 후 현재가와 매도가 비교
                     // 매도 거래의 경우, 해당 기간의 현재가와 매도가 비교
                     if (currentPrice && currentPrice > 0) {
-                      opportunityCost = ((currentPrice - tx.price) / tx.price) * 100;
+                      opportunityCost =
+                        ((currentPrice - tx.price) / tx.price) * 100;
                     }
                   }
-                  
+
                   return (
                     <tr
                       key={idx}
@@ -554,21 +574,31 @@ const MyPage = () => {
                       <td className="py-3 px-4 font-semibold text-[#7c5c2b] whitespace-nowrap">
                         <div className="max-w-[80px] overflow-hidden">
                           {tx.stock_name.length <= 6 ? (
-                            <span className="whitespace-nowrap">{tx.stock_name}</span>
+                            <span className="whitespace-nowrap">
+                              {tx.stock_name}
+                            </span>
                           ) : (
-                            <span className="whitespace-normal break-words">{tx.stock_name}</span>
+                            <span className="whitespace-normal break-words">
+                              {tx.stock_name}
+                            </span>
                           )}
                         </div>
                       </td>
                       <td className="py-3 px-4 text-[#a67c3c]">
                         {tx.transaction_type === "buy" ? "매수" : "매도"}
                       </td>
-                      <td className="py-3 px-4 whitespace-nowrap">{tx.quantity}</td>
+                      <td className="py-3 px-4 whitespace-nowrap">
+                        {tx.quantity}
+                      </td>
                       <td className="py-3 px-4 whitespace-nowrap text-xs">
                         {tx.price.toLocaleString()}원
                       </td>
-                      <td className="py-3 px-4 whitespace-nowrap">{tx.round_number}</td>
-                      <td className="py-3 px-4 whitespace-nowrap text-xs">{tx.period || "-"}</td>
+                      <td className="py-3 px-4 whitespace-nowrap">
+                        {tx.round_number}
+                      </td>
+                      <td className="py-3 px-4 whitespace-nowrap text-xs">
+                        {tx.period || "-"}
+                      </td>
                       <td className="py-3 px-4 whitespace-nowrap text-xs">
                         {currentPrice !== null && currentPrice > 0
                           ? currentPrice.toLocaleString() + "원"
@@ -577,8 +607,8 @@ const MyPage = () => {
                       <td
                         className={`py-3 px-4 whitespace-nowrap text-xs ${
                           profitRate !== null
-                            ? profitRate >= 0 
-                              ? "text-[#3b7c2b]" 
+                            ? profitRate >= 0
+                              ? "text-[#3b7c2b]"
                               : "text-[#a63c2b]"
                             : ""
                         }`}
@@ -591,14 +621,16 @@ const MyPage = () => {
                       </td>
                       <td
                         className={`py-3 px-4 whitespace-nowrap text-xs ${
-                          tx.transaction_type === "sell" && opportunityCost !== null
+                          tx.transaction_type === "sell" &&
+                          opportunityCost !== null
                             ? opportunityCost >= 0
                               ? "text-[#3b7c2b]"
                               : "text-[#a63c2b]"
                             : ""
                         }`}
                       >
-                        {tx.transaction_type === "sell" && opportunityCost !== null
+                        {tx.transaction_type === "sell" &&
+                        opportunityCost !== null
                           ? (opportunityCost >= 0 ? "+" : "") +
                             opportunityCost.toFixed(2) +
                             "%"
@@ -627,27 +659,35 @@ const MyPage = () => {
               let currentPrice = tx.current_price;
               let profitRate = null;
               let opportunityCost = null;
-              
+
               // 매수 거래의 경우: 해당 기간의 현재가와 비교하여 수익률 계산
-              if (tx.transaction_type === "buy" && currentPrice !== null && currentPrice > 0) {
+              if (
+                tx.transaction_type === "buy" &&
+                currentPrice !== null &&
+                currentPrice > 0
+              ) {
                 profitRate = ((currentPrice - tx.price) / tx.price) * 100;
               }
-              
+
               // 매도 거래의 경우: 매도가와 매수가 비교하여 실현 수익률 계산
               if (tx.transaction_type === "sell") {
-                const buyTransaction = tradeHistory.find(t => 
-                  t.stock_id === tx.stock_id && 
-                  t.transaction_type === "buy" && 
-                  t.round_number < tx.round_number
+                const buyTransaction = tradeHistory.find(
+                  (t) =>
+                    t.stock_id === tx.stock_id &&
+                    t.transaction_type === "buy" &&
+                    t.round_number < tx.round_number
                 );
                 if (buyTransaction) {
-                  profitRate = ((tx.price - buyTransaction.price) / buyTransaction.price) * 100;
+                  profitRate =
+                    ((tx.price - buyTransaction.price) / buyTransaction.price) *
+                    100;
                 }
-                
+
                 // 기회비용 계산: 매도 후 현재가와 매도가 비교
                 // 매도 거래의 경우, 해당 기간의 현재가와 매도가 비교
                 if (currentPrice && currentPrice > 0) {
-                  opportunityCost = ((currentPrice - tx.price) / tx.price) * 100;
+                  opportunityCost =
+                    ((currentPrice - tx.price) / tx.price) * 100;
                 }
               }
               return (
@@ -659,9 +699,13 @@ const MyPage = () => {
                   <div className="flex items-center justify-between mb-3">
                     <h4 className="font-bold text-[#7c5c2b] text-lg max-w-[120px] overflow-hidden">
                       {tx.stock_name.length <= 6 ? (
-                        <span className="whitespace-nowrap">{tx.stock_name}</span>
+                        <span className="whitespace-nowrap">
+                          {tx.stock_name}
+                        </span>
                       ) : (
-                        <span className="whitespace-normal break-words">{tx.stock_name}</span>
+                        <span className="whitespace-normal break-words">
+                          {tx.stock_name}
+                        </span>
                       )}
                     </h4>
                     <span
