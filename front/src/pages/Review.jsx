@@ -241,13 +241,47 @@ const Review = () => {
       stockPerformanceData.reduce((sum, stock) => sum + stock.return, 0) /
       stockPerformanceData.length;
 
+    // 섹터별 성과 분석
+    const sectorPerformance = {};
+    tradedStocks.forEach((tx) => {
+      const stockData = stockPerformanceData.find(
+        (s) => s.symbol === tx.stock_symbol
+      );
+      if (stockData) {
+        const sector = stockData.sector;
+        if (!sectorPerformance[sector]) {
+          sectorPerformance[sector] = [];
+        }
+        sectorPerformance[sector].push(stockData.return);
+      }
+    });
+
+    // 최고/최저 성과 종목 분석
+    const bestStock = stockPerformanceData
+      .filter((s) => tradedStocks.some((tx) => tx.stock_symbol === s.symbol))
+      .sort((a, b) => b.return - a.return)[0];
+    const worstStock = stockPerformanceData
+      .filter((s) => tradedStocks.some((tx) => tx.stock_symbol === s.symbol))
+      .sort((a, b) => a.return - b.return)[0];
+
+    // 거래 패턴 분석
+    const buyTransactions = tradingHistory.filter(
+      (tx) => tx.transaction_type === "buy"
+    );
+    const sellTransactions = tradingHistory.filter(
+      (tx) => tx.transaction_type === "sell"
+    );
+    const tradingFrequency = tradingHistory.length;
+
     let summary, performance, recommendations;
 
     if (averageTradedReturn > marketAverage + 5) {
       performance = "excellent";
       summary = `훌륭한 투자 성과입니다! 거래한 종목들의 평균 수익률(${averageTradedReturn.toFixed(
         1
-      )}%)이 시장 평균(${marketAverage.toFixed(1)}%)을 크게 상회했습니다.`;
+      )}%)이 시장 평균(${marketAverage.toFixed(1)}%)을 크게 상회했습니다. ${
+        bestStock ? `${bestStock.name}(${bestStock.return.toFixed(1)}%)` : ""
+      }이 가장 높은 수익률을 보였으며, ${tradingFrequency}회의 거래를 통해 적극적인 투자를 진행하셨습니다.`;
       recommendations = [
         "현재 투자 전략을 유지하세요",
         "성공적인 패턴을 다음 라운드에도 적용해보세요",
@@ -257,7 +291,9 @@ const Review = () => {
       performance = "good";
       summary = `좋은 투자 성과입니다. 거래한 종목들의 평균 수익률(${averageTradedReturn.toFixed(
         1
-      )}%)이 시장 평균(${marketAverage.toFixed(1)}%)보다 높습니다.`;
+      )}%)이 시장 평균(${marketAverage.toFixed(1)}%)보다 높습니다. ${
+        bestStock ? `${bestStock.name}(${bestStock.return.toFixed(1)}%)` : ""
+      }이 가장 좋은 성과를 보였으며, ${tradingFrequency}회의 거래로 적절한 투자 활동을 하셨습니다.`;
       recommendations = [
         "현재 투자 방향을 유지하되 더 신중하게 접근하세요",
         "분산 투자를 통해 리스크를 줄여보세요",
@@ -267,7 +303,9 @@ const Review = () => {
       performance = "neutral";
       summary = `보통 수준의 투자 성과입니다. 거래한 종목들의 평균 수익률(${averageTradedReturn.toFixed(
         1
-      )}%)이 시장 평균(${marketAverage.toFixed(1)}%)과 비슷합니다.`;
+      )}%)이 시장 평균(${marketAverage.toFixed(1)}%)과 비슷합니다. ${
+        worstStock ? `${worstStock.name}(${worstStock.return.toFixed(1)}%)` : ""
+      }이 가장 낮은 성과를 보였으며, 투자 전략의 개선이 필요합니다.`;
       recommendations = [
         "더 체계적인 분석을 통해 투자 결정을 내려보세요",
         "차트와 뉴스를 종합적으로 분석해보세요",
@@ -277,7 +315,9 @@ const Review = () => {
       performance = "poor";
       summary = `개선이 필요한 투자 성과입니다. 거래한 종목들의 평균 수익률(${averageTradedReturn.toFixed(
         1
-      )}%)이 시장 평균(${marketAverage.toFixed(1)}%)보다 낮습니다.`;
+      )}%)이 시장 평균(${marketAverage.toFixed(1)}%)보다 낮습니다. ${
+        worstStock ? `${worstStock.name}(${worstStock.return.toFixed(1)}%)` : ""
+      }이 가장 큰 손실을 보였으며, 투자 전략의 전면적인 재검토가 필요합니다.`;
       recommendations = [
         "투자 전략을 재검토해보세요",
         "더 많은 정보를 수집한 후 투자 결정을 내려보세요",
@@ -297,13 +337,9 @@ const Review = () => {
   // 거래한 종목의 매수/매도 정보를 가져오는 함수
   const getStockTransactionInfo = (stockId) => {
     const transactions = tradingHistory.filter((tx) => tx.stock_id === stockId);
-    const buyCount = transactions.filter(
-      (tx) => tx.transaction_type === "buy"
-    ).length;
-    const sellCount = transactions.filter(
-      (tx) => tx.transaction_type === "sell"
-    ).length;
-    return { buyCount, sellCount };
+    const hasBuy = transactions.some((tx) => tx.transaction_type === "buy");
+    const hasSell = transactions.some((tx) => tx.transaction_type === "sell");
+    return { hasBuy, hasSell };
   };
 
   // 현재 라운드가 마지막 라운드인지 확인
@@ -418,10 +454,10 @@ const Review = () => {
 
   return (
     <div
-      className="w-full h-full flex flex-col"
+      className="w-full h-full flex flex-col relative"
       style={{ fontFamily: "Jua, sans-serif" }}
     >
-      <div className="flex-1 p-6 bg-gradient-to-br from-[#f9f6ef]/30 to-[#f3e7c4]/30">
+      <div className="flex-1 p-6">
         {/* 현재 라운드 정보 및 기간 선택기 */}
         <div className="mb-6 bg-gradient-to-br from-[#f7e6b6]/70 to-[#f3e7c4]/70 p-6 rounded-xl border-2 border-[#e6d3a3]/60 shadow-lg backdrop-blur-sm">
           <div className="flex items-center justify-between mb-4">
@@ -455,24 +491,23 @@ const Review = () => {
                 </p>
               </div>
               {/* 우상단 라운드 진행 버튼 */}
-              {selectedPeriod === currentPeriod &&
-                (isLastRound ? (
-                  <button
-                    onClick={handleShowFinalResult}
-                    className="bg-gradient-to-r from-[#3b7c2b] to-[#2d5a21] hover:from-[#2d5a21] hover:to-[#1e3d16] text-white px-6 py-3 rounded-xl transition-all duration-300 font-bold text-base shadow-lg border-2 border-[#4ade80]"
-                    style={{ fontFamily: "Jua, sans-serif" }}
-                  >
-                    최종 결과 확인
-                  </button>
-                ) : (
-                  <button
-                    onClick={handleNextRound}
-                    className="bg-gradient-to-r from-[#3b7c2b] to-[#2d5a21] hover:from-[#2d5a21] hover:to-[#1e3d16] text-white px-6 py-3 rounded-xl transition-all duration-300 font-bold text-base shadow-lg border-2 border-[#4ade80]"
-                    style={{ fontFamily: "Jua, sans-serif" }}
-                  >
-                    다음 라운드
-                  </button>
-                ))}
+              {selectedPeriod === currentPeriod && (
+                <button
+                  className={`justify-self-end ${
+                    isLastRound
+                      ? "bg-[#bfa76a] hover:bg-[#a67c3c]"
+                      : "bg-[#7c5c2b] hover:bg-[#a67c3c]"
+                  } text-white font-normal py-3 px-8 rounded-full text-lg shadow-lg transition-all duration-200 border-2 border-[#e6d3a3]`}
+                  style={{
+                    fontFamily: "Jua, sans-serif",
+                  }}
+                  onClick={
+                    isLastRound ? handleShowFinalResult : handleNextRound
+                  }
+                >
+                  {isLastRound ? "결과 보기" : "결과 확인"}
+                </button>
+              )}
             </div>
           </div>
 
@@ -603,7 +638,7 @@ const Review = () => {
                   tradingHistory.map((tx) => [tx.stock_id, tx])
                 ).values(),
               ].map((tx) => {
-                const { buyCount, sellCount } = getStockTransactionInfo(
+                const { hasBuy, hasSell } = getStockTransactionInfo(
                   tx.stock_id
                 );
                 return (
@@ -617,9 +652,9 @@ const Review = () => {
                     <div className="text-xs opacity-90 mb-2">
                       ({tx.stock_symbol})
                     </div>
-                    <div className="text-xs">
-                      <div className="text-green-200">매수: {buyCount}회</div>
-                      <div className="text-red-200">매도: {sellCount}회</div>
+                    <div className="text-xs space-y-1">
+                      {hasBuy && <div className="text-green-200">매수</div>}
+                      {hasSell && <div className="text-red-200">매도</div>}
                     </div>
                   </button>
                 );
@@ -638,7 +673,7 @@ const Review = () => {
           </h3>
 
           {/* LLM 분석 결과 */}
-          {tradingHistory.length > 0 && (
+          {tradingHistory.length > 0 ? (
             <div className="mb-6 p-4 bg-gradient-to-br from-[#f9f6ef] to-[#f3e7c4] rounded-lg border border-[#e6d3a3]">
               <h4
                 className="text-lg font-bold text-[#7c5c2b] mb-3 flex items-center"
@@ -775,6 +810,31 @@ const Review = () => {
                 </div>
               )}
             </div>
+          ) : (
+            <div className="mb-6 p-6 bg-gradient-to-br from-[#f9f6ef] to-[#f3e7c4] rounded-lg border border-[#e6d3a3] text-center">
+              <h4
+                className="text-lg font-bold text-[#7c5c2b] mb-4"
+                style={{ fontFamily: "Jua, sans-serif" }}
+              >
+                용사의 조언
+              </h4>
+              <div className="bg-gradient-to-br from-[#fef3c7] to-[#fde68a] p-4 rounded-lg border border-[#f59e0b]">
+                <p
+                  className="text-[#92400e] leading-relaxed text-lg"
+                  style={{ fontFamily: "Jua, sans-serif" }}
+                >
+                  허허, {formatPeriod(selectedPeriod)} 라운드에서는 거래 기록이
+                  없구나!
+                </p>
+                <p
+                  className="text-[#92400e] leading-relaxed mt-2"
+                  style={{ fontFamily: "Jua, sans-serif" }}
+                >
+                  다음 라운드에서는 용감하게 투자에 도전해보시게. 과인의 조언을
+                  참고하여 현명한 투자로 공포의 곰을 물리쳐보시게!
+                </p>
+              </div>
+            </div>
           )}
         </div>
       </div>
@@ -796,6 +856,8 @@ const StockDetailModal = ({ stock, period, onClose }) => {
   const [stockNews, setStockNews] = useState([]);
   const [priceHistory, setPriceHistory] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [stockAnalysis, setStockAnalysis] = useState(null);
+  const [analyzingStock, setAnalyzingStock] = useState(false);
 
   // 거래 기록 데이터를 stock 형태로 변환
   const stockData = {
@@ -808,6 +870,174 @@ const StockDetailModal = ({ stock, period, onClose }) => {
   useEffect(() => {
     fetchStockDetail();
   }, [stock, period]);
+
+  // 데이터가 로드되면 개별 종목 분석 실행
+  useEffect(() => {
+    if (stockNews.length > 0 || priceHistory.length > 0) {
+      analyzeIndividualStock();
+    }
+  }, [stockNews, priceHistory]);
+
+  // 개별 종목 LLM 분석 함수
+  const analyzeIndividualStock = async () => {
+    if (!stockNews.length && !priceHistory.length) {
+      return;
+    }
+
+    setAnalyzingStock(true);
+    try {
+      const analysisData = {
+        stockName: stockData.name,
+        stockSymbol: stockData.symbol,
+        period: period,
+        news: stockNews,
+        priceHistory: priceHistory,
+        sector: stockData.sector,
+      };
+
+      const response = await axios.post(
+        "/api/analysis/individual-stock",
+        analysisData
+      );
+      setStockAnalysis(response.data);
+    } catch (error) {
+      console.error("개별 종목 LLM 분석 실패:", error);
+      // 오프라인 분석으로 대체
+      const offlineStockAnalysis = generateOfflineStockAnalysis();
+      setStockAnalysis(offlineStockAnalysis);
+    } finally {
+      setAnalyzingStock(false);
+    }
+  };
+
+  // 개별 종목 오프라인 분석 함수
+  const generateOfflineStockAnalysis = () => {
+    if (!stockNews.length && !priceHistory.length) {
+      return {
+        summary: `아직 ${stockData.name}에 대한 충분한 데이터가 수집되지 않았소소.`,
+        performance: "neutral",
+        recommendations: [
+          "더 많은 정보를 수집하여 현명한 판단을 내리시게",
+          "차트 분석을 통해 투자 타이밍을 찾아보시게",
+          "섹터 동향을 파악하여 전략을 세우시게",
+        ],
+      };
+    }
+
+    // 실제 가격 데이터 분석
+    let priceAnalysis = "";
+    let priceChangePercent = 0;
+    let volatility = "보통";
+    let priceTrend = "보합";
+    let maxPrice = 0;
+    let minPrice = Infinity;
+    let avgPrice = 0;
+
+    if (priceHistory.length > 1) {
+      const prices = priceHistory.map((p) => p.price);
+      const startPrice = prices[0];
+      const endPrice = prices[prices.length - 1];
+      priceChangePercent = ((endPrice - startPrice) / startPrice) * 100;
+      maxPrice = Math.max(...prices);
+      minPrice = Math.min(...prices);
+      avgPrice = prices.reduce((sum, price) => sum + price, 0) / prices.length;
+
+      // 변동성 계산
+      const priceChanges = [];
+      for (let i = 1; i < prices.length; i++) {
+        priceChanges.push(
+          Math.abs((prices[i] - prices[i - 1]) / prices[i - 1]) * 100
+        );
+      }
+      const avgVolatility =
+        priceChanges.reduce((sum, change) => sum + change, 0) /
+        priceChanges.length;
+
+      if (avgVolatility > 5) volatility = "높음";
+      else if (avgVolatility < 2) volatility = "낮음";
+
+      if (priceChangePercent > 10) priceTrend = "상승";
+      else if (priceChangePercent < -10) priceTrend = "하락";
+
+      priceAnalysis = `${formatPeriod(period)} 동안 ${
+        stockData.name
+      }의 주가는 ${startPrice.toLocaleString()}원에서 ${endPrice.toLocaleString()}원으로 ${
+        priceChangePercent > 0 ? "상승" : "하락"
+      }하였소. 최고가 ${maxPrice.toLocaleString()}원, 최저가 ${minPrice.toLocaleString()}원을 기록하였으며, 변동성은 ${volatility} 수준이었네.`;
+    }
+
+    // 실제 뉴스 데이터 분석
+    let newsAnalysis = "";
+    let newsSentiment = "중립";
+    let positiveNews = 0;
+    let negativeNews = 0;
+    let neutralNews = 0;
+
+    if (stockNews.length > 0) {
+      positiveNews = stockNews.filter(
+        (news) => news.sentiment === "positive"
+      ).length;
+      negativeNews = stockNews.filter(
+        (news) => news.sentiment === "negative"
+      ).length;
+      neutralNews = stockNews.filter(
+        (news) => news.sentiment === "neutral"
+      ).length;
+
+      if (positiveNews > negativeNews) newsSentiment = "긍정적";
+      else if (negativeNews > positiveNews) newsSentiment = "부정적";
+
+      const totalNews = stockNews.length;
+      newsAnalysis = `뉴스 분석 결과, 총 ${totalNews}건의 뉴스 중 긍정적 ${positiveNews}건, 부정적 ${negativeNews}건, 중립적 ${neutralNews}건이었네. 전반적으로 ${newsSentiment}인 뉴스 흐름을 보였느니라.`;
+    }
+
+    // 종합 분석 및 세종대왕 말투
+    let summary, performance, recommendations;
+
+    if (priceChangePercent > 15 && newsSentiment === "긍정적") {
+      performance = "excellent";
+      summary = `과인이 보기에 ${stockData.name}은(는) 매우 훌륭한 성과를 보였나이다! ${priceAnalysis} ${newsAnalysis} 이는 매우 긍정적인 신호라 하겠나이다.`;
+      recommendations = [
+        "현재의 상승세가 지속될 것으로 예상되니, 적절한 수익 실현을 고려하시게",
+        "긍정적인 뉴스 흐름이 계속되니 관심을 기울이시게",
+        "하지만 과도한 낙관은 금물이니, 신중한 판단을 유지하시게",
+      ];
+    } else if (priceChangePercent > 5 || newsSentiment === "긍정적") {
+      performance = "good";
+      summary = `${stockData.name}은(는) 양호한 성과를 보였네. ${priceAnalysis} ${newsAnalysis} 전반적으로 긍정적인 방향으로 진행되고 있다네.`;
+      recommendations = [
+        "현재 방향을 유지하되, 더욱 신중한 관찰이 필요하니라",
+        "추가 정보를 수집하여 투자 판단을 보완하시게",
+        "리스크 관리에 특별히 주의를 기울이시게",
+      ];
+    } else if (priceChangePercent < -15 && newsSentiment === "부정적") {
+      performance = "poor";
+      summary = `${stockData.name}은(는) 개선이 필요한 상황이니라. ${priceAnalysis} ${newsAnalysis} 투자 전략의 재검토가 시급하다네.`;
+      recommendations = [
+        "현재 투자 전략을 전면적으로 재검토하시게",
+        "손절매 기준을 명확히 설정하여 손실을 최소화하시게",
+        "더 많은 분석과 정보 수집이 필요하니라",
+      ];
+    } else if (priceChangePercent < -5 || newsSentiment === "부정적") {
+      performance = "neutral";
+      summary = `${stockData.name}은(는) 신중한 관찰이 필요한 상황이라네. ${priceAnalysis} ${newsAnalysis} 투자 결정을 신중하게 내려야 하겠소.`;
+      recommendations = [
+        "더 체계적인 분석을 통해 투자 판단을 내리시게",
+        "차트와 뉴스를 종합적으로 분석하여 전략을 세우시게",
+        "투자 결정을 신중하게 내리되, 서두르지 마시게",
+      ];
+    } else {
+      performance = "neutral";
+      summary = `${stockData.name}은(는) 안정적인 모습을 보이고 있다네. ${priceAnalysis} ${newsAnalysis} 전반적으로 보합세를 유지하고 있다네.`;
+      recommendations = [
+        "현재 상황을 지켜보되, 기회를 노려보시게",
+        "더 많은 정보를 수집하여 투자 타이밍을 찾아보시게",
+        "안정적인 투자 전략을 유지하시게",
+      ];
+    }
+
+    return { summary, performance, recommendations };
+  };
 
   // 2년치 데이터 기간 계산 함수 (실제 데이터 범위 고려)
   const calculateExtendedPeriod = (currentPeriod) => {
@@ -1097,6 +1327,102 @@ const StockDetailModal = ({ stock, period, onClose }) => {
                     </div>
                   )}
                 </div>
+              </div>
+
+              {/* 개별 종목 용사의 투자 분석 */}
+              <div className="flex-shrink-0">
+                <h3
+                  className="text-lg font-bold mb-3 text-[#7c5c2b]"
+                  style={{ fontFamily: "Jua, sans-serif" }}
+                >
+                  용사의 투자 분석
+                </h3>
+                {analyzingStock ? (
+                  <div className="flex items-center justify-center py-8 bg-gradient-to-br from-[#f9f6ef] to-[#f3e7c4] rounded-xl border-2 border-[#e6d3a3]">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#bfa76a] mr-3"></div>
+                    <span
+                      className="text-[#7c5c2b]"
+                      style={{ fontFamily: "Jua, sans-serif" }}
+                    >
+                      {stockData.name} 분석 중...
+                    </span>
+                  </div>
+                ) : stockAnalysis ? (
+                  <div className="space-y-4">
+                    {/* 성과 요약 */}
+                    <div
+                      className={`p-4 rounded-lg border-2 ${
+                        stockAnalysis.performance === "excellent"
+                          ? "bg-gradient-to-br from-[#dcfce7] to-[#bbf7d0] border-[#22c55e]"
+                          : stockAnalysis.performance === "good"
+                          ? "bg-gradient-to-br from-[#dbeafe] to-[#bfdbfe] border-[#3b82f6]"
+                          : stockAnalysis.performance === "neutral"
+                          ? "bg-gradient-to-br from-[#fef3c7] to-[#fde68a] border-[#f59e0b]"
+                          : "bg-gradient-to-br from-[#fee2e2] to-[#fecaca] border-[#ef4444]"
+                      }`}
+                    >
+                      <h5
+                        className={`font-bold mb-2 ${
+                          stockAnalysis.performance === "excellent"
+                            ? "text-[#166534]"
+                            : stockAnalysis.performance === "good"
+                            ? "text-[#1e40af]"
+                            : stockAnalysis.performance === "neutral"
+                            ? "text-[#92400e]"
+                            : "text-[#991b1b]"
+                        }`}
+                        style={{ fontFamily: "Jua, sans-serif" }}
+                      >
+                        {stockAnalysis.performance === "excellent"
+                          ? "매우 좋은 성과"
+                          : stockAnalysis.performance === "good"
+                          ? "좋은 성과"
+                          : stockAnalysis.performance === "neutral"
+                          ? "보통 성과"
+                          : "개선 필요"}
+                      </h5>
+                      <p
+                        className="text-[#7c5c2b] leading-relaxed"
+                        style={{ fontFamily: "Jua, sans-serif" }}
+                      >
+                        {stockAnalysis.summary}
+                      </p>
+                    </div>
+
+                    {/* 투자 조언 */}
+                    <div className="bg-gradient-to-br from-[#f9f6ef] to-[#f3e7c4] p-4 rounded-lg border-2 border-[#e6d3a3]">
+                      <h5
+                        className="font-bold text-[#7c5c2b] mb-3"
+                        style={{ fontFamily: "Jua, sans-serif" }}
+                      >
+                        용사의 조언
+                      </h5>
+                      <ul className="space-y-2">
+                        {stockAnalysis.recommendations.map((rec, index) => (
+                          <li
+                            key={index}
+                            className="flex items-start space-x-2 text-[#7c5c2b]"
+                            style={{ fontFamily: "Jua, sans-serif" }}
+                          >
+                            <span className="text-[#bfa76a] font-bold mt-1">
+                              •
+                            </span>
+                            <span className="flex-1">{rec}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-8 bg-gradient-to-br from-[#f9f6ef] to-[#f3e7c4] rounded-xl border-2 border-[#e6d3a3]">
+                    <p
+                      className="text-[#a67c3c]"
+                      style={{ fontFamily: "Jua, sans-serif" }}
+                    >
+                      분석 데이터를 불러오는 중입니다...
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* 가격 차트 */}

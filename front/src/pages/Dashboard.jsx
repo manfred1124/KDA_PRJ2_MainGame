@@ -15,7 +15,7 @@ import { GuideMessageContext } from "../App";
 import ChatbotWidget from "../components/ChatbotWidget";
 
 const GUIDE_MSG =
-  "허허, 그대의 투자 여정을 한눈에 볼 수 있는 요약판이구나. 다음 라운드를 준비하시게!";
+  "허허, 그대의 투자 여정을 한눈에 볼 수 있는 요약판이구나. 현명한 투자로 공포의 곰을 물리치고 다음 라운드를 준비하시게!";
 
 const ROUND_TREND_GUIDE = {
   "2020Q1":
