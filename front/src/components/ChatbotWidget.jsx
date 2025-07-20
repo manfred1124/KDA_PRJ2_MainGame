@@ -596,8 +596,10 @@ const ChatbotWidget = forwardRef(
                         : heroImage1
                     }
                     alt="용사"
-                    className="w-80 h-80 object-contain transition-all duration-200"
+                    className="object-contain transition-all duration-200"
                     style={{
+                      width: "25vw",
+                      height: "20vw",
                       filter: isSpeaking ? "brightness(1.1)" : "brightness(1)",
                       transform: isSpeaking ? "scale(1.05)" : "scale(1)",
                     }}

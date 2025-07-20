@@ -27,6 +27,7 @@ import heroImage2 from "./assets/mainlogo2.png";
 import boardImage1 from "./assets/board1.png";
 import ScrollToTop from "./components/ScrollToTop";
 import BackgroundMusic from "./components/BackgroundMusic";
+import BearTopLeftAnimation from "./components/BearTopLeftAnimation";
 import { useAuth } from "./contexts/AuthContext";
 
 // 가이드 메시지 Context 생성
@@ -161,6 +162,8 @@ function App() {
           <GuideMessageContext.Provider value={{ addGuideMessage }}>
             <ScrollToTop />
             <div className="h-screen bg-[url('/bg.jpg')] bg-cover bg-center bg-no-repeat bg-fixed flex flex-col overflow-hidden">
+              {/* 게임 화면에서만 Bear 애니메이션 표시 */}
+              {showGameBox && <BearTopLeftAnimation />}
               {/* Navbar 표시 */}
               <Navbar />
               <div
