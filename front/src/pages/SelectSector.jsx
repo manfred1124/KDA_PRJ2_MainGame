@@ -50,7 +50,7 @@ function getSectorGuide(sector) {
   for (const key of Object.keys(SECTOR_GUIDE)) {
     if (sector.includes(key)) return SECTOR_GUIDE[key];
   }
-  return `허허, ${sector} 섹터에 오신 것을 환영하구나!\n\n그대가 신중하게 판단하시게.`;
+  return `허허, ${sector} 섹터에 온걸 환영하구나!\n\n그대가 신중하게 판단하시게.`;
 }
 
 const ROUND_TREND_GUIDE = {
@@ -299,8 +299,30 @@ const SelectSector = () => {
     }));
     await fetchStocksBySector(sector);
     await fetchSectorNews(sector);
-    // 섹터별 설명 챗봇에 출력 (부분 일치 포함)
-    if (addGuideMessage) {
+    
+    // 섹터별 장군 분석 호출
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.post(
+        "/api/chatbot/sector-analysis",
+        {
+          sector: sector,
+          period: user?.current_period
+        },
+        {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        }
+      );
+      
+      if (response.data && response.data.analysis) {
+        addGuideMessage(response.data.analysis);
+      } else {
+        // 기본 섹터 가이드 메시지
+        addGuideMessage(getSectorGuide(sector));
+      }
+    } catch (error) {
+      console.error("Sector analysis failed:", error);
+      // 에러가 나도 기본 메시지 추가
       addGuideMessage(getSectorGuide(sector));
     }
   };
@@ -315,6 +337,30 @@ const SelectSector = () => {
     setOrderType("buy");
     setOrderQty(1);
     await fetchStockNews(stock.symbol);
+    
+    // 장군 분석 호출
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.post(
+        "/api/chatbot/stock-analysis",
+        {
+          symbol: stock.symbol,
+          name: stock.name,
+          period: user?.current_period
+        },
+        {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        }
+      );
+      
+      if (response.data && response.data.analysis) {
+        addGuideMessage(response.data.analysis);
+      }
+    } catch (error) {
+      console.error("Stock analysis failed:", error);
+      // 에러가 나도 기본 메시지 추가
+      addGuideMessage(`${stock.name} 종목을 선택했구나. 차트와 뉴스를 잘 살펴보시게!`);
+    }
   };
 
   const handleOrder = async () => {
@@ -518,19 +564,37 @@ const SelectSector = () => {
                             {(showAllNews
                               ? allSectorNews[selected] || []
                               : (allSectorNews[selected] || []).slice(0, 5)
-                            ).map((news) => (
-                              <li
-                                key={news.id}
-                                className="bg-white rounded-lg p-4 shadow border-2 border-[#e6d3a3]"
-                              >
-                                <div className="text-xs text-[#a67c3c] mb-2">
-                                  {news.date?.slice(0, 10)}
-                                </div>
-                                <div className="font-medium text-[#7c5c2b] text-base">
-                                  {news.title}
-                                </div>
-                              </li>
-                            ))}
+                            ).map((news) => {
+                              // 날짜 포맷팅 함수
+                              const formatDate = (dateString) => {
+                                if (!dateString) return "";
+                                try {
+                                  const date = new Date(dateString);
+                                  if (isNaN(date.getTime())) return "";
+                                  return date.toLocaleDateString('ko-KR', {
+                                    year: 'numeric',
+                                    month: '2-digit',
+                                    day: '2-digit'
+                                  });
+                                } catch (e) {
+                                  return "";
+                                }
+                              };
+
+                              return (
+                                <li
+                                  key={news.id}
+                                  className="bg-white rounded-lg p-4 shadow border-2 border-[#e6d3a3]"
+                                >
+                                  <div className="text-xs text-[#a67c3c] mb-2">
+                                    {formatDate(news.date)}
+                                  </div>
+                                  <div className="font-medium text-[#7c5c2b] text-base">
+                                    {news.title}
+                                  </div>
+                                </li>
+                              );
+                            })}
                           </ul>
                           {(allSectorNews[selected] || []).length > 5 &&
                             !showAllNews && (
@@ -979,19 +1043,44 @@ const SelectSector = () => {
                             </h3>
                             <div className="space-y-4">
                               {stockNews.length > 0 ? (
-                                stockNews.map((news, index) => (
-                                  <div
-                                    key={index}
-                                    className="bg-gradient-to-br from-[#f7e6b6] to-[#f3e7c4] rounded-xl p-4 shadow-md border-2 border-[#e6d3a3]"
-                                  >
-                                    <div className="text-lg font-medium text-[#7c5c2b] mb-3">
-                                      {news.title}
+                                stockNews.map((news, index) => {
+                                  // 날짜 포맷팅 함수
+                                  const formatDate = (dateString) => {
+                                    if (!dateString) return "";
+                                    try {
+                                      const date = new Date(dateString);
+                                      if (isNaN(date.getTime())) return "";
+                                      return date.toLocaleDateString('ko-KR', {
+                                        year: 'numeric',
+                                        month: '2-digit',
+                                        day: '2-digit'
+                                      });
+                                    } catch (e) {
+                                      return "";
+                                    }
+                                  };
+
+                                  return (
+                                    <div
+                                      key={index}
+                                      className="bg-gradient-to-br from-[#f7e6b6] to-[#f3e7c4] rounded-xl p-4 shadow-md border-2 border-[#e6d3a3]"
+                                    >
+                                      <div className="flex items-start justify-between mb-3">
+                                        <div className="text-lg font-medium text-[#7c5c2b] flex-1">
+                                          {news.title}
+                                        </div>
+                                        {news.date && (
+                                          <div className="text-sm text-[#a67c3c] ml-4 whitespace-nowrap">
+                                            {formatDate(news.date)}
+                                          </div>
+                                        )}
+                                      </div>
+                                      <div className="text-base text-[#a67c3c] leading-relaxed">
+                                        {news.content || news.summary}
+                                      </div>
                                     </div>
-                                    <div className="text-base text-[#a67c3c] leading-relaxed">
-                                      {news.content}
-                                    </div>
-                                  </div>
-                                ))
+                                  );
+                                })
                               ) : (
                                 <div className="text-[#a67c3c] text-center py-8 text-base">
                                   관련 뉴스가 없습니다.

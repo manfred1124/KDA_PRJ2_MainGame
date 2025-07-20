@@ -440,6 +440,242 @@ async def chatbot(
 
     return {"answer": answer}
 
+@app.post("/api/chatbot/stock-analysis")
+async def stock_analysis(
+    stock_data: dict = Body(...),
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: AsyncSession = Depends(get_db)
+):
+    """특정 종목의 해당 기간 흐름을 LLM으로 분석"""
+    try:
+        user_id = auth_service.verify_token(credentials.credentials)
+        user = await db.execute(select(User).where(User.id == user_id))
+        user = user.scalar_one_or_none()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        stock_symbol = stock_data.get("symbol")
+        stock_name = stock_data.get("name")
+        period = stock_data.get("period")
+        
+        if not stock_symbol or not stock_name:
+            raise HTTPException(status_code=400, detail="Stock symbol and name are required")
+        
+        if not period:
+            # 사용자의 현재 기간 사용
+            periods = json.loads(user.round_periods) if user.round_periods else []
+            period = periods[user.current_round_idx] if periods and user.current_round_idx < len(periods) else "2020 H1"
+        
+        print(f"Stock analysis request - symbol: {stock_symbol}, name: {stock_name}, period: {period}")
+        
+        # 1. 종목 뉴스 데이터 수집
+        stock_news = await news_service.get_news_by_stock(db, stock_name=stock_name, period=period, ticker=stock_symbol)
+        
+        # 2. 종목 가격 데이터 수집
+        stock_result = await db.execute(select(Stock).filter(Stock.symbol == stock_symbol))
+        stock = stock_result.scalar_one_or_none()
+        
+        if not stock:
+            raise HTTPException(status_code=404, detail="Stock not found")
+        
+        # period에 해당하는 가격 데이터 조회
+        from services.period_utils import period_to_date
+        from datetime import timedelta
+        
+        date = period_to_date(period)
+        prev_date = date - timedelta(days=180)  # 6개월 전
+        
+        # 현재 기간 가격
+        current_price_result = await db.execute(
+            select(StockPrice)
+            .where(StockPrice.stock_id == stock.id)
+            .where(StockPrice.date >= date)
+            .order_by(StockPrice.date.asc())
+            .limit(1)
+        )
+        current_price = current_price_result.scalar_one_or_none()
+        
+        # 이전 기간 가격
+        prev_price_result = await db.execute(
+            select(StockPrice)
+            .where(StockPrice.stock_id == stock.id)
+            .where(StockPrice.date >= prev_date)
+            .order_by(StockPrice.date.asc())
+            .limit(1)
+        )
+        prev_price = prev_price_result.scalar_one_or_none()
+        
+        # 3. 섹터 뉴스 데이터 수집
+        sector_news = await news_service.get_sector_trend_news(db, stock.sector, period)
+        
+        # 4. 매크로 뉴스 데이터 수집
+        macro_news = await news_service.get_macro_news_by_period(db, period)
+        
+        # 5. 컨텍스트 구성
+        news_titles = [n.title for n in stock_news[:3]]
+        sector_news_titles = [n.title for n in sector_news[:2]]
+        macro_news_titles = [n.title for n in macro_news[:2]]
+        
+        price_change = 0
+        if current_price and prev_price:
+            price_change = ((current_price.close_price - prev_price.close_price) / prev_price.close_price) * 100
+        
+        context = f"""
+현재 분석 기간: {period}
+종목: {stock_name} ({stock_symbol})
+섹터: {stock.sector}
+현재가: {current_price.close_price if current_price else 'N/A'}원
+가격변화: {price_change:.1f}% (이전 6개월 대비)
+
+종목 관련 뉴스: {', '.join(news_titles) if news_titles else '관련 뉴스 없음'}
+섹터 뉴스: {', '.join(sector_news_titles) if sector_news_titles else '섹터 뉴스 없음'}
+매크로 뉴스: {', '.join(macro_news_titles) if macro_news_titles else '매크로 뉴스 없음'}
+"""
+        
+        # 6. LLM 분석
+        llm = ChatOpenAI(temperature=0.3, model_name="gpt-3.5-turbo")
+        system_prompt = (
+            """너는 주식 투자 시뮬레이션 게임의 장군이야.\n"
+            "너는 세종대왕의 어투를 정확히 모방해라.\n"
+            "답변 시작할 때는 반드시 '허허,', '과인이 살펴보니,', '그대가 관심을 보이는 종목이구나,' 같은 표현으로 시작해라.\n"
+            "문장 끝에는 '~하시게', '~하시는 것이 좋겠네', '~하는 것이 현명하리라' 같은 표현을 사용해라.\n"
+            "투자 조언을 줄 때는 '그대가 신중하게 판단하시게', '과인의 조언을 참고하시게' 같은 표현을 사용해라.\n"
+            "답변은 3-4문장으로 간결하게 해라. 너무 길지 않게 핵심만 전달해라.\n"
+            "종목의 가격 변화, 뉴스, 섹터 동향을 종합적으로 분석해서 간단한 투자 관점을 제시해라.\n"
+            "미래 예측은 하지 말고, 현재 상황에 대한 분석만 해라.\n"
+            """
+        )
+        
+        messages = [
+            SystemMessage(content=system_prompt + "\n" + context),
+            HumanMessage(content=f"{stock_name} 종목의 {period} 기간 동안의 흐름을 간략하게 설명해주시게.")
+        ]
+        
+        answer = llm(messages).content
+        
+        return {"analysis": answer}
+        
+    except Exception as e:
+        print(f"Error in stock analysis: {e}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail="Stock analysis failed")
+
+@app.post("/api/chatbot/sector-analysis")
+async def sector_analysis(
+    sector_data: dict = Body(...),
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: AsyncSession = Depends(get_db)
+):
+    """특정 섹터의 해당 기간 흐름을 LLM으로 분석"""
+    try:
+        user_id = auth_service.verify_token(credentials.credentials)
+        user = await db.execute(select(User).where(User.id == user_id))
+        user = user.scalar_one_or_none()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        sector = sector_data.get("sector")
+        period = sector_data.get("period")
+        
+        if not sector:
+            raise HTTPException(status_code=400, detail="Sector is required")
+        
+        if not period:
+            # 사용자의 현재 기간 사용
+            periods = json.loads(user.round_periods) if user.round_periods else []
+            period = periods[user.current_round_idx] if periods and user.current_round_idx < len(periods) else "2020 H1"
+        
+        print(f"Sector analysis request - sector: {sector}, period: {period}")
+        
+        # 1. 섹터 뉴스 데이터 수집
+        sector_news = await news_service.get_sector_trend_news(db, sector, period)
+        
+        # 2. 섹터 내 종목들의 가격 데이터 수집
+        sector_stocks_result = await db.execute(
+            select(Stock).filter(Stock.sector == sector)
+        )
+        sector_stocks = sector_stocks_result.scalars().all()
+        
+        # 3. 매크로 뉴스 데이터 수집
+        macro_news = await news_service.get_macro_news_by_period(db, period)
+        
+        # 4. 섹터 종목들의 평균 수익률 계산
+        from services.period_utils import period_to_date
+        from datetime import timedelta
+        
+        date = period_to_date(period)
+        prev_date = date - timedelta(days=180)  # 6개월 전
+        
+        sector_returns = []
+        for stock in sector_stocks[:5]:  # 상위 5개 종목만 분석
+            current_price_result = await db.execute(
+                select(StockPrice)
+                .where(StockPrice.stock_id == stock.id)
+                .where(StockPrice.date >= date)
+                .order_by(StockPrice.date.asc())
+                .limit(1)
+            )
+            current_price = current_price_result.scalar_one_or_none()
+            
+            prev_price_result = await db.execute(
+                select(StockPrice)
+                .where(StockPrice.stock_id == stock.id)
+                .where(StockPrice.date >= prev_date)
+                .order_by(StockPrice.date.asc())
+                .limit(1)
+            )
+            prev_price = prev_price_result.scalar_one_or_none()
+            
+            if current_price and prev_price:
+                return_rate = ((current_price.close_price - prev_price.close_price) / prev_price.close_price) * 100
+                sector_returns.append(return_rate)
+        
+        avg_sector_return = sum(sector_returns) / len(sector_returns) if sector_returns else 0
+        
+        # 5. 컨텍스트 구성
+        sector_news_titles = [n.title for n in sector_news[:3]]
+        macro_news_titles = [n.title for n in macro_news[:2]]
+        
+        context = f"""
+현재 분석 기간: {period}
+섹터: {sector}
+섹터 종목 수: {len(sector_stocks)}개
+평균 수익률: {avg_sector_return:.1f}% (이전 6개월 대비)
+
+섹터 뉴스: {', '.join(sector_news_titles) if sector_news_titles else '섹터 뉴스 없음'}
+매크로 뉴스: {', '.join(macro_news_titles) if macro_news_titles else '매크로 뉴스 없음'}
+"""
+        
+        # 6. LLM 분석
+        llm = ChatOpenAI(temperature=0.3, model_name="gpt-3.5-turbo")
+        system_prompt = (
+            """너는 주식 투자 시뮬레이션 게임의 장군이야.\n"
+            "너는 세종대왕의 어투를 정확히 모방해라.\n"
+            "답변 시작할 때는 반드시 '허허,', '과인이 살펴보니,', '그대가 관심을 보이는 섹터가구나,' 같은 표현으로 시작해라.\n"
+            "문장 끝에는 '~하시게', '~하시는 것이 좋겠네', '~하는 것이 현명하리라' 같은 표현을 사용해라.\n"
+            "투자 조언을 줄 때는 '그대가 신중하게 판단하시게', '과인의 조언을 참고하시게' 같은 표현을 사용해라.\n"
+            "답변은 3-4문장으로 간결하게 해라. 너무 길지 않게 핵심만 전달해라.\n"
+            "섹터의 전반적인 동향, 뉴스, 수익률을 종합적으로 분석해서 간단한 투자 관점을 제시해라.\n"
+            "미래 예측은 하지 말고, 현재 상황에 대한 분석만 해라.\n"
+            """
+        )
+        
+        messages = [
+            SystemMessage(content=system_prompt + "\n" + context),
+            HumanMessage(content=f"{sector} 섹터의 {period} 기간 동안의 흐름을 간략하게 설명해주시게.")
+        ]
+        
+        answer = llm(messages).content
+        
+        return {"analysis": answer}
+        
+    except Exception as e:
+        print(f"Error in sector analysis: {e}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail="Sector analysis failed")
+
 @app.post("/api/chatbot/keyword-analysis")
 async def keyword_analysis(
     keyword_data: dict = Body(...),
@@ -1165,24 +1401,38 @@ async def get_stock_news(symbol: str, period: str = None, db: AsyncSession = Dep
         import traceback
         print(f"Traceback: {traceback.format_exc()}")
     
-    # 더미 뉴스 반환 (마지막 수단)
-    current_date = datetime.now()
+    # 더미 뉴스 반환 (마지막 수단) - period에 맞는 날짜 생성
+    if period:
+        try:
+            year, half = period.split()
+            year = int(year)
+            if half == "H1":
+                # 상반기: 1월~6월
+                base_date = datetime(year, 3, 15)  # 3월 15일 기준
+            else:
+                # 하반기: 7월~12월
+                base_date = datetime(year, 9, 15)  # 9월 15일 기준
+        except:
+            base_date = datetime.now()
+    else:
+        base_date = datetime.now()
+    
     return [
         {
             "title": f"{symbol} 실적 개선 전망",
-            "date": (current_date - timedelta(days=1)).strftime("%Y-%m-%d"),
+            "date": (base_date - timedelta(days=30)).strftime("%Y-%m-%d"),
             "summary": "분석가들은 해당 종목의 실적이 개선될 것으로 전망하고 있습니다.",
             "sentiment": "positive"
         },
         {
             "title": f"{symbol} 신규 사업 진출 소식", 
-            "date": (current_date - timedelta(days=3)).strftime("%Y-%m-%d"),
+            "date": (base_date - timedelta(days=15)).strftime("%Y-%m-%d"),
             "summary": "새로운 사업 영역 진출로 성장 동력 확보에 나섰습니다.",
             "sentiment": "positive"
         },
         {
             "title": f"{symbol} 시장 동향 분석",
-            "date": (current_date - timedelta(days=5)).strftime("%Y-%m-%d"),
+            "date": base_date.strftime("%Y-%m-%d"),
             "summary": "업계 전문가들이 해당 종목의 향후 전망을 분석했습니다.",
             "sentiment": "neutral"
         }
