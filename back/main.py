@@ -440,6 +440,156 @@ async def chatbot(
 
     return {"answer": answer}
 
+@app.post("/api/chatbot/mypage-feedback")
+async def mypage_feedback(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: AsyncSession = Depends(get_db)
+):
+    """마이페이지 진입 시 사용자의 투자 성과를 분석하여 LLM 기반 피드백 제공"""
+    try:
+        user_id = auth_service.verify_token(credentials.credentials)
+        user = await db.execute(select(User).where(User.id == user_id))
+        user = user.scalar_one_or_none()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        periods = json.loads(user.round_periods)
+        current_period = periods[user.current_round_idx] if user.current_round_idx < len(periods) else periods[-1]
+        current_round = user.current_round_idx + 1
+        
+        # 포트폴리오 데이터 조회
+        portfolio_items = await db.execute(select(Portfolio).where(Portfolio.user_id == user.id, Portfolio.quantity > 0))
+        items = portfolio_items.scalars().all()
+        
+        # 거래 내역 조회
+        transactions = await db.execute(select(Transaction).where(Transaction.user_id == user.id).order_by(Transaction.created_at))
+        transactions = transactions.scalars().all()
+        
+        # 포트폴리오 분석
+        total_portfolio_value = 0
+        total_profit_loss = 0
+        total_investment = 0
+        stock_details = []
+        
+        for item in items:
+            stock = await db.execute(select(Stock).where(Stock.id == item.stock_id))
+            stock = stock.scalar_one_or_none()
+            if stock:
+                # 현재가 조회
+                current_price_result = await db.execute(
+                    select(StockPrice.close_price)
+                    .where(StockPrice.stock_id == stock.id)
+                    .where(StockPrice.date <= period_to_date(current_period))
+                    .order_by(StockPrice.date.desc())
+                    .limit(1)
+                )
+                current_price = current_price_result.scalar_one_or_none() or 0
+                
+                total_value = item.quantity * current_price
+                profit_loss = total_value - (item.quantity * item.average_price)
+                
+                total_portfolio_value += total_value
+                total_profit_loss += profit_loss
+                total_investment += item.quantity * item.average_price
+                
+                stock_details.append({
+                    "name": stock.name,
+                    "quantity": item.quantity,
+                    "avg_price": item.average_price,
+                    "current_price": current_price,
+                    "profit_loss": profit_loss,
+                    "profit_rate": (profit_loss / (item.quantity * item.average_price)) * 100 if item.average_price > 0 else 0
+                })
+        
+        # 거래 패턴 분석
+        buy_count = len([t for t in transactions if t.transaction_type == "buy"])
+        sell_count = len([t for t in transactions if t.transaction_type == "sell"])
+        
+        # 자산 구성 분석
+        total_assets = user.total_balance + total_portfolio_value
+        cash_ratio = (user.total_balance / total_assets) * 100 if total_assets > 0 else 0
+        stock_ratio = (total_portfolio_value / total_assets) * 100 if total_assets > 0 else 0
+        
+        # 총 수익 (미실현 + 실현)
+        total_profit = total_profit_loss + user.realized_profit
+        
+        # 총 수익률 계산 (초기 투자금 1천만원 기준) - 마이페이지와 동일하게
+        initial_investment = 10000000
+        total_profit_percentage = (total_profit / initial_investment) * 100
+        
+        # LLM에 전달할 컨텍스트 구성
+        context = f"""
+        사용자 정보:
+        - 이름: {user.username}
+        - 현재 라운드: {current_round} ({current_period})
+        - 보유 현금: {user.total_balance:,}원
+        - 포트폴리오 가치: {total_portfolio_value:,}원
+        - 총 자산: {total_assets:,}원
+        - 총 수익률 (초기 투자금 대비): {total_profit_percentage:.2f}% (수익률 평가: {'훌륭함' if total_profit_percentage >= 20 else '좋음' if total_profit_percentage >= 10 else '양호함' if total_profit_percentage >= 0 else '손실'}) - 이는 매우 좋은 성과입니다!
+        - 미실현 손익: {total_profit_loss:,}원
+        - 실현 손익: {user.realized_profit:,}원
+        
+        자산 구성:
+        - 현금 비중: {cash_ratio:.1f}% (현금이 40% 이상이면 적극 투자 권장, 25% 이하면 현금 확보 권장)
+        - 주식 비중: {stock_ratio:.1f}%
+        
+        거래 패턴:
+        - 매수 거래: {buy_count}회
+        - 매도 거래: {sell_count}회
+        
+        보유 주식 상세:
+        {chr(10).join([f"- {s['name']}: {s['quantity']}주, 평균단가 {s['avg_price']:,}원, 현재가 {s['current_price']:,}원, 손익 {s['profit_loss']:,}원 ({s['profit_rate']:.2f}%)" for s in stock_details])}
+        """
+        
+        # LangChain LLM 호출
+        llm = ChatOpenAI(temperature=0.3, model_name="gpt-3.5-turbo")
+        system_prompt = """
+        너는 주식 투자 시뮬레이션 게임의 조언자로서, 세종대왕의 어투를 정확히 모방하는 현명한 투자 조언자이다.
+        
+        말투 규칙:
+        1. 문장 시작: "허허, 용사 ~이여!", "과인이 분석해보니", "그대의 투자 성과를 살펴보니"
+        2. 문장 끝: "~하시게", "~하시는 것이 좋겠나이다", "~하는 것이 현명하리라"
+        3. 조언 시: "과인의 조언", "그대가 신중하게 판단하시게", "이런 관점도 있으니 생각해보시게"
+        4. 격려 시: "용사 ~이여, 투자의 길에서 항상 현명한 판단을 하시길 바라나이다"
+        
+        간단한 피드백을 제공하라:
+        
+        - "허허, 용사 ~이여!"로 시작
+        - 수익률에 따른 간단한 격려 또는 조언 (1-2문장):
+          * 수익률 20% 이상: "훌륭한 성과로다! 진정한 투자 고수라 할 수 있겠나이다."
+          * 수익률 10% 이상: "좋은 성과로다! 현명한 투자자라 할 수 있겠나이다."
+          * 수익률 0% 이상: "양호한 성과로다. 신중한 투자라 할 수 있겠나이다."
+          * 수익률 0% 미만: "손실이 있으나 이는 투자의 길에서 반드시 겪어야 할 시련이라 할 수 있겠나이다."
+        
+        중요: 수익률이 양수이면 반드시 긍정적인 평가를 해야 한다. "아쉽다", "부족하다", "손실" 등의 부정적 표현을 절대 사용하지 말라. 수익률이 +31.25%라면 이는 매우 훌륭한 성과이므로 반드시 긍정적으로 평가해야 한다.
+        - 가장 중요한 한 가지 조언만 제시 (다음 우선순위로):
+          1. 손실 발생 시: 분산 투자와 리스크 관리 권장
+          2. 현금 40% 이상: 적극적인 투자 기회 찾기 권장
+          3. 현금 25% 이하: 현금 유동성 확보 권장
+          4. 거래 빈도가 매우 높거나 낮을 때: 거래 패턴 조언
+          5. 기타: 현재 전략 유지하되 신중하게 접근 권장
+        - 세종대왕의 어투 유지 ("~하시게", "~하시는 것이 좋겠나이다")
+        
+        중요: 마크다운 형식(###)을 사용하지 말고, 이모지와 텍스트만 사용하라.
+        
+        답변은 100-150자 내외로 매우 간결하게 작성하라.
+        
+        최종 확인: 수익률이 양수이면 절대 "손실", "아쉽다", "부족하다" 등의 부정적 표현을 사용하지 말라. +31.25%는 매우 훌륭한 성과이므로 반드시 긍정적으로 평가해야 한다.
+        """
+        
+        messages = [
+            SystemMessage(content=system_prompt),
+            HumanMessage(content=f"다음 투자 성과 데이터를 바탕으로 세종대왕 어투로 피드백을 제공해주세요:\n\n{context}")
+        ]
+        
+        answer = llm(messages).content
+        
+        return {"feedback": answer}
+        
+    except Exception as e:
+        print(f"Error in mypage_feedback: {e}")
+        raise HTTPException(status_code=500, detail="피드백 생성 중 오류가 발생했습니다.")
+
 @app.post("/api/chatbot/keyword-analysis")
 async def keyword_analysis(
     keyword_data: dict = Body(...),

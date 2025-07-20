@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -15,10 +15,13 @@ import {
   Newspaper,
 } from "lucide-react";
 import faceImage from "../assets/face.png";
+import { GuideMessageContext } from "../App";
+
 
 const MyPage = () => {
   const { user, updateUser } = useAuth();
   const navigate = useNavigate();
+  const { addGuideMessage } = useContext(GuideMessageContext);
   const [portfolio, setPortfolio] = useState(null);
   const [loading, setLoading] = useState(true);
   const [tradeHistory, setTradeHistory] = useState([]); // 거래내역
@@ -28,6 +31,32 @@ const MyPage = () => {
     fetchUserInfo();
     fetchTradeHistory();
   }, []);
+
+  // 마이페이지 진입 시 LLM 기반 라운드 성과 피드백 표시
+  useEffect(() => {
+    if (portfolio && user && !loading && addGuideMessage) {
+      // 약간의 지연 후 피드백 표시 (UI 렌더링 완료 후)
+      const timer = setTimeout(async () => {
+        try {
+          const feedback = await generateLLMFeedback();
+          if (feedback) {
+            addGuideMessage(feedback);
+          }
+        } catch (error) {
+          console.error("피드백 표시 실패:", error);
+          // 에러 발생 시 기본 피드백 사용
+          const basicFeedback = generateBasicFeedback();
+          if (basicFeedback) {
+            addGuideMessage(basicFeedback);
+          }
+        }
+      }, 1500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [portfolio, user, loading, addGuideMessage]);
+
+
 
   const fetchPortfolio = async () => {
     try {
@@ -59,6 +88,62 @@ const MyPage = () => {
       setTradeHistory([]);
     }
   };
+
+  // LLM 기반 라운드 성과 피드백 생성
+  const generateLLMFeedback = async () => {
+    try {
+      const response = await axios.post("/api/chatbot/mypage-feedback");
+      return response.data.feedback;
+    } catch (error) {
+      console.error("LLM 피드백 생성 실패:", error);
+      // LLM 실패 시 기본 피드백 반환
+      return generateBasicFeedback();
+    }
+  };
+
+  // 기본 피드백 생성 (LLM 실패 시 사용)
+  const generateBasicFeedback = () => {
+    if (!portfolio || !user) return "";
+
+    const currentRound = (user.current_round_idx ?? 0) + 1;
+    const totalProfitPercentage = portfolio.total_profit_percentage;
+    const totalBalance = portfolio.total_balance;
+    const totalPortfolioValue = portfolio.total_portfolio_value;
+    const totalAssets = totalBalance + totalPortfolioValue;
+    const cashRatio = (totalBalance / totalAssets) * 100;
+
+    let feedback = `허허, 용사 ${user.username}이여! ${currentRound}라운드 투자 성과를 살펴보니 `;
+
+    // 수익률에 따른 간단한 격려
+    if (totalProfitPercentage >= 20) {
+      feedback += "훌륭한 성과로다! 20% 이상의 수익률을 달성하셨으니 진정한 투자 고수라 할 수 있겠나이다.";
+    } else if (totalProfitPercentage >= 10) {
+      feedback += "좋은 성과로다! 10% 이상의 수익률로 안정적인 투자를 보여주셨으니 현명한 투자자라 할 수 있겠나이다.";
+    } else if (totalProfitPercentage >= 0) {
+      feedback += "양호한 성과로다. 손실 없이 투자를 마무리하셨으니 신중한 투자라 할 수 있겠나이다.";
+    } else {
+      feedback += "손실이 있으나 이는 투자의 길에서 반드시 겪어야 할 시련이라 할 수 있겠나이다.";
+    }
+
+    // 가장 중요한 한 가지 조언 (우선순위 순서)
+    if (totalProfitPercentage < 0) {
+      feedback += " 과인의 조언: 다음 라운드에서는 분산 투자와 리스크 관리에 집중하시게.";
+    } else if (cashRatio > 30) {
+      feedback += " 과인의 조언: 현금 비중이 높으니 적극적인 투자 기회를 찾아보시게.";
+    } else if (cashRatio < 10) {
+      feedback += " 과인의 조언: 현금 비중이 낮으니 현금 유동성을 확보하는 것도 고려해보시게.";
+    } else if (tradeHistory.length > 10) {
+      feedback += " 과인의 조언: 거래가 빈번하니 신중한 매매를 하시게.";
+    } else if (tradeHistory.length < 3) {
+      feedback += " 과인의 조언: 더 적극적인 투자 기회를 찾아보시게.";
+    } else {
+      feedback += " 과인의 조언: 현재 전략을 유지하되 더욱 신중하게 접근하시게.";
+    }
+
+    return feedback;
+  };
+
+
 
   if (loading) {
     return (
@@ -116,7 +201,7 @@ const MyPage = () => {
           {/* 우상단 라운드 리뷰 버튼 */}
           <button
             onClick={() => navigate("/review")}
-            className="bg-[#7c5c2b] hover:bg-[#a67c3c] text-white font-bold py-3 px-6 rounded-full text-base shadow-lg transition-all duration-200 border-2 border-[#e6d3a3]"
+            className="bg-[#7c5c2b] hover:bg-[#a67c3c] text-white font-normal py-3 px-6 rounded-full text-base shadow-lg transition-all duration-200 border-2 border-[#e6d3a3]"
             style={{ fontFamily: "Jua, sans-serif" }}
           >
             라운드 리뷰
@@ -261,55 +346,7 @@ const MyPage = () => {
           </div>
         </div>
       </div>
-      {/* 라운드 리뷰 */}
-      <div className="rounded-xl shadow-lg border border-[#e6d3a3] bg-[#fffbe6] p-6 mb-6 flex items-center gap-4">
-        <div className="flex-shrink-0">
-          <Calendar size={36} className="text-[#bfa76a]" />
-        </div>
-        <div>
-          <h3
-            className="text-xl font-bold text-[#a67c3c] mb-1"
-            style={{ fontFamily: "Jua, sans-serif" }}
-          >
-            라운드 리뷰
-          </h3>
-          <p
-            className="text-[#7c5c2b] text-base"
-            style={{ fontFamily: "Jua, sans-serif" }}
-          >
-            {/* 간단한 라운드 요약. 필요시 더 상세하게 수정 가능 */}
-            {(() => {
-              const period = user?.current_period;
-              if (!period) return "이번 라운드의 시장 동향을 잘 살펴보세요!";
-              // 간단한 getRoundTrendGuide 로직 (2020Q1, 2020Q2 등)
-              const guides = {
-                "2020Q1":
-                  "2020년 1분기, 코로나19의 영향으로 글로벌 증시가 큰 충격을 받았네.",
-                "2020Q2":
-                  "2020년 2분기, 각국의 경기부양책으로 시장이 반등하기 시작했지.",
-                "2021Q1":
-                  "2021년 1분기, 백신 보급과 함께 경기 회복 기대감이 커졌네.",
-                "2023H1":
-                  "2023년 상반기, 글로벌 경제가 점차 안정을 찾아가고 있네. 상반기에는 경기 회복 기대감이 컸지.",
-                "2023H2":
-                  "2023년 하반기, 금리 인상과 인플레이션 이슈가 완화되며 시장이 점진적으로 회복되고 있네.",
-              };
-              if (guides[period]) return guides[period];
-              if (period.includes("H1"))
-                return `${period.slice(
-                  0,
-                  4
-                )}년 상반기, 글로벌 경제와 산업의 주요 변화를 주목해보게!`;
-              if (period.includes("H2"))
-                return `${period.slice(
-                  0,
-                  4
-                )}년 하반기, 하반기 시장의 주요 이슈와 트렌드를 살펴보게!`;
-              return "현재 시점의 시장 동향을 잘 살펴 투자 전략을 세워보게!";
-            })()}
-          </p>
-        </div>
-      </div>
+
       {/* 보유 주식 목록 */}
       <div className="rounded-xl shadow-lg border border-[#e6d3a3] bg-[#f3e7c4]">
         <div className="p-6 border-b border-[#e6d3a3]">
@@ -514,8 +551,14 @@ const MyPage = () => {
                       key={idx}
                       className="border-b border-[#f3e7c4] hover:bg-[#f7f3e8] transition-colors"
                     >
-                      <td className="py-3 px-4 font-semibold text-[#7c5c2b]">
-                        {tx.stock_name}
+                      <td className="py-3 px-4 font-semibold text-[#7c5c2b] whitespace-nowrap">
+                        <div className="max-w-[80px] overflow-hidden">
+                          {tx.stock_name.length <= 6 ? (
+                            <span className="whitespace-nowrap">{tx.stock_name}</span>
+                          ) : (
+                            <span className="whitespace-normal break-words">{tx.stock_name}</span>
+                          )}
+                        </div>
                       </td>
                       <td className="py-3 px-4 text-[#a67c3c]">
                         {tx.transaction_type === "buy" ? "매수" : "매도"}
@@ -614,8 +657,12 @@ const MyPage = () => {
                   style={{ fontFamily: "Jua, sans-serif" }}
                 >
                   <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-bold text-[#7c5c2b] text-lg">
-                      {tx.stock_name}
+                    <h4 className="font-bold text-[#7c5c2b] text-lg max-w-[120px] overflow-hidden">
+                      {tx.stock_name.length <= 6 ? (
+                        <span className="whitespace-nowrap">{tx.stock_name}</span>
+                      ) : (
+                        <span className="whitespace-normal break-words">{tx.stock_name}</span>
+                      )}
                     </h4>
                     <span
                       className={`px-3 py-1 rounded-full text-sm font-semibold ${
