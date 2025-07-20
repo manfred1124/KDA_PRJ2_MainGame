@@ -14,7 +14,7 @@ const BearTopLeftAnimation = () => {
   const bearImages = ["/bear3.png", "/bear4.png"];
 
   return (
-    <div className="fixed z-10" style={{ top: "2%", left: "-2%" }}>
+    <div className="fixed z-20" style={{ top: "2%", left: "-2%" }}>
       <img
         src={bearImages[currentBear]}
         alt="Bear"

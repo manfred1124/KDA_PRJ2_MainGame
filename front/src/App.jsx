@@ -179,7 +179,7 @@ function App() {
                 >
                   <div
                     ref={showGameBox ? gameBoxRef : null}
-                    className={`w-full max-w-2xl game-scrollbar flex flex-col items-center justify-center`}
+                    className={`w-full max-w-2xl game-scrollbar flex flex-col items-center justify-center relative z-30`}
                     style={
                       showBoardBg
                         ? {
@@ -381,7 +381,7 @@ function App() {
                 {isLoggedIn && (
                   <aside
                     className="w-[420px] max-w-full flex-shrink-0 flex flex-col justify-start h-full"
-                    style={{ zIndex: 10 }}
+                    style={{ zIndex: 5 }}
                   >
                     <div className="h-full flex flex-col">
                       <ChatbotWidget

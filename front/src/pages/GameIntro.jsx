@@ -94,30 +94,25 @@ const GameIntro = () => {
       {/* 환영 메시지 */}
       <div className="text-center mb-4">
         <div
-          className="inline-block bg-white bg-opacity-90 border-4 border-[#7c5c2b] rounded-2xl p-6 shadow-xl max-w-2xl mx-auto"
+          className="inline-block bg-white bg-opacity-90 border-4 border-[#7c5c2b] rounded-2xl p-6 shadow-xl max-w-4xl mx-auto"
           style={{ fontFamily: "Jua, sans-serif" }}
         >
-          <h2
-            className="text-xl md:text-2xl font-bold text-[#7c5c2b] mb-4"
-            style={{ fontFamily: "Jua, sans-serif" }}
-          >
+          <h2 className="text-xl md:text-2xl font-bold text-[#7c5c2b] mb-4 welcome-message-serif">
             {user ? (
               <>
                 <span className="text-[#1e3a8a]">{user.username}</span> 용사여,
+                이제
                 <br />
-                투자 모험의 세계에 온 것을 환영하네!
+                전장은 숫자로 싸우는 곳이 되었노라.
               </>
             ) : (
               "용사여, 투자 모험의 세계에 온 것을 환영하네!"
             )}
           </h2>
-          <p
-            className="text-lg text-[#7c5c2b] leading-relaxed"
-            style={{ fontFamily: "Jua, sans-serif" }}
-          >
+          <p className="text-lg text-[#7c5c2b] leading-relaxed welcome-message-serif">
             과인과 함께 현명한 투자자가 되어보지 않겠는가?
             <br />
-            이곳은 투자 영웅이 탄생하는 곳이라네!
+            공포의 곰을 꿰뚫고, 승리의 깃발을 꽂을 차례다.
           </p>
         </div>
       </div>

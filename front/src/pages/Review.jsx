@@ -39,6 +39,18 @@ const formatPeriod = (period) => {
   return period;
 };
 
+// 기간을 날짜 범위로 변환하는 함수
+const formatPeriodToDateRange = (period) => {
+  if (!period) return period;
+  const [year, half] = period.split(" ");
+  if (half === "H1") {
+    return `${year}년 1월 1일 ~ ${year}년 6월 30일`;
+  } else if (half === "H2") {
+    return `${year}년 7월 1일 ~ ${year}년 12월 31일`;
+  }
+  return period;
+};
+
 const Review = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -538,26 +550,25 @@ const Review = () => {
 
         {/* 주식 수익률 차트 */}
         <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2
-              className="text-2xl font-bold text-[#7c5c2b]"
-              style={{ fontFamily: "Jua, sans-serif" }}
-            >
-              {formatPeriod(selectedPeriod)} 종목별 가격 변화율
-            </h2>
-            {selectedPeriod === currentPeriod && (
-              <span className="bg-gradient-to-r from-[#bfa76a] to-[#a67c3c] text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg">
-                현재 라운드
-              </span>
-            )}
-          </div>
-
           {loading ? (
             <div className="flex justify-center items-center h-96 bg-gradient-to-br from-[#f7e6b6] to-[#f3e7c4] rounded-xl border-2 border-[#e6d3a3]">
               <div className="animate-spin rounded-full h-32 w-32 border-b-4 border-[#bfa76a]"></div>
             </div>
           ) : (
             <div className="bg-gradient-to-br from-[#f7e6b6] to-[#f3e7c4] p-6 rounded-xl shadow-lg border-2 border-[#e6d3a3]">
+              <div className="flex items-center justify-between mb-4">
+                <h2
+                  className="text-2xl font-bold text-[#7c5c2b]"
+                  style={{ fontFamily: "Jua, sans-serif" }}
+                >
+                  {formatPeriod(selectedPeriod)} 종목별 가격 변화율
+                </h2>
+                {selectedPeriod === currentPeriod && (
+                  <span className="bg-gradient-to-r from-[#bfa76a] to-[#a67c3c] text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg">
+                    {formatPeriodToDateRange(currentPeriod)}
+                  </span>
+                )}
+              </div>
               <ResponsiveContainer width="100%" height={400}>
                 <BarChart
                   data={stockPerformanceData}
@@ -858,6 +869,8 @@ const StockDetailModal = ({ stock, period, onClose }) => {
   const [loading, setLoading] = useState(true);
   const [stockAnalysis, setStockAnalysis] = useState(null);
   const [analyzingStock, setAnalyzingStock] = useState(false);
+  const [stockTransactions, setStockTransactions] = useState([]);
+  const [analysisCache, setAnalysisCache] = useState(new Map()); // 분석 결과 캐시
 
   // 거래 기록 데이터를 stock 형태로 변환
   const stockData = {
@@ -869,6 +882,7 @@ const StockDetailModal = ({ stock, period, onClose }) => {
 
   useEffect(() => {
     fetchStockDetail();
+    fetchStockTransactions();
   }, [stock, period]);
 
   // 데이터가 로드되면 개별 종목 분석 실행
@@ -881,6 +895,16 @@ const StockDetailModal = ({ stock, period, onClose }) => {
   // 개별 종목 LLM 분석 함수
   const analyzeIndividualStock = async () => {
     if (!stockNews.length && !priceHistory.length) {
+      return;
+    }
+
+    // 캐시 키 생성 (종목 + 기간)
+    const cacheKey = `${stockData.symbol}_${period}`;
+
+    // 캐시된 분석 결과가 있는지 확인
+    if (analysisCache.has(cacheKey)) {
+      console.log(`캐시된 분석 결과 사용: ${cacheKey}`);
+      setStockAnalysis(analysisCache.get(cacheKey));
       return;
     }
 
@@ -899,11 +923,19 @@ const StockDetailModal = ({ stock, period, onClose }) => {
         "/api/analysis/individual-stock",
         analysisData
       );
+
+      // 분석 결과를 캐시에 저장
+      setAnalysisCache((prev) => new Map(prev).set(cacheKey, response.data));
       setStockAnalysis(response.data);
     } catch (error) {
       console.error("개별 종목 LLM 분석 실패:", error);
       // 오프라인 분석으로 대체
       const offlineStockAnalysis = generateOfflineStockAnalysis();
+
+      // 오프라인 분석 결과도 캐시에 저장
+      setAnalysisCache((prev) =>
+        new Map(prev).set(cacheKey, offlineStockAnalysis)
+      );
       setStockAnalysis(offlineStockAnalysis);
     } finally {
       setAnalyzingStock(false);
@@ -924,7 +956,7 @@ const StockDetailModal = ({ stock, period, onClose }) => {
       };
     }
 
-    // 실제 가격 데이터 분석
+    // 실제 가격 데이터 분석 - 해당 기간만 필터링
     let priceAnalysis = "";
     let priceChangePercent = 0;
     let volatility = "보통";
@@ -934,36 +966,42 @@ const StockDetailModal = ({ stock, period, onClose }) => {
     let avgPrice = 0;
 
     if (priceHistory.length > 1) {
-      const prices = priceHistory.map((p) => p.price);
-      const startPrice = prices[0];
-      const endPrice = prices[prices.length - 1];
-      priceChangePercent = ((endPrice - startPrice) / startPrice) * 100;
-      maxPrice = Math.max(...prices);
-      minPrice = Math.min(...prices);
-      avgPrice = prices.reduce((sum, price) => sum + price, 0) / prices.length;
+      // 해당 기간의 데이터만 필터링
+      const periodData = filterPriceDataByPeriod(priceHistory, period);
 
-      // 변동성 계산
-      const priceChanges = [];
-      for (let i = 1; i < prices.length; i++) {
-        priceChanges.push(
-          Math.abs((prices[i] - prices[i - 1]) / prices[i - 1]) * 100
-        );
+      if (periodData.length > 1) {
+        const prices = periodData.map((p) => p.price);
+        const startPrice = prices[0];
+        const endPrice = prices[prices.length - 1];
+        priceChangePercent = ((endPrice - startPrice) / startPrice) * 100;
+        maxPrice = Math.max(...prices);
+        minPrice = Math.min(...prices);
+        avgPrice =
+          prices.reduce((sum, price) => sum + price, 0) / prices.length;
+
+        // 변동성 계산
+        const priceChanges = [];
+        for (let i = 1; i < prices.length; i++) {
+          priceChanges.push(
+            Math.abs((prices[i] - prices[i - 1]) / prices[i - 1]) * 100
+          );
+        }
+        const avgVolatility =
+          priceChanges.reduce((sum, change) => sum + change, 0) /
+          priceChanges.length;
+
+        if (avgVolatility > 5) volatility = "높음";
+        else if (avgVolatility < 2) volatility = "낮음";
+
+        if (priceChangePercent > 10) priceTrend = "상승";
+        else if (priceChangePercent < -10) priceTrend = "하락";
+
+        priceAnalysis = `${formatPeriod(period)} 동안 ${
+          stockData.name
+        }의 주가는 ${startPrice.toLocaleString()}원에서 ${endPrice.toLocaleString()}원으로 ${
+          priceChangePercent > 0 ? "상승" : "하락"
+        }하였소. 최고가 ${maxPrice.toLocaleString()}원, 최저가 ${minPrice.toLocaleString()}원을 기록하였으며, 변동성은 ${volatility} 수준이었네.`;
       }
-      const avgVolatility =
-        priceChanges.reduce((sum, change) => sum + change, 0) /
-        priceChanges.length;
-
-      if (avgVolatility > 5) volatility = "높음";
-      else if (avgVolatility < 2) volatility = "낮음";
-
-      if (priceChangePercent > 10) priceTrend = "상승";
-      else if (priceChangePercent < -10) priceTrend = "하락";
-
-      priceAnalysis = `${formatPeriod(period)} 동안 ${
-        stockData.name
-      }의 주가는 ${startPrice.toLocaleString()}원에서 ${endPrice.toLocaleString()}원으로 ${
-        priceChangePercent > 0 ? "상승" : "하락"
-      }하였소. 최고가 ${maxPrice.toLocaleString()}원, 최저가 ${minPrice.toLocaleString()}원을 기록하였으며, 변동성은 ${volatility} 수준이었네.`;
     }
 
     // 실제 뉴스 데이터 분석
@@ -1039,6 +1077,27 @@ const StockDetailModal = ({ stock, period, onClose }) => {
     return { summary, performance, recommendations };
   };
 
+  // 해당 기간의 가격 데이터만 필터링하는 함수
+  const filterPriceDataByPeriod = (priceData, currentPeriod) => {
+    const [year, half] = currentPeriod.split(" ");
+    const currentYear = parseInt(year);
+    const isFirstHalf = half === "H1";
+
+    // 해당 기간의 시작/끝 날짜 계산
+    const startMonth = isFirstHalf ? 1 : 7;
+    const endMonth = isFirstHalf ? 6 : 12;
+
+    const startDate = `${currentYear}-${startMonth
+      .toString()
+      .padStart(2, "0")}-01`;
+    const endDate = `${currentYear}-${endMonth.toString().padStart(2, "0")}-31`;
+
+    return priceData.filter((item) => {
+      const itemDate = item.date;
+      return itemDate >= startDate && itemDate <= endDate;
+    });
+  };
+
   // 2년치 데이터 기간 계산 함수 (실제 데이터 범위 고려)
   const calculateExtendedPeriod = (currentPeriod) => {
     const [year, half] = currentPeriod.split(" ");
@@ -1065,6 +1124,20 @@ const StockDetailModal = ({ stock, period, onClose }) => {
     const endDate = `${endYear}-${endMonth.toString().padStart(2, "0")}-30`;
 
     return { startDate, endDate };
+  };
+
+  // 해당 종목의 거래내역 가져오기
+  const fetchStockTransactions = async () => {
+    try {
+      const response = await axios.get("/api/portfolio/transactions");
+      const filteredTransactions = response.data.filter(
+        (tx) => tx.stock_symbol === stockData.symbol && tx.period === period
+      );
+      setStockTransactions(filteredTransactions);
+    } catch (error) {
+      console.error("Failed to fetch stock transactions:", error);
+      setStockTransactions([]);
+    }
   };
 
   const fetchStockDetail = async () => {
@@ -1227,8 +1300,42 @@ const StockDetailModal = ({ stock, period, onClose }) => {
                     className="font-semibold text-[#7c5c2b]"
                     style={{ fontFamily: "Jua, sans-serif" }}
                   >
-                    {stock.transaction_type === "buy" ? "구매" : "판매"}:{" "}
-                    {stock.quantity}주
+                    {(() => {
+                      if (stockTransactions.length === 0) {
+                        return "매매: 0주";
+                      }
+
+                      const buyTransactions = stockTransactions.filter(
+                        (tx) => tx.transaction_type === "buy"
+                      );
+                      const sellTransactions = stockTransactions.filter(
+                        (tx) => tx.transaction_type === "sell"
+                      );
+
+                      const totalBuy = buyTransactions.reduce(
+                        (sum, tx) => sum + tx.quantity,
+                        0
+                      );
+                      const totalSell = sellTransactions.reduce(
+                        (sum, tx) => sum + tx.quantity,
+                        0
+                      );
+
+                      if (totalBuy === 0 && totalSell === 0) {
+                        return "매매: 0주";
+                      }
+
+                      let result = "";
+                      if (totalBuy > 0) {
+                        result += `매수: ${totalBuy}주`;
+                      }
+                      if (totalSell > 0) {
+                        if (result) result += " / ";
+                        result += `매도: ${totalSell}주`;
+                      }
+
+                      return result;
+                    })()}
                   </p>
                 </div>
                 <div>
@@ -1481,10 +1588,17 @@ const addRoundPeriodHighlight = (series, period) => {
     const startMonth = isFirstHalf ? 1 : 7;
     const endMonth = isFirstHalf ? 6 : 12;
 
+    // 각 월의 마지막 날짜 계산
+    const getLastDayOfMonth = (year, month) => {
+      return new Date(year, month, 0).getDate();
+    };
+
     const startDate = `${currentYear}-${startMonth
       .toString()
       .padStart(2, "0")}-01`;
-    const endDate = `${currentYear}-${endMonth.toString().padStart(2, "0")}-30`;
+    const endDate = `${currentYear}-${endMonth
+      .toString()
+      .padStart(2, "0")}-${getLastDayOfMonth(currentYear, endMonth)}`;
 
     // 시리즈 차트 참조 가져오기
     const chart = series.chart && series.chart();
@@ -1492,8 +1606,8 @@ const addRoundPeriodHighlight = (series, period) => {
 
     // 반투명 배경 영역을 위한 Area 시리즈 추가
     const backgroundSeries = chart.addAreaSeries({
-      topColor: "rgba(255, 193, 7, 0.1)", // 연한 노란색 배경
-      bottomColor: "rgba(255, 193, 7, 0.05)",
+      topColor: "rgba(124, 92, 43, 0.3)", // 브라운 계열 배경색 - 더 진하게
+      bottomColor: "rgba(124, 92, 43, 0.1)",
       lineColor: "transparent", // 경계선 없음
       lineWidth: 0,
       crosshairMarkerVisible: false,
@@ -1501,12 +1615,33 @@ const addRoundPeriodHighlight = (series, period) => {
       priceLineVisible: false,
     });
 
-    // 차트 전체 높이를 덮는 배경 데이터 생성
-    // 간단한 방법: 매우 높은 값과 0 사이의 영역으로 전체 차트 덮기
-    const backgroundData = [
-      { time: startDate, value: 999999999 }, // 매우 높은 값
-      { time: endDate, value: 999999999 }, // 매우 높은 값
-    ];
+    // 해당 기간에만 배경 데이터 생성 - 더 확실한 방법
+    const backgroundData = [];
+
+    // 시작일부터 종료일까지 매일 데이터 생성
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    // 시작점 추가
+    backgroundData.push({
+      time: startDate,
+      value: 0,
+    });
+
+    // 시작일부터 종료일까지 매일 데이터 생성
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      const dateStr = d.toISOString().split("T")[0];
+      backgroundData.push({
+        time: dateStr,
+        value: 999999999, // 매우 높은 값으로 전체 높이 덮기
+      });
+    }
+
+    // 종료점 추가
+    backgroundData.push({
+      time: endDate,
+      value: 0,
+    });
 
     backgroundSeries.setData(backgroundData);
 
@@ -1522,12 +1657,12 @@ const addRoundPeriodHighlight = (series, period) => {
         },
         // 워터마크로 기간 표시
         watermark: {
-          color: "rgba(255, 193, 7, 0.3)",
+          color: "rgba(124, 92, 43, 0.4)",
           visible: true,
-          text: `📅 ${period} 라운드 기간`,
-          fontSize: 24,
+          text: `📅 ${formatPeriodToDateRange(period)}`,
+          fontSize: 14,
           horzAlign: "center",
-          vertAlign: "center",
+          vertAlign: "top",
         },
       });
     }

@@ -1603,6 +1603,216 @@ async def analyze_trading_performance(
         print(f"분석 오류: {e}")
         raise HTTPException(status_code=500, detail="분석 중 오류가 발생했습니다.")
 
+@app.post("/api/analysis/individual-stock")
+async def analyze_individual_stock(
+    analysis_data: dict = Body(...),
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: AsyncSession = Depends(get_db)
+):
+    """개별 종목의 상세 분석을 LLM으로 수행"""
+    try:
+        user_id = auth_service.verify_token(credentials.credentials)
+        user = await db.execute(select(User).where(User.id == user_id))
+        user = user.scalar_one_or_none()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        stock_name = analysis_data.get("stockName", "")
+        stock_symbol = analysis_data.get("stockSymbol", "")
+        period = analysis_data.get("period", "")
+        news = analysis_data.get("news", [])
+        price_history = analysis_data.get("priceHistory", [])
+        sector = analysis_data.get("sector", "정보없음")
+
+        if not stock_name or not period:
+            return {
+                "summary": "종목 정보가 부족하여 분석할 수 없습니다.",
+                "performance": "neutral",
+                "recommendations": ["더 많은 정보를 수집하여 분석해보세요"]
+            }
+
+        # 가격 데이터 분석
+        price_analysis = ""
+        price_change_percent = 0
+        volatility = "보통"
+        price_trend = "보합"
+        
+        if price_history and len(price_history) > 1:
+            prices = [p.get("price", 0) for p in price_history]
+            start_price = prices[0]
+            end_price = prices[-1]
+            
+            if start_price > 0:
+                price_change_percent = ((end_price - start_price) / start_price) * 100
+                
+                # 변동성 계산
+                price_changes = []
+                for i in range(1, len(prices)):
+                    if prices[i-1] > 0:
+                        change = abs((prices[i] - prices[i-1]) / prices[i-1]) * 100
+                        price_changes.append(change)
+                
+                if price_changes:
+                    avg_volatility = sum(price_changes) / len(price_changes)
+                    if avg_volatility > 5:
+                        volatility = "높음"
+                    elif avg_volatility < 2:
+                        volatility = "낮음"
+                
+                if price_change_percent > 10:
+                    price_trend = "상승"
+                elif price_change_percent < -10:
+                    price_trend = "하락"
+                
+                price_analysis = f"{period} 동안 {stock_name}의 주가는 {start_price:,.0f}원에서 {end_price:,.0f}원으로 {price_change_percent:+.1f}% 변화하였습니다."
+
+        # 뉴스 분석
+        news_analysis = ""
+        news_sentiment = "중립"
+        positive_news = 0
+        negative_news = 0
+        neutral_news = 0
+        
+        if news:
+            positive_news = len([n for n in news if n.get("sentiment") == "positive"])
+            negative_news = len([n for n in news if n.get("sentiment") == "negative"])
+            neutral_news = len([n for n in news if n.get("sentiment") == "neutral"])
+            
+            if positive_news > negative_news:
+                news_sentiment = "긍정적"
+            elif negative_news > positive_news:
+                news_sentiment = "부정적"
+            
+            total_news = len(news)
+            news_analysis = f"뉴스 분석 결과, 총 {total_news}건의 뉴스 중 긍정적 {positive_news}건, 부정적 {negative_news}건, 중립적 {neutral_news}건이었습니다."
+
+        # 기간 표현 변환
+        period_display = period
+        if "H1" in period:
+            period_display = period.replace("H1", "년 상반기")
+        elif "H2" in period:
+            period_display = period.replace("H2", "년 하반기")
+
+        # LLM 분석 프롬프트 구성
+        analysis_prompt = f"""
+당신은 조선시대 세종대왕의 말투를 사용하는 전문 투자 분석가입니다. {stock_name}({stock_symbol}) 종목의 {period_display} 기간 상세 분석을 수행해주세요.
+
+=== 종목 기본 정보 ===
+- 종목명: {stock_name} ({stock_symbol})
+- 섹터: {sector}
+- 분석 기간: {period_display}
+
+=== 가격 분석 ===
+{price_analysis}
+- 변동성: {volatility}
+- 가격 추세: {price_trend}
+
+=== 뉴스 분석 ===
+{news_analysis}
+- 뉴스 감정: {news_sentiment}
+
+분석 요구사항:
+1. {period_display} 기간 동안의 종목 성과를 구체적인 수치로 평가
+2. 가격 변동 패턴과 뉴스 영향력 분석
+3. 해당 섹터의 시장 상황과 비교 분석
+4. 향후 투자 전략에 대한 구체적 조언
+5. 리스크 요인과 기회 요인 분석
+
+성과 등급 기준:
+- excellent: +15% 이상의 수익률 또는 매우 긍정적인 뉴스
+- good: +5~15% 수익률 또는 긍정적인 뉴스
+- neutral: -5~+5% 수익률 또는 중립적 뉴스
+- poor: -5% 이하 수익률 또는 부정적인 뉴스
+
+세종대왕 말투 예시:
+- "과인이 보기에 {stock_name}은(는)..."
+- "그대가 신중하게 판단하시게"
+- "이런 시기를 잘 활용하시게"
+- "다음에는 더욱 신중하게 접근하시게"
+- "~했노라", "~보였노라", "~판단되노라" 등의 조선시대 말투 사용
+
+다음 JSON 형식으로 응답해주세요:
+{{
+    "summary": "세종대왕 말투로 종목의 상세한 성과 분석 (한국어, 200자 이상)",
+    "performance": "excellent|good|neutral|poor",
+    "recommendations": ["세종대왕 말투의 구체적인 투자 조언 1", "세종대왕 말투의 구체적인 투자 조언 2", "세종대왕 말투의 구체적인 투자 조언 3"]
+}}
+
+반드시 세종대왕의 말투를 사용하여 구체적인 수치와 분석을 포함한 전문적이고 실용적인 분석을 제공해주세요.
+"""
+
+        # LLM 호출 (OpenAI API 키가 있는 경우)
+        openai_api_key = os.getenv("OPENAI_API_KEY")
+        if openai_api_key:
+            try:
+                llm = ChatOpenAI(
+                    model_name="gpt-3.5-turbo",
+                    temperature=0.7,
+                    openai_api_key=openai_api_key
+                )
+                
+                messages = [
+                    SystemMessage(content="당신은 전문 투자 분석가입니다. 정확하고 실용적인 투자 조언을 제공해주세요."),
+                    HumanMessage(content=analysis_prompt)
+                ]
+                
+                response = llm(messages)
+                result = json.loads(response.content)
+                
+                return {
+                    "summary": result.get("summary", "분석을 완료했습니다."),
+                    "performance": result.get("performance", "neutral"),
+                    "recommendations": result.get("recommendations", ["분산 투자를 권장합니다."])
+                }
+            except Exception as e:
+                print(f"LLM 분석 실패: {e}")
+                # LLM 실패 시 오프라인 분석으로 대체
+                pass
+
+        # 오프라인 분석 (LLM 실패 시 또는 API 키가 없는 경우)
+        if price_change_percent > 15 and news_sentiment == "긍정적":
+            performance = "excellent"
+            summary = f"과인이 보기에 {stock_name}은(는) 매우 훌륭한 성과를 보였나이다! {price_analysis} {news_analysis} 이는 매우 긍정적인 신호라 하겠나이다."
+            recommendations = [
+                "현재의 상승세가 지속될 것으로 예상되니, 적절한 수익 실현을 고려하시게",
+                "긍정적인 뉴스 흐름이 계속되니 관심을 기울이시게",
+                "하지만 과도한 낙관은 금물이니, 신중한 판단을 유지하시게"
+            ]
+        elif price_change_percent > 5 or news_sentiment == "긍정적":
+            performance = "good"
+            summary = f"{stock_name}은(는) 양호한 성과를 보였네. {price_analysis} {news_analysis} 전반적으로 긍정적인 방향으로 진행되고 있다네."
+            recommendations = [
+                "현재 방향을 유지하되, 더욱 신중한 관찰이 필요하니라",
+                "추가 정보를 수집하여 투자 판단을 보완하시게",
+                "리스크 관리에 특별히 주의를 기울이시게"
+            ]
+        elif price_change_percent < -15 and news_sentiment == "부정적":
+            performance = "poor"
+            summary = f"{stock_name}은(는) 개선이 필요한 상황이니라. {price_analysis} {news_analysis} 투자 전략의 재검토가 시급하다네."
+            recommendations = [
+                "현재 투자 전략을 전면적으로 재검토하시게",
+                "손절매 기준을 명확히 설정하여 손실을 최소화하시게",
+                "더 많은 분석과 정보 수집이 필요하니라"
+            ]
+        else:
+            performance = "neutral"
+            summary = f"{stock_name}은(는) 보통의 성과를 보였네. {price_analysis} {news_analysis} 신중한 관찰이 필요하니라."
+            recommendations = [
+                "현재 상황을 지켜보되, 추가 정보 수집에 노력하시게",
+                "분산 투자를 통해 리스크를 관리하시게",
+                "장기적 관점에서 투자 가치를 재평가하시게"
+            ]
+
+        return {
+            "summary": summary,
+            "performance": performance,
+            "recommendations": recommendations
+        }
+
+    except Exception as e:
+        print(f"개별 종목 분석 오류: {e}")
+        raise HTTPException(status_code=500, detail="분석 중 오류가 발생했습니다.")
+
 @app.get("/api/stocks/{symbol}/price-history")
 async def get_stock_price_history(
     symbol: str, 

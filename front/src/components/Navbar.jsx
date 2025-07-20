@@ -91,9 +91,12 @@ const Navbar = () => {
         return "🎉 위대한 모험의 대단원";
 
       default:
-        if (currentRound === 1) return "🚩 첫 번째 투자 여정: 차트 속 흐름을 읽어보시게";
-        if (currentRound === 2) return "🚩 두 번째 투자 여정: 소문 속 기회를 엿보시게";
-        if (currentRound === 3) return "🚩 세 번째 투자 여정: 장부 속 진실을 꿰뚫어보시게";
+        if (currentRound === 1)
+          return "🚩 첫 번째 투자 여정: 차트 속 흐름을 읽어보시게";
+        if (currentRound === 2)
+          return "🚩 두 번째 투자 여정: 소문 속 기회를 엿보시게";
+        if (currentRound === 3)
+          return "🚩 세 번째 투자 여정: 장부 속 진실을 꿰뚫어보시게";
         return "🚩 조선왕조 투자실록";
     }
   };
@@ -278,7 +281,7 @@ const Navbar = () => {
         fontFamily: "Jua, sans-serif",
         backgroundColor: "rgba(0, 30, 90, 0.3)",
         backdropFilter: "blur(8px)",
-        zIndex: 1000,
+        zIndex: 10,
         position: "relative",
       }}
     >

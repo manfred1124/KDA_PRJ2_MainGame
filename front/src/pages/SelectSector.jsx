@@ -110,9 +110,14 @@ const SelectSector = () => {
     addGuideMessage(GUIDE_MSG);
     // 라운드/시점 동향 메시지 출력 제거 (메인에서만 출력)
     fetchSectors();
-    fetchAllNews(); // 전체 뉴스 데이터 가져오기
     fetchPortfolio();
   }, []);
+
+  useEffect(() => {
+    if (user?.current_period) {
+      fetchAllNews(); // 전체 뉴스 데이터 가져오기
+    }
+  }, [user?.current_period]);
 
   useEffect(() => {
     if (selected) {
@@ -202,7 +207,15 @@ const SelectSector = () => {
 
   const fetchAllNews = async () => {
     try {
-      const response = await axios.get("/api/news");
+      const period = user?.current_period;
+      if (!period) {
+        console.log("현재 기간 정보가 없어서 뉴스를 불러올 수 없습니다.");
+        setAllNews([]);
+        return;
+      }
+      const response = await axios.get(
+        `/api/news?period=${encodeURIComponent(period)}`
+      );
       setAllNews(response.data);
     } catch (error) {
       console.error("뉴스 데이터를 불러오는데 실패했습니다:", error);
