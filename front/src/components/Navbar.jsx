@@ -31,6 +31,9 @@ const Navbar = () => {
   const [newsBanner, setNewsBanner] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedNews, setSelectedNews] = useState(null);
+  const [isPortfolioOpen, setIsPortfolioOpen] = useState(false);
+  const [portfolioData, setPortfolioData] = useState(null);
+  const [portfolioLoading, setPortfolioLoading] = useState(false);
 
   // 현재 기간을 한국어로 변환
   const formatPeriod = (period) => {
@@ -105,6 +108,11 @@ const Navbar = () => {
     // 거래 완료 이벤트 리스너 추가
     const handleTransactionComplete = () => {
       fetchUserBalance();
+      // 포트폴리오가 열려있으면 데이터 새로고침
+      if (isPortfolioOpen) {
+        setPortfolioData(null);
+        fetchPortfolioData();
+      }
     };
 
     window.addEventListener("transactionComplete", handleTransactionComplete);
@@ -115,7 +123,7 @@ const Navbar = () => {
         handleTransactionComplete
       );
     };
-  }, []);
+  }, [isPortfolioOpen]);
 
   // 뉴스 배너는 user.current_period가 준비된 후에만 호출
   useEffect(() => {
@@ -130,13 +138,16 @@ const Navbar = () => {
       if (isDropdownOpen && !event.target.closest(".dropdown-container")) {
         setIsDropdownOpen(false);
       }
+      if (isPortfolioOpen && !event.target.closest(".portfolio-container")) {
+        setIsPortfolioOpen(false);
+      }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [isDropdownOpen]);
+  }, [isDropdownOpen, isPortfolioOpen]);
 
   const fetchBannerNews = async (period) => {
     try {
@@ -177,6 +188,33 @@ const Navbar = () => {
     } catch (error) {
       console.error("Failed to fetch user balance:", error);
       setUserBalance(user?.total_balance || 0);
+    }
+  };
+
+  const fetchPortfolioData = async () => {
+    setPortfolioLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get("/api/portfolio", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      console.log("포트폴리오 데이터:", response.data);
+      setPortfolioData(response.data);
+    } catch (error) {
+      console.error("Failed to fetch portfolio data:", error);
+      toast.error("포트폴리오 정보를 불러오는데 실패했습니다.");
+    } finally {
+      setPortfolioLoading(false);
+    }
+  };
+
+  const handlePortfolioClick = () => {
+    setIsPortfolioOpen(!isPortfolioOpen);
+    if (!isPortfolioOpen) {
+      setPortfolioData(null); // 데이터 초기화
+      fetchPortfolioData();
     }
   };
 
@@ -267,10 +305,6 @@ const Navbar = () => {
 
   if (!user) return null;
 
-  // 잔고 정보(예시: user.balance 또는 user.total_balance)
-  // 실제 잔고 필드명에 맞게 수정 필요
-  const balance = user.total_balance || user.balance || 0;
-
   return (
     <nav
       className="py-2 lg:py-4 relative shadow-lg"
@@ -337,16 +371,115 @@ const Navbar = () => {
             </div>
           </div>
 
-          {/* 잔고 정보 */}
-          <div className="flex-shrink-0">
-            <div className="bg-white rounded-2xl shadow-md px-6 py-4">
+          {/* 평가금액 정보 */}
+          <div className="flex-shrink-0 relative portfolio-container">
+            <button
+              onClick={handlePortfolioClick}
+              className="bg-white rounded-2xl shadow-md px-6 py-4 hover:shadow-lg transition-all duration-300 cursor-pointer"
+            >
               <div className="flex items-center space-x-2">
-                <span className="text-sm text-[#a67c3c] font-medium">잔고</span>
+                <span className="text-sm text-[#a67c3c] font-medium">평가금액</span>
                 <span className="text-2xl font-bold text-[#7c5c2b]">
                   {userBalance.toLocaleString()}원
                 </span>
+                <ChevronDown
+                  className={`w-4 h-4 text-[#a67c3c] transition-transform duration-200 ${
+                    isPortfolioOpen ? "rotate-180" : ""
+                  }`}
+                />
               </div>
-            </div>
+            </button>
+
+            {/* 포트폴리오 드롭다운 */}
+            {isPortfolioOpen && (
+              <div className="absolute top-full left-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-100 z-50">
+                <div className="p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-lg font-bold text-[#7c5c2b]" style={{ fontFamily: "Jua, sans-serif" }}>
+                      보유 종목
+                    </h3>
+                    <button
+                      onClick={() => setIsPortfolioOpen(false)}
+                      className="text-gray-400 hover:text-gray-600 text-xl"
+                    >
+                      ×
+                    </button>
+                  </div>
+                  
+                  {portfolioLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#bfa76a]"></div>
+                    </div>
+                  ) : portfolioData && portfolioData.items && portfolioData.items.length > 0 ? (
+                    <div className="max-h-64 overflow-y-auto">
+                      <div className="space-y-3">
+                        {portfolioData.items.map((item, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center space-x-2">
+                                <span className="text-sm font-bold text-[#7c5c2b] truncate">
+                                  {item.stock_name}
+                                </span>
+                                <span className="text-xs text-[#a67c3c] bg-gray-200 px-2 py-1 rounded">
+                                  {item.stock_symbol}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between mt-1">
+                                <span className="text-xs text-[#a67c3c]">
+                                  {item.quantity.toLocaleString()}주
+                                </span>
+                                <span className="text-xs text-[#a67c3c]">
+                                  평균 {item.average_price.toLocaleString()}원
+                                </span>
+                              </div>
+                            </div>
+                            <div className="text-right ml-3">
+                              <div className={`text-sm font-bold ${
+                                item.profit_loss >= 0 ? 'text-green-600' : 'text-red-600'
+                              }`}>
+                                {item.profit_loss >= 0 ? '+' : ''}{item.profit_loss.toLocaleString()}원
+                              </div>
+                              <div className={`text-xs ${
+                                item.profit_loss_percentage >= 0 ? 'text-green-600' : 'text-red-600'
+                              }`}>
+                                {item.profit_loss_percentage >= 0 ? '+' : ''}{item.profit_loss_percentage.toFixed(1)}%
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-[#a67c3c]">
+                      <div className="text-2xl mb-2">📊</div>
+                      <p className="text-sm">보유 종목이 없습니다.</p>
+                    </div>
+                  )}
+                  
+                  {portfolioData && (
+                    <div className="mt-4 pt-3 border-t border-gray-200">
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-[#a67c3c]">총 평가금액:</span>
+                        <span className="font-bold text-[#7c5c2b]">
+                          {portfolioData.total_portfolio_value?.toLocaleString() || 0}원
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm mt-1">
+                        <span className="text-[#a67c3c]">총 손익:</span>
+                        <span className={`font-bold ${
+                          portfolioData.total_profit_loss >= 0 ? 'text-green-600' : 'text-red-600'
+                        }`}>
+                          {portfolioData.total_profit_loss >= 0 ? '+' : ''}{portfolioData.total_profit_loss?.toLocaleString() || 0}원
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* 유저 드롭다운 */}
@@ -493,18 +626,117 @@ const Navbar = () => {
               </div>
             </div>
 
-            {/* 잔고 정보 */}
-            <div className="flex-1">
-              <div className="bg-white rounded-xl shadow-md px-3 py-2">
+            {/* 평가금액 정보 */}
+            <div className="flex-1 relative portfolio-container">
+              <button
+                onClick={handlePortfolioClick}
+                className="bg-white rounded-xl shadow-md px-3 py-2 hover:shadow-lg transition-all duration-300 cursor-pointer w-full"
+              >
                 <div className="flex items-center justify-center space-x-1">
                   <span className="text-xs text-[#a67c3c] font-medium">
-                    잔고
+                    평가금액
                   </span>
                   <span className="text-sm font-bold text-[#7c5c2b] truncate">
                     {userBalance.toLocaleString()}원
                   </span>
+                  <ChevronDown
+                    className={`w-3 h-3 text-[#a67c3c] transition-transform duration-200 ${
+                      isPortfolioOpen ? "rotate-180" : ""
+                    }`}
+                  />
                 </div>
-              </div>
+              </button>
+
+              {/* 모바일 포트폴리오 드롭다운 */}
+              {isPortfolioOpen && (
+                <div className="absolute top-full left-0 mt-2 w-72 bg-white rounded-xl shadow-lg border border-gray-100 z-50">
+                  <div className="p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-base font-bold text-[#7c5c2b]" style={{ fontFamily: "Jua, sans-serif" }}>
+                        보유 종목
+                      </h3>
+                      <button
+                        onClick={() => setIsPortfolioOpen(false)}
+                        className="text-gray-400 hover:text-gray-600 text-lg"
+                      >
+                        ×
+                      </button>
+                    </div>
+                    
+                    {portfolioLoading ? (
+                      <div className="flex items-center justify-center py-6">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#bfa76a]"></div>
+                      </div>
+                    ) : portfolioData && portfolioData.items && portfolioData.items.length > 0 ? (
+                      <div className="max-h-48 overflow-y-auto">
+                        <div className="space-y-2">
+                          {portfolioData.items.map((item, index) => (
+                            <div
+                              key={index}
+                              className="flex items-center justify-between p-2 bg-gray-50 rounded-lg border border-gray-200"
+                            >
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center space-x-1">
+                                  <span className="text-xs font-bold text-[#7c5c2b] truncate">
+                                    {item.stock_name}
+                                  </span>
+                                  <span className="text-xs text-[#a67c3c] bg-gray-200 px-1 py-0.5 rounded">
+                                    {item.stock_symbol}
+                                  </span>
+                                </div>
+                                <div className="flex items-center justify-between mt-1">
+                                  <span className="text-xs text-[#a67c3c]">
+                                    {item.quantity.toLocaleString()}주
+                                  </span>
+                                  <span className="text-xs text-[#a67c3c]">
+                                    평균 {item.average_price.toLocaleString()}원
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="text-right ml-2">
+                                <div className={`text-xs font-bold ${
+                                  item.profit_loss >= 0 ? 'text-green-600' : 'text-red-600'
+                                }`}>
+                                  {item.profit_loss >= 0 ? '+' : ''}{item.profit_loss.toLocaleString()}원
+                                </div>
+                                <div className={`text-xs ${
+                                  item.profit_loss_percentage >= 0 ? 'text-green-600' : 'text-red-600'
+                                }`}>
+                                  {item.profit_loss_percentage >= 0 ? '+' : ''}{item.profit_loss_percentage.toFixed(1)}%
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-6 text-[#a67c3c]">
+                        <div className="text-xl mb-1">📊</div>
+                        <p className="text-xs">보유 종목이 없습니다.</p>
+                      </div>
+                    )}
+                    
+                    {portfolioData && (
+                      <div className="mt-3 pt-2 border-t border-gray-200">
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="text-[#a67c3c]">총 평가금액:</span>
+                          <span className="font-bold text-[#7c5c2b]">
+                            {portfolioData.total_portfolio_value?.toLocaleString() || 0}원
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center text-xs mt-1">
+                          <span className="text-[#a67c3c]">총 손익:</span>
+                          <span className={`font-bold ${
+                            portfolioData.total_profit_loss >= 0 ? 'text-green-600' : 'text-red-600'
+                          }`}>
+                            {portfolioData.total_profit_loss >= 0 ? '+' : ''}{portfolioData.total_profit_loss?.toLocaleString() || 0}원
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* 유저 드롭다운 */}
