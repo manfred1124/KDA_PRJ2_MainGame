@@ -416,7 +416,21 @@ const Navbar = () => {
                         {portfolioData.items.map((item, index) => (
                           <div
                             key={index}
-                            className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
+                            className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-100 transition-colors duration-200"
+                            onClick={() => {
+                              // 보유 종목 클릭 시 판매하기 모달 열기 이벤트 발생
+                              window.dispatchEvent(new CustomEvent('openSellModal', {
+                                detail: {
+                                  stock_id: item.stock_id,
+                                  stock_name: item.stock_name,
+                                  stock_symbol: item.stock_symbol,
+                                  current_price: item.current_price,
+                                  quantity: item.quantity,
+                                  average_price: item.average_price
+                                }
+                              }));
+                              setIsPortfolioOpen(false); // 포트폴리오 드롭다운 닫기
+                            }}
                           >
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center space-x-2">
@@ -673,7 +687,21 @@ const Navbar = () => {
                           {portfolioData.items.map((item, index) => (
                             <div
                               key={index}
-                              className="flex items-center justify-between p-2 bg-gray-50 rounded-lg border border-gray-200"
+                              className="flex items-center justify-between p-2 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-100 transition-colors duration-200"
+                              onClick={() => {
+                                // 보유 종목 클릭 시 판매하기 모달 열기 이벤트 발생
+                                window.dispatchEvent(new CustomEvent('openSellModal', {
+                                  detail: {
+                                    stock_id: item.stock_id,
+                                    stock_name: item.stock_name,
+                                    stock_symbol: item.stock_symbol,
+                                    current_price: item.current_price,
+                                    quantity: item.quantity,
+                                    average_price: item.average_price
+                                  }
+                                }));
+                                setIsPortfolioOpen(false); // 포트폴리오 드롭다운 닫기
+                              }}
                             >
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center space-x-1">

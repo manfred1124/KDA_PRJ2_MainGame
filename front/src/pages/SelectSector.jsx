@@ -112,6 +112,45 @@ const SelectSector = () => {
     fetchSectors();
     fetchAllNews(); // 전체 뉴스 데이터 가져오기
     fetchPortfolio();
+
+    // 보유 종목 클릭 시 판매하기 모달 열기 이벤트 리스너
+    const handleOpenSellModal = async (event) => {
+      const { stock_id, stock_name, stock_symbol, current_price, quantity, average_price } = event.detail;
+      
+      // 해당 주식의 전체 정보를 가져오기
+      try {
+        const token = localStorage.getItem("token");
+        const response = await axios.get(`/api/stocks/${stock_id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const stockData = response.data;
+        
+        // 판매하기 모달 열기
+        setOrderModal({
+          stock: {
+            ...stockData,
+            current_price: current_price
+          },
+          type: "sell"
+        });
+        setOrderType("sell"); // 판매하기로 설정
+        setOrderQty(1); // 수량 초기화
+        
+        // 매매하기 탭으로 이동
+        setOrderTab("trade");
+      } catch (error) {
+        console.error("주식 정보를 가져오는데 실패했습니다:", error);
+        toast.error("주식 정보를 불러오는데 실패했습니다.");
+      }
+    };
+
+    window.addEventListener('openSellModal', handleOpenSellModal);
+
+    return () => {
+      window.removeEventListener('openSellModal', handleOpenSellModal);
+    };
   }, []);
 
   useEffect(() => {

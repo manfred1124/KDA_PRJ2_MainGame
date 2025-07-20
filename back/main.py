@@ -129,8 +129,27 @@ async def get_all_sectors(db: AsyncSession = Depends(get_db)):
     return await stock_service.get_all_sectors(db)
 
 @app.get("/api/stocks/{stock_id}", response_model=StockResponse)
-async def get_stock(stock_id: int, db: AsyncSession = Depends(get_db)):
-    return await stock_service.get_stock_by_id(db, stock_id)
+async def get_stock(
+    stock_id: int, 
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: AsyncSession = Depends(get_db)
+):
+    # 사용자 인증 및 현재 기간 가져오기
+    user_id = auth_service.verify_token(credentials.credentials)
+    user = await db.execute(select(User).where(User.id == user_id))
+    user = user.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # 현재 기간의 시작 날짜 계산
+    periods = json.loads(user.round_periods)
+    if user.current_round_idx >= len(periods):
+        current_period = periods[-1]  # 마지막 기간 사용
+    else:
+        current_period = periods[user.current_round_idx]
+    
+    date = period_to_date(current_period)
+    return await stock_service.get_stock_by_id(db, stock_id, date)
 
 # 포트폴리오 관련 엔드포인트
 @app.get("/api/portfolio")
