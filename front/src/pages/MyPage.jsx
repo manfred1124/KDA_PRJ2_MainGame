@@ -14,6 +14,7 @@ import {
   TrendingUp as StockIcon,
   Newspaper,
 } from "lucide-react";
+import faceImage from "../assets/face.png";
 
 const MyPage = () => {
   const { user, updateUser } = useAuth();
@@ -90,8 +91,12 @@ const MyPage = () => {
       >
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-4">
-            <div className="p-3 bg-[#e6d3a3] bg-opacity-80 rounded-full border-2 border-[#bfa76a]">
-              <User size={32} className="text-[#7c5c2b]" />
+            <div className="p-3 bg-[#e6d3a3] bg-opacity-80 rounded-full border-2 border-[#bfa76a] overflow-hidden">
+              <img 
+                src={faceImage} 
+                alt="User Avatar" 
+                className="w-8 h-8 object-cover"
+              />
             </div>
             <div>
               <h1
@@ -104,7 +109,7 @@ const MyPage = () => {
                 className="text-[#a67c3c]"
                 style={{ fontFamily: "Jua, sans-serif" }}
               >
-                모험가
+                용사
               </p>
             </div>
           </div>
@@ -148,42 +153,42 @@ const MyPage = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {/** 카드 반복: 각 카드에 RPG풍 스타일 적용 **/}
         <div
-          className="rounded-xl p-6 border-2 border-[#e6d3a3] bg-[#f7e6b6] shadow"
+          className="rounded-xl p-4 border-2 border-[#e6d3a3] bg-[#f7e6b6] shadow"
           style={{ boxShadow: "0 2px 8px #c2b28033" }}
         >
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-[#a67c3c]">보유 현금</p>
-              <p className="text-xl font-bold text-[#7c5c2b]">
+            <div className="w-full">
+              <p className="text-xs font-medium text-[#a67c3c] mb-1">보유 현금</p>
+              <p className="text-sm font-bold text-[#7c5c2b] whitespace-nowrap overflow-hidden text-ellipsis">
                 {portfolio.total_balance.toLocaleString()}원
               </p>
             </div>
           </div>
         </div>
         <div
-          className="rounded-xl p-6 border-2 border-[#e6d3a3] bg-[#f7e6b6] shadow"
+          className="rounded-xl p-4 border-2 border-[#e6d3a3] bg-[#f7e6b6] shadow"
           style={{ boxShadow: "0 2px 8px #c2b28033" }}
         >
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-[#a67c3c]">
+            <div className="w-full">
+              <p className="text-xs font-medium text-[#a67c3c] mb-1">
                 포트폴리오 가치
               </p>
-              <p className="text-xl font-bold text-[#7c5c2b]">
+              <p className="text-sm font-bold text-[#7c5c2b] whitespace-nowrap overflow-hidden text-ellipsis">
                 {portfolio.total_portfolio_value.toLocaleString()}원
               </p>
             </div>
           </div>
         </div>
         <div
-          className="rounded-xl p-6 border-2 border-[#e6d3a3] bg-[#f7e6b6] shadow"
+          className="rounded-xl p-4 border-2 border-[#e6d3a3] bg-[#f7e6b6] shadow"
           style={{ boxShadow: "0 2px 8px #c2b28033" }}
         >
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-[#a67c3c]">미실현 손익</p>
+            <div className="w-full">
+              <p className="text-xs font-medium text-[#a67c3c] mb-1">미실현 손익</p>
               <p
-                className={`text-xl font-bold ${
+                className={`text-sm font-bold whitespace-nowrap overflow-hidden text-ellipsis ${
                   portfolio.total_profit_loss >= 0
                     ? "text-[#3b7c2b]"
                     : "text-[#a63c2b]"
@@ -196,14 +201,14 @@ const MyPage = () => {
           </div>
         </div>
         <div
-          className="rounded-xl p-6 border-2 border-[#e6d3a3] bg-[#f7e6b6] shadow"
+          className="rounded-xl p-4 border-2 border-[#e6d3a3] bg-[#f7e6b6] shadow"
           style={{ boxShadow: "0 2px 8px #c2b28033" }}
         >
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-[#a67c3c]">실현 수익</p>
+            <div className="w-full">
+              <p className="text-xs font-medium text-[#a67c3c] mb-1">실현 수익</p>
               <p
-                className={`text-xl font-bold ${
+                className={`text-sm font-bold whitespace-nowrap overflow-hidden text-ellipsis ${
                   portfolio.realized_profit >= 0
                     ? "text-[#3b7c2b]"
                     : "text-[#a63c2b]"
@@ -216,14 +221,14 @@ const MyPage = () => {
           </div>
         </div>
         <div
-          className="rounded-xl p-6 border-2 border-[#e6d3a3] bg-[#f7e6b6] shadow"
+          className="rounded-xl p-4 border-2 border-[#e6d3a3] bg-[#f7e6b6] shadow"
           style={{ boxShadow: "0 2px 8px #c2b28033" }}
         >
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-[#a67c3c]">총 수익</p>
+            <div className="w-full">
+              <p className="text-xs font-medium text-[#a67c3c] mb-1">총 수익</p>
               <p
-                className={`text-xl font-bold ${
+                className={`text-sm font-bold whitespace-nowrap overflow-hidden text-ellipsis ${
                   portfolio.total_profit >= 0
                     ? "text-[#3b7c2b]"
                     : "text-[#a63c2b]"
@@ -236,14 +241,14 @@ const MyPage = () => {
           </div>
         </div>
         <div
-          className="rounded-xl p-6 border-2 border-[#e6d3a3] bg-[#f7e6b6] shadow"
+          className="rounded-xl p-4 border-2 border-[#e6d3a3] bg-[#f7e6b6] shadow"
           style={{ boxShadow: "0 2px 8px #c2b28033" }}
         >
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-[#a67c3c]">총 수익률</p>
+            <div className="w-full">
+              <p className="text-xs font-medium text-[#a67c3c] mb-1">총 수익률</p>
               <p
-                className={`text-xl font-bold ${
+                className={`text-sm font-bold whitespace-nowrap overflow-hidden text-ellipsis ${
                   portfolio.total_profit_percentage >= 0
                     ? "text-[#3b7c2b]"
                     : "text-[#a63c2b]"
@@ -336,25 +341,25 @@ const MyPage = () => {
             <table className="w-full" style={{ fontFamily: "Jua, sans-serif" }}>
               <thead className="sticky top-0 bg-[#f3e7c4] z-10">
                 <tr className="border-b border-[#e6d3a3]">
-                  <th className="text-center py-4 px-6 font-semibold text-[#a67c3c]">
+                  <th className="text-center py-4 px-6 font-semibold text-[#a67c3c] whitespace-nowrap">
                     종목
                   </th>
-                  <th className="text-center py-4 px-6 font-semibold text-[#a67c3c]">
+                  <th className="text-center py-4 px-6 font-semibold text-[#a67c3c] whitespace-nowrap">
                     보유수량
                   </th>
-                  <th className="text-right py-4 px-6 font-semibold text-[#a67c3c]">
+                  <th className="text-right py-4 px-6 font-semibold text-[#a67c3c] whitespace-nowrap">
                     평균단가
                   </th>
-                  <th className="text-right py-4 px-6 font-semibold text-[#a67c3c]">
+                  <th className="text-right py-4 px-6 font-semibold text-[#a67c3c] whitespace-nowrap">
                     현재가
                   </th>
-                  <th className="text-right py-4 px-6 font-semibold text-[#a67c3c]">
+                  <th className="text-right py-4 px-6 font-semibold text-[#a67c3c] whitespace-nowrap">
                     평가금액
                   </th>
-                  <th className="text-right py-4 px-6 font-semibold text-[#a67c3c]">
+                  <th className="text-right py-4 px-6 font-semibold text-[#a67c3c] whitespace-nowrap">
                     손익
                   </th>
-                  <th className="text-right py-4 px-6 font-semibold text-[#a67c3c]">
+                  <th className="text-right py-4 px-6 font-semibold text-[#a67c3c] whitespace-nowrap">
                     수익률
                   </th>
                 </tr>
@@ -375,20 +380,20 @@ const MyPage = () => {
                         </p>
                       </div>
                     </td>
-                    <td className="text-center py-4 px-6 font-semibold text-[#7c5c2b]">
+                    <td className="text-center py-4 px-6 font-semibold text-[#7c5c2b] whitespace-nowrap">
                       {(item.quantity ?? 0).toLocaleString()}주
                     </td>
-                    <td className="text-right py-4 px-6 text-[#a67c3c]">
+                    <td className="text-right py-4 px-6 text-[#a67c3c] whitespace-nowrap text-sm">
                       {(item.average_price ?? 0).toLocaleString()}원
                     </td>
-                    <td className="text-right py-4 px-6 font-semibold text-[#7c5c2b]">
+                    <td className="text-right py-4 px-6 font-semibold text-[#7c5c2b] whitespace-nowrap text-sm">
                       {(item.current_price ?? 0).toLocaleString()}원
                     </td>
-                    <td className="text-right py-4 px-6 font-semibold text-[#7c5c2b]">
+                    <td className="text-right py-4 px-6 font-semibold text-[#7c5c2b] whitespace-nowrap text-sm">
                       {(item.total_value ?? 0).toLocaleString()}원
                     </td>
                     <td
-                      className={`text-right py-4 px-6 font-semibold ${
+                      className={`text-right py-4 px-6 font-semibold whitespace-nowrap text-sm ${
                         (item.profit_loss ?? 0) >= 0
                           ? "text-[#3b7c2b]"
                           : "text-[#a63c2b]"
@@ -398,7 +403,7 @@ const MyPage = () => {
                       {(item.profit_loss ?? 0).toLocaleString()}원
                     </td>
                     <td
-                      className={`text-right py-4 px-6 font-semibold ${
+                      className={`text-right py-4 px-6 font-semibold whitespace-nowrap text-sm ${
                         (item.profit_loss_percentage ?? 0) >= 0
                           ? "text-[#3b7c2b]"
                           : "text-[#a63c2b]"
@@ -432,31 +437,31 @@ const MyPage = () => {
           >
             <thead className="sticky top-0 bg-[#f3e7c4] z-10">
               <tr className="border-b border-[#e6d3a3]">
-                <th className="py-3 px-4 font-semibold text-[#a67c3c] w-24">
+                <th className="py-3 px-4 font-semibold text-[#a67c3c] w-24 whitespace-nowrap">
                   종목
                 </th>
-                <th className="py-3 px-4 font-semibold text-[#a67c3c] w-16">
+                <th className="py-3 px-4 font-semibold text-[#a67c3c] w-16 whitespace-nowrap">
                   유형
                 </th>
-                <th className="py-3 px-4 font-semibold text-[#a67c3c] w-16">
+                <th className="py-3 px-4 font-semibold text-[#a67c3c] w-16 whitespace-nowrap">
                   수량
                 </th>
-                <th className="py-3 px-4 font-semibold text-[#a67c3c] w-24">
+                <th className="py-3 px-4 font-semibold text-[#a67c3c] w-24 whitespace-nowrap">
                   거래가
                 </th>
-                <th className="py-3 px-4 font-semibold text-[#a67c3c] w-16">
+                <th className="py-3 px-4 font-semibold text-[#a67c3c] w-16 whitespace-nowrap">
                   라운드
                 </th>
-                <th className="py-3 px-4 font-semibold text-[#a67c3c] w-24">
+                <th className="py-3 px-4 font-semibold text-[#a67c3c] w-24 whitespace-nowrap">
                   거래시점
                 </th>
-                <th className="py-3 px-4 font-semibold text-[#a67c3c] w-24">
+                <th className="py-3 px-4 font-semibold text-[#a67c3c] w-24 whitespace-nowrap">
                   현재가
                 </th>
-                <th className="py-3 px-4 font-semibold text-[#a67c3c] w-20">
+                <th className="py-3 px-4 font-semibold text-[#a67c3c] w-20 whitespace-nowrap">
                   수익률
                 </th>
-                <th className="py-3 px-4 font-semibold text-[#a67c3c] w-32">
+                <th className="py-3 px-4 font-semibold text-[#a67c3c] w-32 whitespace-nowrap text-xs">
                   매도 후 현재가 대비(%)
                 </th>
               </tr>
@@ -474,17 +479,36 @@ const MyPage = () => {
                 </tr>
               ) : (
                 tradeHistory.map((tx, idx) => {
-                  // 현재가, 수익률, 기회비용(매도 후 현재가 대비) 계산 예시
-                  // 실제 데이터 구조에 맞게 수정 필요
-                  const currentPrice = tx.current_price ?? 0;
-                  const profitRate =
-                    tx.transaction_type === "buy"
-                      ? ((currentPrice - tx.price) / tx.price) * 100
-                      : ((tx.price - tx.sell_price) / tx.sell_price) * 100;
-                  const opportunityCost =
-                    tx.transaction_type === "sell" && currentPrice
-                      ? ((currentPrice - tx.price) / tx.price) * 100
-                      : null;
+                  // 현재가, 수익률, 기회비용(매도 후 현재가 대비) 계산
+                  let currentPrice = tx.current_price;
+                  let profitRate = null;
+                  let opportunityCost = null;
+                  
+                  // 매수 거래의 경우: 해당 기간의 현재가와 비교하여 수익률 계산
+                  if (tx.transaction_type === "buy" && currentPrice !== null && currentPrice > 0) {
+                    profitRate = ((currentPrice - tx.price) / tx.price) * 100;
+                  }
+                  
+                  // 매도 거래의 경우: 매도가와 매수가 비교하여 실현 수익률 계산
+                  if (tx.transaction_type === "sell") {
+                    // 매도 거래는 이미 실현된 거래이므로 수익률 계산
+                    // 매도가가 거래가격이므로, 매수가는 이전 매수 거래에서 찾아야 함
+                    const buyTransaction = tradeHistory.find(t => 
+                      t.stock_id === tx.stock_id && 
+                      t.transaction_type === "buy" && 
+                      t.round_number < tx.round_number
+                    );
+                    if (buyTransaction) {
+                      profitRate = ((tx.price - buyTransaction.price) / buyTransaction.price) * 100;
+                    }
+                    
+                    // 기회비용 계산: 매도 후 현재가와 매도가 비교
+                    // 매도 거래의 경우, 해당 기간의 현재가와 매도가 비교
+                    if (currentPrice && currentPrice > 0) {
+                      opportunityCost = ((currentPrice - tx.price) / tx.price) * 100;
+                    }
+                  }
+                  
                   return (
                     <tr
                       key={idx}
@@ -496,38 +520,42 @@ const MyPage = () => {
                       <td className="py-3 px-4 text-[#a67c3c]">
                         {tx.transaction_type === "buy" ? "매수" : "매도"}
                       </td>
-                      <td className="py-3 px-4">{tx.quantity}</td>
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-4 whitespace-nowrap">{tx.quantity}</td>
+                      <td className="py-3 px-4 whitespace-nowrap text-xs">
                         {tx.price.toLocaleString()}원
                       </td>
-                      <td className="py-3 px-4">{tx.round_number}</td>
-                      <td className="py-3 px-4">{tx.period || "-"}</td>
-                      <td className="py-3 px-4">
-                        {currentPrice
+                      <td className="py-3 px-4 whitespace-nowrap">{tx.round_number}</td>
+                      <td className="py-3 px-4 whitespace-nowrap text-xs">{tx.period || "-"}</td>
+                      <td className="py-3 px-4 whitespace-nowrap text-xs">
+                        {currentPrice !== null && currentPrice > 0
                           ? currentPrice.toLocaleString() + "원"
                           : "-"}
                       </td>
                       <td
-                        className={`py-3 px-4 ${
-                          profitRate >= 0 ? "text-[#3b7c2b]" : "text-[#a63c2b]"
+                        className={`py-3 px-4 whitespace-nowrap text-xs ${
+                          profitRate !== null
+                            ? profitRate >= 0 
+                              ? "text-[#3b7c2b]" 
+                              : "text-[#a63c2b]"
+                            : ""
                         }`}
                       >
-                        {profitRate
+                        {profitRate !== null
                           ? (profitRate >= 0 ? "+" : "") +
                             profitRate.toFixed(2) +
                             "%"
                           : "-"}
                       </td>
                       <td
-                        className={`py-3 px-4 ${
-                          opportunityCost !== null
+                        className={`py-3 px-4 whitespace-nowrap text-xs ${
+                          tx.transaction_type === "sell" && opportunityCost !== null
                             ? opportunityCost >= 0
                               ? "text-[#3b7c2b]"
                               : "text-[#a63c2b]"
                             : ""
                         }`}
                       >
-                        {opportunityCost !== null
+                        {tx.transaction_type === "sell" && opportunityCost !== null
                           ? (opportunityCost >= 0 ? "+" : "") +
                             opportunityCost.toFixed(2) +
                             "%"
@@ -552,17 +580,33 @@ const MyPage = () => {
             </div>
           ) : (
             tradeHistory.map((tx, idx) => {
-              // 현재가, 수익률, 기회비용(매도 후 현재가 대비) 계산 예시
-              // 실제 데이터 구조에 맞게 수정 필요
-              const currentPrice = tx.current_price ?? 0;
-              const profitRate =
-                tx.transaction_type === "buy"
-                  ? ((currentPrice - tx.price) / tx.price) * 100
-                  : ((tx.price - tx.sell_price) / tx.sell_price) * 100;
-              const opportunityCost =
-                tx.transaction_type === "sell" && currentPrice
-                  ? ((currentPrice - tx.price) / tx.price) * 100
-                  : null;
+              // 현재가, 수익률, 기회비용(매도 후 현재가 대비) 계산
+              let currentPrice = tx.current_price;
+              let profitRate = null;
+              let opportunityCost = null;
+              
+              // 매수 거래의 경우: 해당 기간의 현재가와 비교하여 수익률 계산
+              if (tx.transaction_type === "buy" && currentPrice !== null && currentPrice > 0) {
+                profitRate = ((currentPrice - tx.price) / tx.price) * 100;
+              }
+              
+              // 매도 거래의 경우: 매도가와 매수가 비교하여 실현 수익률 계산
+              if (tx.transaction_type === "sell") {
+                const buyTransaction = tradeHistory.find(t => 
+                  t.stock_id === tx.stock_id && 
+                  t.transaction_type === "buy" && 
+                  t.round_number < tx.round_number
+                );
+                if (buyTransaction) {
+                  profitRate = ((tx.price - buyTransaction.price) / buyTransaction.price) * 100;
+                }
+                
+                // 기회비용 계산: 매도 후 현재가와 매도가 비교
+                // 매도 거래의 경우, 해당 기간의 현재가와 매도가 비교
+                if (currentPrice && currentPrice > 0) {
+                  opportunityCost = ((currentPrice - tx.price) / tx.price) * 100;
+                }
+              }
               return (
                 <div
                   key={idx}
