@@ -88,24 +88,34 @@ const MyPage = () => {
           backdropFilter: "blur(8px)",
         }}
       >
-        <div className="flex items-center space-x-4 mb-4">
-          <div className="p-3 bg-[#e6d3a3] bg-opacity-80 rounded-full border-2 border-[#bfa76a]">
-            <User size={32} className="text-[#7c5c2b]" />
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-4">
+            <div className="p-3 bg-[#e6d3a3] bg-opacity-80 rounded-full border-2 border-[#bfa76a]">
+              <User size={32} className="text-[#7c5c2b]" />
+            </div>
+            <div>
+              <h1
+                className="text-3xl font-bold text-[#7c5c2b]"
+                style={{ fontFamily: "Jua, sans-serif" }}
+              >
+                {user?.username}
+              </h1>
+              <p
+                className="text-[#a67c3c]"
+                style={{ fontFamily: "Jua, sans-serif" }}
+              >
+                모험가
+              </p>
+            </div>
           </div>
-          <div>
-            <h1
-              className="text-3xl font-bold text-[#7c5c2b]"
-              style={{ fontFamily: "Jua, sans-serif" }}
-            >
-              {user?.username}
-            </h1>
-            <p
-              className="text-[#a67c3c]"
-              style={{ fontFamily: "Jua, sans-serif" }}
-            >
-              모험가
-            </p>
-          </div>
+          {/* 우상단 라운드 리뷰 버튼 */}
+          <button
+            onClick={() => navigate("/review")}
+            className="bg-[#7c5c2b] hover:bg-[#a67c3c] text-white font-bold py-3 px-6 rounded-full text-base shadow-lg transition-all duration-200 border-2 border-[#e6d3a3]"
+            style={{ fontFamily: "Jua, sans-serif" }}
+          >
+            라운드 리뷰
+          </button>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="flex items-center space-x-2 text-[#7c5c2b]">
@@ -660,17 +670,6 @@ const MyPage = () => {
 
       {/* 계속 진행하기 버튼을 페이지 맨 아래로 이동 */}
       {/* 버튼 제거됨 */}
-
-      {/* 라운드 리뷰 버튼 */}
-      <div className="flex justify-center space-x-4">
-        <button
-          onClick={() => navigate("/review")}
-          className="bg-[#7c5c2b] hover:bg-[#a67c3c] text-white font-bold py-4 px-12 rounded-full text-xl shadow-lg transition-all duration-200 border-4 border-[#e6d3a3]"
-          style={{ minWidth: "180px", fontFamily: "serif" }}
-        >
-          라운드 리뷰
-        </button>
-      </div>
 
       {/* 라운드 리뷰 모달 제거됨 */}
     </div>

@@ -50,8 +50,13 @@ const GameIntro = () => {
     // 인트로 페이지를 본 것으로 표시
     localStorage.setItem("hasSeenIntro", "true");
 
-    // 라운드 소개 페이지로 이동
-    navigate("/roundintro?round=1");
+    // 사용자의 현재 라운드 정보 확인
+    const currentRound = user?.current_round_idx
+      ? user.current_round_idx + 1
+      : 1;
+
+    // 라운드 소개 페이지로 이동 (사용자의 현재 라운드로)
+    navigate(`/roundintro?round=${currentRound}`);
   };
 
   if (loading) {

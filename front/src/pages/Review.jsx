@@ -61,16 +61,14 @@ const Review = () => {
     ? user.round_periods[user.current_round_idx || 0]
     : "2020 H1";
 
-  console.log("User round periods:", user?.round_periods);
-  console.log("Current round index:", user?.current_round_idx);
-  console.log("Calculated current period:", currentPeriod);
-
   const [selectedPeriod, setSelectedPeriod] = useState(currentPeriod);
   const [stockPerformanceData, setStockPerformanceData] = useState([]);
   const [selectedStock, setSelectedStock] = useState(null);
   const [stockDetailModal, setStockDetailModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [tradingHistory, setTradingHistory] = useState([]); // 거래 기록
+  const [llmAnalysis, setLlmAnalysis] = useState(null); // LLM 분석 결과
+  const [analyzing, setAnalyzing] = useState(false); // LLM 분석 중 상태
 
   // 사용자 정보가 업데이트되면 선택된 기간도 업데이트
   useEffect(() => {
@@ -84,6 +82,17 @@ const Review = () => {
     fetchStockPerformance();
     fetchTradingHistory();
   }, [selectedPeriod]);
+
+  // 데이터가 로드되면 LLM 분석 실행
+  useEffect(() => {
+    if (
+      tradingHistory.length > 0 &&
+      stockPerformanceData.length > 0 &&
+      !analyzing
+    ) {
+      analyzeTradingPerformance();
+    }
+  }, [tradingHistory, stockPerformanceData]);
 
   const fetchStockPerformance = async () => {
     setLoading(true);
@@ -105,17 +114,11 @@ const Review = () => {
 
   const fetchTradingHistory = async () => {
     try {
-      console.log("Fetching trading history...");
       const response = await axios.get("/api/portfolio/transactions");
-      console.log("All transactions:", response.data);
 
       // 선택된 기간에 해당하는 거래만 필터링
       const filteredHistory = response.data.filter(
         (tx) => tx.period === selectedPeriod
-      );
-      console.log(
-        `Filtered transactions for period ${selectedPeriod}:`,
-        filteredHistory
       );
       setTradingHistory(filteredHistory);
     } catch (error) {
@@ -129,7 +132,6 @@ const Review = () => {
   const handleNextRound = async () => {
     try {
       const response = await axios.post("/api/game/next-round");
-      console.log("다음 라운드 응답:", response.data);
       toast.success("다음 라운드로 진행되었습니다!");
 
       // 사용자 정보 업데이트 이벤트 발생
@@ -167,10 +169,141 @@ const Review = () => {
     navigate("/game-result");
   };
 
+  // LLM 분석 함수
+  const analyzeTradingPerformance = async () => {
+    if (tradingHistory.length === 0 || !stockPerformanceData.length) {
+      return;
+    }
+
+    setAnalyzing(true);
+    try {
+      // 거래한 종목들의 성과 분석
+      const tradedStocks = [
+        ...new Map(tradingHistory.map((tx) => [tx.stock_id, tx])).values(),
+      ];
+
+      const analysisData = {
+        period: selectedPeriod,
+        tradingHistory: tradingHistory,
+        stockPerformance: stockPerformanceData,
+        tradedStocks: tradedStocks,
+        marketAverage:
+          stockPerformanceData.reduce((sum, stock) => sum + stock.return, 0) /
+          stockPerformanceData.length,
+      };
+
+      const response = await axios.post(
+        "/api/analysis/trading-performance",
+        analysisData
+      );
+      setLlmAnalysis(response.data);
+    } catch (error) {
+      console.error("LLM 분석 실패:", error);
+      // 오프라인 분석으로 대체
+      const offlineAnalysis = generateOfflineAnalysis();
+      setLlmAnalysis(offlineAnalysis);
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
+  // 오프라인 분석 함수 (API 실패 시 대체)
+  const generateOfflineAnalysis = () => {
+    if (tradingHistory.length === 0) {
+      return {
+        summary:
+          "이번 라운드에서는 거래 기록이 없습니다. 다음 라운드에서는 적극적인 투자를 시도해보세요!",
+        performance: "neutral",
+        recommendations: [
+          "다양한 종목에 분산 투자해보세요",
+          "차트 분석을 기반으로 매수 타이밍을 찾아보세요",
+          "리스크 관리에 주의를 기울이세요",
+        ],
+      };
+    }
+
+    const tradedStocks = [
+      ...new Map(tradingHistory.map((tx) => [tx.stock_id, tx])).values(),
+    ];
+
+    // 거래한 종목들의 평균 수익률 계산
+    const tradedStockReturns = tradedStocks.map((tx) => {
+      const stockData = stockPerformanceData.find(
+        (s) => s.symbol === tx.stock_symbol
+      );
+      return stockData ? stockData.return : 0;
+    });
+
+    const averageTradedReturn =
+      tradedStockReturns.reduce((sum, ret) => sum + ret, 0) /
+      tradedStockReturns.length;
+    const marketAverage =
+      stockPerformanceData.reduce((sum, stock) => sum + stock.return, 0) /
+      stockPerformanceData.length;
+
+    let summary, performance, recommendations;
+
+    if (averageTradedReturn > marketAverage + 5) {
+      performance = "excellent";
+      summary = `훌륭한 투자 성과입니다! 거래한 종목들의 평균 수익률(${averageTradedReturn.toFixed(
+        1
+      )}%)이 시장 평균(${marketAverage.toFixed(1)}%)을 크게 상회했습니다.`;
+      recommendations = [
+        "현재 투자 전략을 유지하세요",
+        "성공적인 패턴을 다음 라운드에도 적용해보세요",
+        "수익 실현 타이밍을 잘 조절하세요",
+      ];
+    } else if (averageTradedReturn > marketAverage) {
+      performance = "good";
+      summary = `좋은 투자 성과입니다. 거래한 종목들의 평균 수익률(${averageTradedReturn.toFixed(
+        1
+      )}%)이 시장 평균(${marketAverage.toFixed(1)}%)보다 높습니다.`;
+      recommendations = [
+        "현재 투자 방향을 유지하되 더 신중하게 접근하세요",
+        "분산 투자를 통해 리스크를 줄여보세요",
+        "매수 타이밍을 더 정교하게 분석해보세요",
+      ];
+    } else if (averageTradedReturn > marketAverage - 5) {
+      performance = "neutral";
+      summary = `보통 수준의 투자 성과입니다. 거래한 종목들의 평균 수익률(${averageTradedReturn.toFixed(
+        1
+      )}%)이 시장 평균(${marketAverage.toFixed(1)}%)과 비슷합니다.`;
+      recommendations = [
+        "더 체계적인 분석을 통해 투자 결정을 내려보세요",
+        "차트와 뉴스를 종합적으로 분석해보세요",
+        "리스크 관리에 더 많은 주의를 기울이세요",
+      ];
+    } else {
+      performance = "poor";
+      summary = `개선이 필요한 투자 성과입니다. 거래한 종목들의 평균 수익률(${averageTradedReturn.toFixed(
+        1
+      )}%)이 시장 평균(${marketAverage.toFixed(1)}%)보다 낮습니다.`;
+      recommendations = [
+        "투자 전략을 재검토해보세요",
+        "더 많은 정보를 수집한 후 투자 결정을 내려보세요",
+        "손절매 기준을 명확히 설정하세요",
+      ];
+    }
+
+    return { summary, performance, recommendations };
+  };
+
   // 종목 상세 모달 클릭 핸들러
   const handleStockDetailClick = (tx) => {
     setSelectedStock(tx);
     setStockDetailModal(true);
+  };
+
+  // 거래한 종목의 매수/매도 정보를 가져오는 함수
+  const getStockTransactionInfo = (stockId) => {
+    const transactions = tradingHistory.filter((tx) => tx.stock_id === stockId);
+    const buyCount = transactions.filter(
+      (tx) => tx.transaction_type === "buy"
+    ).length;
+    const sellCount = transactions.filter(
+      (tx) => tx.transaction_type === "sell"
+    ).length;
+    return { buyCount, sellCount };
   };
 
   // 현재 라운드가 마지막 라운드인지 확인
@@ -306,19 +439,40 @@ const Review = () => {
                 라운드 {(user?.current_round_idx || 0) + 1} / 3 진행 중
               </p>
             </div>
-            <div className="text-right">
-              <span
-                className="text-sm text-[#a67c3c]"
-                style={{ fontFamily: "Jua, sans-serif" }}
-              >
-                현재 기간
-              </span>
-              <p
-                className="text-lg font-bold text-[#7c5c2b]"
-                style={{ fontFamily: "Jua, sans-serif" }}
-              >
-                {formatPeriod(currentPeriod)}
-              </p>
+            <div className="flex items-center gap-4">
+              <div className="text-right">
+                <span
+                  className="text-sm text-[#a67c3c]"
+                  style={{ fontFamily: "Jua, sans-serif" }}
+                >
+                  현재 기간
+                </span>
+                <p
+                  className="text-lg font-bold text-[#7c5c2b]"
+                  style={{ fontFamily: "Jua, sans-serif" }}
+                >
+                  {formatPeriod(currentPeriod)}
+                </p>
+              </div>
+              {/* 우상단 라운드 진행 버튼 */}
+              {selectedPeriod === currentPeriod &&
+                (isLastRound ? (
+                  <button
+                    onClick={handleShowFinalResult}
+                    className="bg-gradient-to-r from-[#3b7c2b] to-[#2d5a21] hover:from-[#2d5a21] hover:to-[#1e3d16] text-white px-6 py-3 rounded-xl transition-all duration-300 font-bold text-base shadow-lg border-2 border-[#4ade80]"
+                    style={{ fontFamily: "Jua, sans-serif" }}
+                  >
+                    최종 결과 확인
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleNextRound}
+                    className="bg-gradient-to-r from-[#3b7c2b] to-[#2d5a21] hover:from-[#2d5a21] hover:to-[#1e3d16] text-white px-6 py-3 rounded-xl transition-all duration-300 font-bold text-base shadow-lg border-2 border-[#4ade80]"
+                    style={{ fontFamily: "Jua, sans-serif" }}
+                  >
+                    다음 라운드
+                  </button>
+                ))}
             </div>
           </div>
 
@@ -347,168 +501,8 @@ const Review = () => {
           )}
         </div>
 
-        {/* 라운드 상세 리뷰 섹션 */}
-        <div className="mb-6 bg-gradient-to-br from-[#f7e6b6] to-[#f3e7c4] p-6 rounded-xl border-2 border-[#e6d3a3] shadow-lg">
-          <h3
-            className="text-xl font-bold text-[#7c5c2b] mb-4"
-            style={{ fontFamily: "Jua, sans-serif" }}
-          >
-            {formatPeriod(selectedPeriod)} 라운드 상세 리뷰
-          </h3>
-
-          {/* 종합 설명 */}
-          <div className="mb-6 p-4 bg-gradient-to-br from-[#f9f6ef] to-[#f3e7c4] rounded-lg border border-[#e6d3a3]">
-            <h4
-              className="text-lg font-bold text-[#7c5c2b] mb-3"
-              style={{ fontFamily: "Jua, sans-serif" }}
-            >
-              📊 투자 활동 요약
-            </h4>
-            {tradingHistory.length > 0 ? (
-              <div className="space-y-2">
-                <p
-                  className="text-[#7c5c2b]"
-                  style={{ fontFamily: "Jua, sans-serif" }}
-                >
-                  이번 라운드에서 총{" "}
-                  <span className="font-bold text-[#a67c3c]">
-                    {tradingHistory.length}건
-                  </span>
-                  의 거래를 진행하셨습니다.
-                </p>
-                <p
-                  className="text-[#7c5c2b]"
-                  style={{ fontFamily: "Jua, sans-serif" }}
-                >
-                  구매:{" "}
-                  <span className="font-bold text-[#3b7c2b]">
-                    {
-                      tradingHistory.filter(
-                        (tx) => tx.transaction_type === "buy"
-                      ).length
-                    }
-                    건
-                  </span>{" "}
-                  | 판매:{" "}
-                  <span className="font-bold text-[#a63c2b]">
-                    {
-                      tradingHistory.filter(
-                        (tx) => tx.transaction_type === "sell"
-                      ).length
-                    }
-                    건
-                  </span>
-                </p>
-                {tradingHistory.filter((tx) => tx.transaction_type === "buy")
-                  .length > 0 && (
-                  <p
-                    className="text-sm text-[#a67c3c]"
-                    style={{ fontFamily: "Jua, sans-serif" }}
-                  >
-                    주요 투자 종목들의 실제 성과를 아래 버튼을 통해 자세히
-                    확인해보세요.
-                  </p>
-                )}
-              </div>
-            ) : (
-              <p
-                className="text-[#a67c3c]"
-                style={{ fontFamily: "Jua, sans-serif" }}
-              >
-                이번 라운드에서는 거래 기록이 없습니다. 다음 라운드에서는
-                적극적인 투자를 시도해보세요!
-              </p>
-            )}
-          </div>
-
-          {/* 거래한 종목 버튼들 */}
-          {tradingHistory.length > 0 && (
-            <div>
-              <h4
-                className="text-lg font-bold text-[#7c5c2b] mb-3"
-                style={{ fontFamily: "Jua, sans-serif" }}
-              >
-                💼 거래한 종목 상세 분석
-              </h4>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                {/* 중복 제거된 종목들만 표시 */}
-                {[
-                  ...new Map(
-                    tradingHistory.map((tx) => [tx.stock_id, tx])
-                  ).values(),
-                ].map((tx) => (
-                  <button
-                    key={tx.stock_id}
-                    onClick={() => handleStockDetailClick(tx)}
-                    className="bg-gradient-to-r from-[#bfa76a] to-[#a67c3c] hover:from-[#a67c3c] hover:to-[#7c5c2b] text-white px-4 py-3 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg border border-[#e6d3a3]"
-                    style={{ fontFamily: "Jua, sans-serif" }}
-                  >
-                    <div className="text-sm font-bold">{tx.stock_name}</div>
-                    <div className="text-xs opacity-90">
-                      ({tx.stock_symbol})
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
         {/* 주식 수익률 차트 */}
-        <div className="mb-8">
-          {/* 매매한 종목 버튼들 */}
-          <div className="mb-6">
-            <h3
-              className="text-lg font-bold text-[#7c5c2b] mb-3"
-              style={{ fontFamily: "Jua, sans-serif" }}
-            >
-              💼 내가 매매한 종목
-            </h3>
-
-            {/* 디버깅 정보 */}
-            <div className="mb-3 p-2 bg-yellow-100 border border-yellow-300 rounded text-sm">
-              <p>현재 사용자 ID: {user?.id}</p>
-              <p>현재 사용자명: {user?.username}</p>
-              <p>현재 라운드 인덱스: {user?.current_round_idx}</p>
-              <p>전체 거래 기록 수: {tradingHistory.length}</p>
-              <p>선택된 기간: {selectedPeriod}</p>
-              {tradingHistory.length > 0 && (
-                <p>
-                  거래 기록:{" "}
-                  {tradingHistory
-                    .map((tx) => `${tx.stock_name}(${tx.transaction_type})`)
-                    .join(", ")}
-                </p>
-              )}
-            </div>
-
-            {tradingHistory.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {[
-                  ...new Map(
-                    tradingHistory.map((tx) => [tx.stock_id, tx])
-                  ).values(),
-                ].map((tx) => (
-                  <button
-                    key={tx.stock_id}
-                    onClick={() => handleStockDetailClick(tx)}
-                    className="bg-gradient-to-r from-[#bfa76a] to-[#a67c3c] hover:from-[#a67c3c] hover:to-[#7c5c2b] text-white px-4 py-2 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg border border-[#e6d3a3] text-sm font-bold"
-                    style={{ fontFamily: "Jua, sans-serif" }}
-                  >
-                    {tx.stock_name} ({tx.stock_symbol})
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <p
-                className="text-[#a67c3c] text-sm"
-                style={{ fontFamily: "Jua, sans-serif" }}
-              >
-                이 기간에 매매한 종목이 없습니다.
-              </p>
-            )}
-          </div>
-
+        <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
             <h2
               className="text-2xl font-bold text-[#7c5c2b]"
@@ -585,7 +579,7 @@ const Review = () => {
                     className="text-sm text-[#a67c3c] mt-1"
                     style={{ fontFamily: "Jua, sans-serif" }}
                   >
-                    📊 과거 라운드 데이터입니다. 투자 전략 수립에 참고하세요!
+                    과거 라운드 데이터입니다. 투자 전략 수립에 참고하세요!
                   </p>
                 )}
               </div>
@@ -593,27 +587,195 @@ const Review = () => {
           )}
         </div>
 
-        {/* 라운드 진행 버튼 */}
-        <div className="mb-6 flex justify-center">
-          {/* 라운드 진행 버튼 - 현재 라운드를 보고 있을 때만 표시 */}
-          {selectedPeriod === currentPeriod &&
-            (isLastRound ? (
-              <button
-                onClick={handleShowFinalResult}
-                className="bg-gradient-to-r from-[#3b7c2b] to-[#2d5a21] hover:from-[#2d5a21] hover:to-[#1e3d16] text-white px-8 py-4 rounded-xl transition-all duration-300 font-bold text-lg shadow-lg border-2 border-[#4ade80]"
+        {/* 거래한 종목 상세 분석 */}
+        {tradingHistory.length > 0 && (
+          <div className="mb-6 bg-gradient-to-br from-[#f7e6b6] to-[#f3e7c4] p-6 rounded-xl border-2 border-[#e6d3a3] shadow-lg">
+            <h3
+              className="text-xl font-bold text-[#7c5c2b] mb-4"
+              style={{ fontFamily: "Jua, sans-serif" }}
+            >
+              거래한 종목 상세 분석
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {/* 중복 제거된 종목들만 표시 */}
+              {[
+                ...new Map(
+                  tradingHistory.map((tx) => [tx.stock_id, tx])
+                ).values(),
+              ].map((tx) => {
+                const { buyCount, sellCount } = getStockTransactionInfo(
+                  tx.stock_id
+                );
+                return (
+                  <button
+                    key={tx.stock_id}
+                    onClick={() => handleStockDetailClick(tx)}
+                    className="bg-gradient-to-r from-[#bfa76a] to-[#a67c3c] hover:from-[#a67c3c] hover:to-[#7c5c2b] text-white px-4 py-3 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg border border-[#e6d3a3]"
+                    style={{ fontFamily: "Jua, sans-serif" }}
+                  >
+                    <div className="text-sm font-bold">{tx.stock_name}</div>
+                    <div className="text-xs opacity-90 mb-2">
+                      ({tx.stock_symbol})
+                    </div>
+                    <div className="text-xs">
+                      <div className="text-green-200">매수: {buyCount}회</div>
+                      <div className="text-red-200">매도: {sellCount}회</div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* 라운드 상세 리뷰 섹션 */}
+        <div className="mb-6 bg-gradient-to-br from-[#f7e6b6] to-[#f3e7c4] p-6 rounded-xl border-2 border-[#e6d3a3] shadow-lg">
+          <h3
+            className="text-xl font-bold text-[#7c5c2b] mb-4"
+            style={{ fontFamily: "Jua, sans-serif" }}
+          >
+            {formatPeriod(selectedPeriod)} 라운드 상세 리뷰
+          </h3>
+
+          {/* LLM 분석 결과 */}
+          {tradingHistory.length > 0 && (
+            <div className="mb-6 p-4 bg-gradient-to-br from-[#f9f6ef] to-[#f3e7c4] rounded-lg border border-[#e6d3a3]">
+              <h4
+                className="text-lg font-bold text-[#7c5c2b] mb-3 flex items-center"
                 style={{ fontFamily: "Jua, sans-serif" }}
               >
-                🏆 최종 결과 확인하기
-              </button>
-            ) : (
-              <button
-                onClick={handleNextRound}
-                className="bg-gradient-to-r from-[#3b7c2b] to-[#2d5a21] hover:from-[#2d5a21] hover:to-[#1e3d16] text-white px-8 py-4 rounded-xl transition-all duration-300 font-bold text-lg shadow-lg border-2 border-[#4ade80]"
-                style={{ fontFamily: "Jua, sans-serif" }}
-              >
-                ➡️ 다음 라운드 진행하기
-              </button>
-            ))}
+                용사의 투자 분석
+                {analyzing && (
+                  <span className="ml-2 text-sm text-[#a67c3c]">
+                    (분석 중...)
+                  </span>
+                )}
+              </h4>
+
+              {analyzing ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#bfa76a] mr-3"></div>
+                  <span
+                    className="text-[#7c5c2b]"
+                    style={{ fontFamily: "Jua, sans-serif" }}
+                  >
+                    투자 성과를 분석하고 있습니다...
+                  </span>
+                </div>
+              ) : llmAnalysis ? (
+                <div className="space-y-4">
+                  {/* 성과 요약 */}
+                  <div
+                    className={`p-4 rounded-lg border-2 ${
+                      llmAnalysis.performance === "훌륭함"
+                        ? "bg-gradient-to-br from-[#dcfce7] to-[#bbf7d0] border-[#22c55e]"
+                        : llmAnalysis.performance === "좋음"
+                        ? "bg-gradient-to-br from-[#dbeafe] to-[#bfdbfe] border-[#3b82f6]"
+                        : llmAnalysis.performance === "보통"
+                        ? "bg-gradient-to-br from-[#fef3c7] to-[#fde68a] border-[#f59e0b]"
+                        : "bg-gradient-to-br from-[#fee2e2] to-[#fecaca] border-[#ef4444]"
+                    }`}
+                  >
+                    <h5
+                      className={`font-bold mb-2 ${
+                        llmAnalysis.performance === "훌륭함"
+                          ? "text-[#166534]"
+                          : llmAnalysis.performance === "좋음"
+                          ? "text-[#1e40af]"
+                          : llmAnalysis.performance === "보통"
+                          ? "text-[#92400e]"
+                          : "text-[#991b1b]"
+                      }`}
+                      style={{ fontFamily: "Jua, sans-serif" }}
+                    >
+                      {llmAnalysis.performance === "훌륭함"
+                        ? "훌륭한 성과"
+                        : llmAnalysis.performance === "좋음"
+                        ? "좋은 성과"
+                        : llmAnalysis.performance === "보통"
+                        ? "보통 성과"
+                        : "개선 필요"}
+                    </h5>
+                    <p
+                      className="text-[#7c5c2b] leading-relaxed"
+                      style={{ fontFamily: "Jua, sans-serif" }}
+                    >
+                      {llmAnalysis.summary}
+                    </p>
+                  </div>
+
+                  {/* 시장 상황 분석 */}
+                  {llmAnalysis.market_analysis && (
+                    <div className="bg-gradient-to-br from-[#dbeafe] to-[#bfdbfe] p-4 rounded-lg border border-[#3b82f6]">
+                      <h5
+                        className="font-bold text-[#1e40af] mb-2"
+                        style={{ fontFamily: "Jua, sans-serif" }}
+                      >
+                        시장 상황 분석
+                      </h5>
+                      <p
+                        className="text-[#1e3a8a] leading-relaxed"
+                        style={{ fontFamily: "Jua, sans-serif" }}
+                      >
+                        {llmAnalysis.market_analysis}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* 거래 패턴 분석 */}
+                  {llmAnalysis.trading_pattern_analysis && (
+                    <div className="bg-gradient-to-br from-[#f3e8ff] to-[#e9d5ff] p-4 rounded-lg border border-[#8b5cf6]">
+                      <h5
+                        className="font-bold text-[#5b21b6] mb-2"
+                        style={{ fontFamily: "Jua, sans-serif" }}
+                      >
+                        거래 패턴 분석
+                      </h5>
+                      <p
+                        className="text-[#4c1d95] leading-relaxed"
+                        style={{ fontFamily: "Jua, sans-serif" }}
+                      >
+                        {llmAnalysis.trading_pattern_analysis}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* 개선 권장사항 */}
+                  <div className="bg-gradient-to-br from-[#f9f6ef] to-[#f3e7c4] p-4 rounded-lg border border-[#e6d3a3]">
+                    <h5
+                      className="font-bold text-[#7c5c2b] mb-3"
+                      style={{ fontFamily: "Jua, sans-serif" }}
+                    >
+                      개선 권장사항
+                    </h5>
+                    <ul className="space-y-2">
+                      {llmAnalysis.recommendations.map((rec, index) => (
+                        <li
+                          key={index}
+                          className="flex items-start space-x-2"
+                          style={{ fontFamily: "Jua, sans-serif" }}
+                        >
+                          <span className="text-[#bfa76a] font-bold mt-1">
+                            •
+                          </span>
+                          <span className="text-[#7c5c2b]">{rec}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <p
+                    className="text-[#a67c3c]"
+                    style={{ fontFamily: "Jua, sans-serif" }}
+                  >
+                    분석 데이터를 준비 중입니다...
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -672,23 +834,13 @@ const StockDetailModal = ({ stock, period, onClose }) => {
       .padStart(2, "0")}-01`;
     const endDate = `${endYear}-${endMonth.toString().padStart(2, "0")}-30`;
 
-    console.log(
-      `Period calculation: ${currentPeriod} -> ${startDate} to ${endDate}`
-    );
     return { startDate, endDate };
   };
 
   const fetchStockDetail = async () => {
     try {
-      console.log(`Fetching data for ${stockData.symbol} in period ${period}`);
-
       // 2년치 데이터 기간 계산
       const { startDate, endDate } = calculateExtendedPeriod(period);
-      console.log(`Extended period: ${startDate} to ${endDate}`);
-
-      // 실제 API 호출 URL 로그
-      const apiUrl = `/api/stocks/${stockData.symbol}/price-history?start_date=${startDate}&end_date=${endDate}`;
-      console.log(`Calling API: ${apiUrl}`);
 
       // 뉴스는 현재 period만, 가격 데이터는 2년치 가져오기
       const [newsResponse, priceResponse] = await Promise.all([
@@ -701,9 +853,6 @@ const StockDetailModal = ({ stock, period, onClose }) => {
           `/api/stocks/${stockData.symbol}/price-history?start_date=${startDate}&end_date=${endDate}`
         ),
       ]);
-
-      console.log("News response:", newsResponse.data);
-      console.log("Price response:", priceResponse.data);
 
       // 뉴스 데이터 처리
       const newsData = Array.isArray(newsResponse.data)
@@ -783,10 +932,10 @@ const StockDetailModal = ({ stock, period, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-gradient-to-br from-[#f7e6b6] to-[#f3e7c4] rounded-xl max-w-6xl w-full max-h-[90vh] shadow-2xl flex flex-col border-2 border-[#e6d3a3]">
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-2 sm:p-4">
+      <div className="bg-gradient-to-br from-[#f7e6b6] to-[#f3e7c4] rounded-xl w-full max-w-6xl max-h-[85vh] shadow-2xl flex flex-col border-2 border-[#e6d3a3] overflow-hidden">
         {/* 고정 헤더 */}
-        <div className="flex justify-between items-center p-4 md:p-6 border-b-2 border-[#e6d3a3] flex-shrink-0">
+        <div className="flex justify-between items-center p-3 md:p-4 border-b-2 border-[#e6d3a3] flex-shrink-0 bg-gradient-to-br from-[#f7e6b6] to-[#f3e7c4]">
           <h2
             className="text-xl md:text-2xl font-bold text-[#7c5c2b]"
             style={{ fontFamily: "Jua, sans-serif" }}
@@ -813,16 +962,16 @@ const StockDetailModal = ({ stock, period, onClose }) => {
           </button>
         </div>
 
-        {/* 컨텐츠 영역 */}
-        <div className="flex-1 p-4 md:p-6">
+        {/* 스크롤 가능한 컨텐츠 영역 */}
+        <div className="flex-1 overflow-y-auto p-3 md:p-4">
           {loading ? (
             <div className="flex justify-center items-center h-64">
               <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-[#bfa76a]"></div>
             </div>
           ) : (
-            <div className="space-y-4 md:space-y-6">
+            <div className="space-y-3 md:space-y-4 min-h-0">
               {/* 기본 정보 */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 p-3 md:p-4 bg-gradient-to-br from-[#f9f6ef] to-[#f3e7c4] rounded-lg border border-[#e6d3a3]">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 p-3 md:p-4 bg-gradient-to-br from-[#f9f6ef] to-[#f3e7c4] rounded-lg border border-[#e6d3a3] flex-shrink-0">
                 <div>
                   <span
                     className="text-sm text-[#a67c3c]"
@@ -869,14 +1018,14 @@ const StockDetailModal = ({ stock, period, onClose }) => {
               </div>
 
               {/* 관련 뉴스 */}
-              <div>
+              <div className="flex-shrink-0">
                 <h3
                   className="text-lg font-bold mb-3 text-[#7c5c2b]"
                   style={{ fontFamily: "Jua, sans-serif" }}
                 >
                   관련 뉴스
                 </h3>
-                <div className="space-y-2 md:space-y-3">
+                <div className="space-y-2 md:space-y-3 max-h-48 overflow-y-auto">
                   {stockNews.length > 0 ? (
                     stockNews.map((news, index) => (
                       <div
@@ -951,7 +1100,7 @@ const StockDetailModal = ({ stock, period, onClose }) => {
               </div>
 
               {/* 가격 차트 */}
-              <div>
+              <div className="flex-shrink-0">
                 <h3
                   className="text-lg font-bold mb-3 text-[#7c5c2b]"
                   style={{ fontFamily: "Jua, sans-serif" }}
@@ -1010,13 +1159,6 @@ const addRoundPeriodHighlight = (series, period) => {
       .toString()
       .padStart(2, "0")}-01`;
     const endDate = `${currentYear}-${endMonth.toString().padStart(2, "0")}-30`;
-
-    console.log(
-      `Adding period highlight for ${period}: ${startDate} to ${endDate}`
-    );
-
-    // 간단한 표시를 위해 콘솔에 기간 정보 출력
-    console.log(`🎯 게임 기간: ${startDate} ~ ${endDate} (${period})`);
 
     // 시리즈 차트 참조 가져오기
     const chart = series.chart && series.chart();
@@ -1086,7 +1228,7 @@ const CandlestickChart = ({ data, stock, period }) => {
           textColor: "#333",
         },
         width: chartContainerRef.current.clientWidth,
-        height: 500,
+        height: Math.min(350, window.innerHeight * 0.35),
         grid: {
           vertLines: { color: "#f0f0f0" },
           horzLines: { color: "#f0f0f0" },
@@ -1218,7 +1360,7 @@ const CandlestickChart = ({ data, stock, period }) => {
       <div
         ref={chartContainerRef}
         className="w-full border-2 border-[#e6d3a3] rounded-lg bg-white"
-        style={{ height: "500px" }}
+        style={{ height: "min(350px, 35vh)" }}
       />
     </div>
   );

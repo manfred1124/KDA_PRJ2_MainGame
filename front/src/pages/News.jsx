@@ -293,15 +293,41 @@ const News = () => {
 
   return (
     <div className="space-y-6 news-page">
+      {/* 헤더와 투자 하러가기 버튼 */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1
+            className="text-2xl font-bold text-[#7c5c2b]"
+            style={{ fontFamily: "Jua, sans-serif" }}
+          >
+            📰 시장 뉴스
+          </h1>
+          <p
+            className="text-[#a67c3c]"
+            style={{ fontFamily: "Jua, sans-serif" }}
+          >
+            최신 시장 동향을 확인하고 투자에 참고하세요
+          </p>
+        </div>
+        {/* 우상단 투자 하러가기 버튼 */}
+        <button
+          className="bg-[#7c5c2b] hover:bg-[#a67c3c] text-white font-bold py-3 px-6 rounded-full text-base shadow-lg transition-all duration-200 border-2 border-[#e6d3a3]"
+          style={{ fontFamily: "Jua, sans-serif" }}
+          onClick={() => navigate("/select-sector")}
+        >
+          투자 하러가기
+        </button>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {news.slice(0, 4).map((item) => (
           <div
             key={item.id}
-            className={`card news-card transition-all duration-200 ${getImpactColor(
+            className={`card news-card transition-all duration-200 h-48 flex flex-col ${getImpactColor(
               item.impact_type
             )}`}
           >
-            <div className="flex items-start justify-between mb-4">
+            <div className="flex items-start justify-between mb-4 flex-1">
               <div className="flex-1">
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
                   <span className="inline-block bg-blue-100 text-blue-700 text-xs font-normal rounded-full px-2 py-0.5 mr-2 align-middle">
@@ -309,14 +335,14 @@ const News = () => {
                   </span>
                   {item.title}
                 </h3>
-                <p className="text-gray-600 text-sm leading-relaxed">
+                <p className="text-gray-600 text-sm leading-relaxed line-clamp-3">
                   {item.summary || item.content}
                 </p>
               </div>
               <div className="ml-4">{getImpactIcon(item.impact_type)}</div>
             </div>
 
-            <div className="flex items-center justify-between text-sm text-gray-500">
+            <div className="flex items-center justify-between text-sm text-gray-500 mt-auto">
               <div>
                 {item.affected_sectors && (
                   <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
@@ -328,14 +354,6 @@ const News = () => {
           </div>
         ))}
       </div>
-
-      {/* next 버튼 */}
-      <button
-        className="mt-12 bg-[#7c5c2b] hover:bg-[#a67c3c] text-white font-normal py-4 px-12 rounded-full text-xl shadow-lg transition-all duration-200 border-4 border-[#e6d3a3] mx-auto block"
-        onClick={() => navigate("/select-sector")}
-      >
-        투자 하러가기
-      </button>
 
       {news.length === 0 && (
         <div className="text-center py-12">

@@ -1122,6 +1122,270 @@ async def get_stock_news(symbol: str, period: str = None, db: AsyncSession = Dep
     ]
 
 # 종목별 가격 히스토리 API
+@app.post("/api/analysis/trading-performance")
+async def analyze_trading_performance(
+    analysis_data: dict = Body(...),
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: AsyncSession = Depends(get_db)
+):
+    """사용자의 거래 성과를 LLM으로 분석"""
+    try:
+        user_id = auth_service.verify_token(credentials.credentials)
+        user = await db.execute(select(User).where(User.id == user_id))
+        user = user.scalar_one_or_none()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        trading_history = analysis_data.get("tradingHistory", [])
+        stock_performance = analysis_data.get("stockPerformance", [])
+        period = analysis_data.get("period", "")
+        market_average = analysis_data.get("marketAverage", 0)
+
+        if not trading_history or not stock_performance:
+            return {
+                "summary": "거래 기록이 없어 분석할 수 없습니다.",
+                "performance": "neutral",
+                "recommendations": ["다양한 종목에 분산 투자해보세요", "차트 분석을 기반으로 매수 타이밍을 찾아보세요"]
+            }
+
+        # 거래한 종목들의 성과 분석
+        traded_stocks = list(set([tx["stock_symbol"] for tx in trading_history]))
+        traded_returns = []
+        
+        for symbol in traded_stocks:
+            stock_data = next((s for s in stock_performance if s["symbol"] == symbol), None)
+            if stock_data:
+                traded_returns.append(stock_data["return"])
+
+        if not traded_returns:
+            return {
+                "summary": "거래한 종목의 성과 데이터를 찾을 수 없습니다.",
+                "performance": "neutral",
+                "recommendations": ["더 많은 정보를 수집한 후 투자 결정을 내려보세요"]
+            }
+
+        average_traded_return = sum(traded_returns) / len(traded_returns)
+        
+        # 거래 기록 상세 분석
+        buy_transactions = [tx for tx in trading_history if tx["transaction_type"] == "buy"]
+        sell_transactions = [tx for tx in trading_history if tx["transaction_type"] == "sell"]
+        
+        # 종목별 상세 분석
+        stock_analysis = []
+        for symbol in traded_stocks:
+            stock_data = next((s for s in stock_performance if s["symbol"] == symbol), None)
+            if stock_data:
+                stock_txs = [tx for tx in trading_history if tx["stock_symbol"] == symbol]
+                buy_count = len([tx for tx in stock_txs if tx["transaction_type"] == "buy"])
+                sell_count = len([tx for tx in stock_txs if tx["transaction_type"] == "sell"])
+                
+                stock_analysis.append({
+                    "symbol": symbol,
+                    "return": stock_data["return"],
+                    "sector": stock_data.get("sector", "정보없음"),
+                    "buy_count": buy_count,
+                    "sell_count": sell_count
+                })
+
+        # 시장 상황 분석 (전체 종목의 섹터별 분포)
+        sector_performance = {}
+        for stock in stock_performance:
+            sector = stock.get("sector", "기타")
+            if sector not in sector_performance:
+                sector_performance[sector] = []
+            sector_performance[sector].append(stock["return"])
+        
+        sector_averages = {}
+        for sector, returns in sector_performance.items():
+            sector_averages[sector] = sum(returns) / len(returns)
+
+        # 기간 표현 변환
+        period_display = period
+        if "H1" in period:
+            period_display = period.replace("H1", "년 상반기")
+        elif "H2" in period:
+            period_display = period.replace("H2", "년 하반기")
+        elif "Q1" in period:
+            period_display = period.replace("Q1", "년 1분기")
+        elif "Q2" in period:
+            period_display = period.replace("Q2", "년 2분기")
+        elif "Q3" in period:
+            period_display = period.replace("Q3", "년 3분기")
+        elif "Q4" in period:
+            period_display = period.replace("Q4", "년 4분기")
+
+        # LLM 분석 프롬프트 구성
+        analysis_prompt = f"""
+당신은 조선시대 세종대왕의 말투를 사용하는 전문 투자 분석가입니다. {period_display} 기간 동안의 사용자 주식 거래 성과를 시장 상황과 종목별 변화를 고려하여 상세히 분석해주세요.
+
+=== 시장 상황 분석 ===
+- 분석 기간: {period_display}
+- 시장 전체 평균 수익률: {market_average:.1f}%
+- 거래 기록: 총 {len(trading_history)}건 (매수: {len(buy_transactions)}건, 매도: {len(sell_transactions)}건)
+- 거래한 종목 수: {len(traded_stocks)}개
+
+=== 섹터별 시장 성과 ===
+{chr(10).join([f"- {sector}: 평균 {avg:.1f}%" for sector, avg in sector_averages.items()])}
+
+=== 사용자 거래 종목 상세 분석 ===
+{chr(10).join([f"- {stock['symbol']} ({stock['sector']}): {stock['return']:.1f}% (매수: {stock['buy_count']}회, 매도: {stock['sell_count']}회)" for stock in stock_analysis])}
+
+=== 사용자 성과 요약 ===
+- 거래한 종목들의 평균 수익률: {average_traded_return:.1f}%
+- 시장 대비 성과: {average_traded_return - market_average:+.1f}%p
+
+분석 요구사항:
+1. {period_display} 기간의 시장 상황을 섹터별로 분석하여 설명
+2. 사용자가 선택한 종목들의 섹터 분포와 해당 섹터의 시장 성과 비교
+3. 구체적인 수치를 포함한 성과 평가 (예: "시장 평균 5.2% 대비 8.7%로 3.5%p 높은 수익률")
+4. 매수/매도 패턴 분석 및 타이밍 평가
+5. 성과가 좋은 경우: 어떤 선택이 성공 요인이었는지 구체적 분석
+6. 성과가 낮은 경우: 어떤 선택이 실수였는지와 구체적 개선 방안 제시
+
+성과 등급 기준:
+- 훌륭함: 시장 평균 대비 +5%p 이상
+- 좋음: 시장 평균 대비 +0~5%p
+- 보통: 시장 평균 대비 -5~0%p  
+- 부족함: 시장 평균 대비 -5%p 이하
+
+세종대왕 말투 예시:
+- "허허, 그대의 투자 성과를 살펴보니..."
+- "과인의 조언을 참고하시게"
+- "그대가 신중하게 판단하시게"
+- "이런 시기를 잘 활용하시게"
+- "다음에는 더욱 신중하게 접근하시게"
+- "~했노라", "~보였노라", "~판단되노라" 등의 조선시대 말투 사용
+
+다음 JSON 형식으로 응답해주세요:
+{{
+    "summary": "세종대왕 말투로 시장 상황과 종목별 변화를 반영한 상세한 성과 분석 (한국어, 200자 이상)",
+    "performance": "훌륭함|좋음|보통|부족함",
+    "recommendations": ["세종대왕 말투의 구체적인 개선 방안 1", "세종대왕 말투의 구체적인 개선 방안 2", "세종대왕 말투의 구체적인 개선 방안 3"],
+    "market_analysis": "{period_display} 기간의 시장 상황 분석 (세종대왕 말투, 100자 이상)",
+    "trading_pattern_analysis": "매체/매도 패턴 분석 (세종대왕 말투, 100자 이상)"
+}}
+
+반드시 세종대왕의 말투를 사용하여 구체적인 수치와 섹터별 분석을 포함한 전문적이고 실용적인 분석을 제공해주세요.
+"""
+
+        # LLM 호출 (OpenAI API 키가 있는 경우)
+        openai_api_key = os.getenv("OPENAI_API_KEY")
+        if openai_api_key:
+            try:
+                llm = ChatOpenAI(
+                    model_name="gpt-3.5-turbo",
+                    temperature=0.7,
+                    openai_api_key=openai_api_key
+                )
+                
+                messages = [
+                    SystemMessage(content="당신은 전문 투자 분석가입니다. 정확하고 실용적인 투자 조언을 제공해주세요."),
+                    HumanMessage(content=analysis_prompt)
+                ]
+                
+                response = llm(messages)
+                result = json.loads(response.content)
+                
+                return {
+                    "summary": result.get("summary", "분석을 완료했습니다."),
+                    "performance": result.get("performance", "neutral"),
+                    "recommendations": result.get("recommendations", ["분산 투자를 권장합니다."]),
+                    "market_analysis": result.get("market_analysis", f"{period} 기간의 시장 상황을 분석했습니다."),
+                    "trading_pattern_analysis": result.get("trading_pattern_analysis", "거래 패턴을 분석했습니다.")
+                }
+            except Exception as e:
+                print(f"LLM 분석 실패: {e}")
+                # LLM 실패 시 오프라인 분석으로 대체
+                pass
+
+        # 오프라인 분석 (LLM 실패 시 또는 API 키가 없는 경우)
+        performance_diff = average_traded_return - market_average
+        
+        # 기간 표현 변환
+        period_display = period
+        if "H1" in period:
+            period_display = period.replace("H1", "년 상반기")
+        elif "H2" in period:
+            period_display = period.replace("H2", "년 하반기")
+        elif "Q1" in period:
+            period_display = period.replace("Q1", "년 1분기")
+        elif "Q2" in period:
+            period_display = period.replace("Q2", "년 2분기")
+        elif "Q3" in period:
+            period_display = period.replace("Q3", "년 3분기")
+        elif "Q4" in period:
+            period_display = period.replace("Q4", "년 4분기")
+        
+        # 섹터별 분석
+        traded_sectors = {}
+        for stock in stock_analysis:
+            sector = stock["sector"]
+            if sector not in traded_sectors:
+                traded_sectors[sector] = []
+            traded_sectors[sector].append(stock["return"])
+        
+        sector_analysis = []
+        for sector, returns in traded_sectors.items():
+            sector_avg = sum(returns) / len(returns)
+            market_sector_avg = sector_averages.get(sector, market_average)
+            sector_analysis.append(f"{sector} 섹터: 평균 {sector_avg:.1f}% (시장 섹터 평균: {market_sector_avg:.1f}%)")
+        
+        # 거래 패턴 분석
+        total_buys = len(buy_transactions)
+        total_sells = len(sell_transactions)
+        trading_pattern = f"매수 {total_buys}회, 매도 {total_sells}회로 "
+        if total_buys > total_sells * 2:
+            trading_pattern += "적극적인 매수 전략을 구사했노라."
+        elif total_sells > total_buys:
+            trading_pattern += "수익 실현에 집중한 전략을 보였노라."
+        else:
+            trading_pattern += "균형잡힌 매매 전략을 보였노라."
+
+        if performance_diff > 5:
+            performance = "훌륭함"
+            summary = f"허허, 그대의 투자 성과를 살펴보니 훌륭하구나! 시장 평균 수익률 {market_average:.1f}% 대비 {average_traded_return:.1f}%로 {performance_diff:+.1f}%p 높은 수익률을 달성했노라. 특히 {', '.join(sector_analysis[:2])}에서 우수한 성과를 보였으니, 과인의 조언을 참고하시게."
+            recommendations = [
+                f"현재 투자 전략을 유지하되, {performance_diff:.1f}%p의 성과 차이를 유지하기 위한 리스크 관리에 주의하시게",
+                "성공적인 섹터 선택 패턴을 다음 라운드에도 적용해보시게",
+                "수익 실현 타이밍을 더욱 정교하게 조절하여 최대 수익을 추구하시게"
+            ]
+        elif performance_diff > 0:
+            performance = "좋음"
+            summary = f"좋은 투자 성과를 보였노라. 시장 평균 수익률 {market_average:.1f}% 대비 {average_traded_return:.1f}%로 {performance_diff:+.1f}%p 높은 수익률을 달성했노라. {trading_pattern} 그대가 신중하게 판단하시게."
+            recommendations = [
+                f"현재 투자 방향을 유지하되, {performance_diff:.1f}%p의 성과 차이를 더욱 확대하기 위한 분석을 강화하시게",
+                "분산 투자를 통해 리스크를 줄이면서 수익률을 더욱 향상시켜보시게",
+                "매수 타이밍을 더 정교하게 분석하여 성과를 개선해보시게"
+            ]
+        elif performance_diff > -5:
+            performance = "보통"
+            summary = f"보통 수준의 투자 성과를 보였노라. 시장 평균 수익률 {market_average:.1f}% 대비 {average_traded_return:.1f}%로 {performance_diff:+.1f}%p의 차이를 보였노라. {trading_pattern} 다음에는 더욱 신중하게 접근하시게."
+            recommendations = [
+                f"시장 평균과 {abs(performance_diff):.1f}%p 차이를 좁히기 위해 더 체계적인 분석을 통해 투자 결정을 내려보시게",
+                "차트와 뉴스를 종합적으로 분석하여 매수 타이밍을 개선해보시게",
+                "리스크 관리에 더 많은 주의를 기울여 안정적인 수익을 추구하시게"
+            ]
+        else:
+            performance = "부족함"
+            summary = f"개선이 필요한 투자 성과를 보였노라. 시장 평균 수익률 {market_average:.1f}% 대비 {average_traded_return:.1f}%로 {performance_diff:+.1f}%p 낮은 수익률을 보였노라. {trading_pattern} 이런 시기를 잘 활용하시게."
+            recommendations = [
+                f"시장 평균과 {abs(performance_diff):.1f}%p 차이를 좁히기 위해 투자 전략을 재검토해보시게",
+                "더 많은 정보를 수집하고 섹터별 분석을 강화한 후 투자 결정을 내려보시게",
+                "손절매 기준을 명확히 설정하여 손실을 최소화하시게"
+            ]
+
+        return {
+            "summary": summary,
+            "performance": performance,
+            "recommendations": recommendations,
+            "market_analysis": f"{period_display} 기간 동안 시장 전체 평균 수익률은 {market_average:.1f}%였으며, 섹터별로는 {', '.join([f'{sector} {avg:.1f}%' for sector, avg in list(sector_averages.items())[:3]])} 등의 성과를 보였노라.",
+            "trading_pattern_analysis": trading_pattern
+        }
+
+    except Exception as e:
+        print(f"분석 오류: {e}")
+        raise HTTPException(status_code=500, detail="분석 중 오류가 발생했습니다.")
+
 @app.get("/api/stocks/{symbol}/price-history")
 async def get_stock_price_history(
     symbol: str, 

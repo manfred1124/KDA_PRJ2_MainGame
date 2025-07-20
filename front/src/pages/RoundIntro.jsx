@@ -50,8 +50,12 @@ const RoundIntro = () => {
 
     if (roundFromUrl) {
       setCurrentRound(parseInt(roundFromUrl));
-    } else if (user?.current_round_idx) {
-      setCurrentRound(user.current_round_idx);
+    } else if (user?.current_round_idx !== undefined) {
+      // current_round_idx는 0-based이므로 1을 더해서 표시
+      setCurrentRound(user.current_round_idx + 1);
+    } else {
+      // 기본값은 1라운드
+      setCurrentRound(1);
     }
 
     setLoading(false);
