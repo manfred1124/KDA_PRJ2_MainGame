@@ -3,6 +3,9 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { IntroContext } from "../App";
 import { Eye, EyeOff, LogIn } from "lucide-react";
+import SwordAnimation from "../components/SwordAnimation";
+import BearAnimation from "../components/BearAnimation";
+import pathofheroImage from "../assets/pathofhero.png";
 
 const Login = () => {
   const [username, setUsername] = useState("");
@@ -34,15 +37,28 @@ const Login = () => {
   };
 
   return (
-    <div className="h-screen overflow-hidden flex items-center justify-center auth-page">
-      <div className="max-w-md w-full space-y-5">
+    <div className="h-screen overflow-hidden flex items-center justify-center auth-page relative">
+      <SwordAnimation />
+      <BearAnimation />
+      <div className="max-w-md w-full space-y-2" style={{ marginTop: "-28vh" }}>
         <div className="text-center">
-          <h2 className="text-3xl font-bold text-gray-900">로그인</h2>
-          <p className="mt-2 text-gray-600">주식 투자 시뮬레이션 게임</p>
+          <img
+            src={pathofheroImage}
+            alt="Path of Hero"
+            style={{
+              width: "17vw",
+              maxWidth: "400px",
+              height: "auto",
+              marginBottom: "-4rem",
+            }}
+            className="mx-auto object-contain"
+          />
+          {/* <h2 className="text-3xl font-bold text-gray-900">로그인</h2> */}
+          {/* <p className="mt-2 text-gray-600">주식 투자 시뮬레이션 게임</p> */}
         </div>
 
         {/* card div 제거, 내부 내용만 남김 */}
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label
               htmlFor="username"
