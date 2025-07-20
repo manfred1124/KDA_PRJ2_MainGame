@@ -196,8 +196,8 @@ const RoundIntro = () => {
           {/* 용사의 조언 */}
           <div className="bg-white rounded-2xl shadow-xl p-5 mb-5 border-4 border-[#bfa76a] animate-fade-in">
             <h2
-              className="text-xl font-bold text-[#7c5c2b] mb-3 flex items-center justify-center"
-              style={{ fontFamily: "Jua, sans-serif" }}
+              className="text-lg font-bold text-[#7c5c2b] mb-3 flex items-center justify-center"
+              style={{ fontFamily: "Jua, sans-serif", fontSize: "1.5rem" }}
             >
               🗡️ 용사의 조언
             </h2>
@@ -216,8 +216,8 @@ const RoundIntro = () => {
             {/* 팁 섹션 */}
             <div className="bg-gray-50 rounded-lg p-4 border-2 border-[#e6d3a3]">
               <h3
-                className="text-base font-bold text-[#7c5c2b] mb-3"
-                style={{ fontFamily: "Jua, sans-serif" }}
+                className="text-lg font-bold text-[#7c5c2b] mb-3"
+                style={{ fontFamily: "Jua, sans-serif", fontSize: "1.5rem" }}
               >
                 💡 실전 팁
               </h3>
@@ -231,8 +231,8 @@ const RoundIntro = () => {
                       •
                     </span>
                     <p
-                      className="text-[#7c5c2b] text-base"
-                      style={{ fontFamily: "Jua, sans-serif" }}
+                      className="text-[#7c5c2b] text-lg"
+                      style={{ fontFamily: "Jua, sans-serif", fontSize: "1.25rem" }}
                     >
                       {tip}
                     </p>

@@ -197,9 +197,11 @@ const News = () => {
   // 모달 상태 추가
   const [selectedNews, setSelectedNews] = useState(null);
   const [currentPeriod, setCurrentPeriod] = useState(null);
+  const [flippedCards, setFlippedCards] = useState({}); // 카드별 flip 상태
   const navigate = useNavigate(); // 추가
   const { user } = useAuth();
   const { addGuideMessage } = useContext(GuideMessageContext);
+  const currentRound = (user?.current_round_idx ?? 0) + 1;
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -283,6 +285,24 @@ const News = () => {
     }
   };
 
+  // 카드 클릭 핸들러
+  const handleCardFlip = (id) => {
+    setFlippedCards((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  // 감정 분석 한글 및 색상 반환 함수
+  const getSentimentLabel = (sentiment) => {
+    switch (sentiment) {
+      case "positive":
+        return { label: "긍정", color: "#22c55e", bg: "#e6f9ed" };
+      case "negative":
+        return { label: "부정", color: "#ef4444", bg: "#fdeaea" };
+      case "neutral":
+      default:
+        return { label: "중립", color: "#a3a3a3", bg: "#f3f4f6" };
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -293,61 +313,124 @@ const News = () => {
 
   return (
     <div className="space-y-6 news-page">
-      {/* 헤더와 투자 하러가기 버튼 */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1
-            className="text-2xl font-bold text-[#7c5c2b]"
-            style={{ fontFamily: "Jua, sans-serif" }}
-          >
-            📰 시장 뉴스
-          </h1>
-          <p
-            className="text-[#a67c3c]"
-            style={{ fontFamily: "Jua, sans-serif" }}
-          >
-            최신 시장 동향을 확인하고 투자에 참고하세요
-          </p>
-        </div>
-        {/* 우상단 투자 하러가기 버튼 */}
-        <button
-          className="bg-[#7c5c2b] hover:bg-[#a67c3c] text-white font-bold py-3 px-6 rounded-full text-base shadow-lg transition-all duration-200 border-2 border-[#e6d3a3]"
-          style={{ fontFamily: "Jua, sans-serif" }}
-          onClick={() => navigate("/select-sector")}
-        >
-          투자 하러가기
-        </button>
-      </div>
+      <style>{`
+        .flip-card {
+          perspective: 1000px;
+        }
+        .flip-card-inner {
+          position: relative;
+          width: 100%;
+          height: 100%;
+          transition: transform 0.6s;
+          transform-style: preserve-3d;
+        }
+        .flip-card.flipped .flip-card-inner {
+          transform: rotateY(180deg);
+        }
+        .flip-card-front, .flip-card-back {
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          backface-visibility: hidden;
+          border-radius: 1rem;
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+        }
+        .flip-card-back {
+          background: #fffbe6;
+          color: #7c5c2b;
+          transform: rotateY(180deg);
+          border: 2px solid #e6d3a3;
+          padding: 1.5rem;
+        }
+      `}</style>
+      <div className="flex items-center justify-between mb-6 max-w-screen-xl mx-auto px-4">
+  {/* 텍스트 묶음 */}
+  <div style={{ transform: "translateY(-16px)" }}>
+    <h1
+      className="text-2xl font-bold text-[#7c5c2b]"
+      style={{ fontFamily: "Jua, sans-serif" }}
+    >
+      📰 시장 뉴스
+    </h1>
+    <p
+      className="text-[#a67c3c] mt-1"
+      style={{ fontFamily: "Jua, sans-serif" }}
+    >
+      최신 시장 동향을 파악하고 투자에 참고하시게
+    </p>
+  </div>
+
+  {/* 버튼도 같은 높이로 올림 */}
+  <div style={{ transform: "translateY(-16px) translateX(-10px)" }}>
+    <button
+      className="bg-[#7c5c2b] hover:bg-[#a67c3c] text-white font-normal py-3 px-8 rounded-full text-lg shadow-lg transition-all duration-200 border-2 border-[#e6d3a3]"
+      style={{ fontFamily: "Jua, sans-serif" }}
+      onClick={() => navigate("/select-sector")}
+    >
+      투자 하러가기
+    </button>
+  </div>
+</div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {news.slice(0, 4).map((item) => (
           <div
             key={item.id}
-            className={`card news-card transition-all duration-200 h-48 flex flex-col ${getImpactColor(
+            className={`flip-card card news-card transition-all duration-200 h-48 flex flex-col ${getImpactColor(
               item.impact_type
-            )}`}
+            )} ${flippedCards[item.id] ? "flipped" : ""}`}
+            onClick={() => handleCardFlip(item.id)}
+            style={{ cursor: "pointer" }}
           >
-            <div className="flex items-start justify-between mb-4 flex-1">
-              <div className="flex-1">
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  <span className="inline-block bg-blue-100 text-blue-700 text-xs font-normal rounded-full px-2 py-0.5 mr-2 align-middle">
-                    {item.period}
-                  </span>
-                  {item.title}
-                </h3>
-                <p className="text-gray-600 text-sm leading-relaxed line-clamp-3">
-                  {item.summary || item.content}
-                </p>
+            <div className="flip-card-inner w-full h-full">
+              {/* 앞면 */}
+              <div className="flip-card-front w-full h-full p-4">
+                <div className="flex items-start justify-between mb-4 flex-1">
+                  <div className="flex-1">
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      <span className="inline-block bg-blue-100 text-blue-700 text-xs font-normal rounded-full px-2 py-0.5 mr-2 align-middle">
+                        {item.period}
+                      </span>
+                      {item.title}
+                    </h3>
+                    <p className="text-gray-600 text-sm leading-relaxed line-clamp-3">
+                      {item.summary || item.content}
+                    </p>
+                  </div>
+                  <div className="ml-4">{getImpactIcon(item.impact_type)}</div>
+                </div>
+                <div className="flex items-center justify-between text-sm text-gray-500 mt-auto">
+                  <div>
+                    {item.affected_sectors && (
+                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
+                        {item.affected_sectors}
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
-              <div className="ml-4">{getImpactIcon(item.impact_type)}</div>
-            </div>
-
-            <div className="flex items-center justify-between text-sm text-gray-500 mt-auto">
-              <div>
-                {item.affected_sectors && (
-                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
-                    {item.affected_sectors}
-                  </span>
+              {/* 뒷면 */}
+              <div className="flip-card-back w-full h-full flex flex-col items-center justify-center">
+                {currentRound === 3 ? (
+                  <div className="text-xl font-bold text-[#a67c3c] text-center px-4 py-2">
+                    이번에는 스스로 판단해 보시게나
+                  </div>
+                ) : (
+                  <>
+                    <h3 className="text-lg font-bold mb-2">뉴스 감정 분석 결과</h3>
+                    <div
+                      className="text-2xl font-bold mb-4 px-4 py-2 rounded-full"
+                      style={{
+                        color: getSentimentLabel(item.sentiment).color,
+                        background: getSentimentLabel(item.sentiment).bg,
+                      }}
+                    >
+                      {getSentimentLabel(item.sentiment).label}
+                    </div>
+                  </>
                 )}
               </div>
             </div>
