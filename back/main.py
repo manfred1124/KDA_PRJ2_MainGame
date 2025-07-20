@@ -159,17 +159,39 @@ async def get_portfolio(credentials: HTTPAuthorizationCredentials = Depends(secu
         stock = await db.execute(select(Stock).where(Stock.id == item.stock_id))
         stock = stock.scalar_one_or_none()
         if stock:
-            # period 기준 가격 조회
-            price_result = await db.execute(
+            # 해당 기간의 시작 가격과 끝 가격 조회
+            start_price_result = await db.execute(
                 select(StockPrice.close_price)
                 .where(StockPrice.stock_id == stock.id)
                 .where(StockPrice.date >= date)
                 .order_by(StockPrice.date.asc())
                 .limit(1)
             )
-            current_price = price_result.scalar_one_or_none()
+            start_price = start_price_result.scalar_one_or_none()
+            
+            # 해당 기간의 끝 가격 조회 (6개월 후)
+            from datetime import datetime, timedelta
+            if current_period.endswith("H1"):
+                year = int(current_period.split()[0])
+                end_date = datetime(year, 6, 30).date()
+            else:
+                year = int(current_period.split()[0])
+                end_date = datetime(year, 12, 31).date()
+            
+            end_price_result = await db.execute(
+                select(StockPrice.close_price)
+                .where(StockPrice.stock_id == stock.id)
+                .where(StockPrice.date <= end_date)
+                .order_by(StockPrice.date.desc())
+                .limit(1)
+            )
+            end_price = end_price_result.scalar_one_or_none()
+            
+            # 현재가로는 끝 가격 사용
+            current_price = end_price if end_price is not None else start_price
             if current_price is None:
                 current_price = 0
+                
             total_value = item.quantity * current_price
             profit_loss = total_value - (item.quantity * item.average_price)
             profit_loss_percentage = (profit_loss / (item.quantity * item.average_price)) * 100 if item.average_price > 0 else 0
@@ -190,7 +212,13 @@ async def get_portfolio(credentials: HTTPAuthorizationCredentials = Depends(secu
     total_profit_loss_percentage = (total_profit_loss / total_investment) * 100 if total_investment > 0 else 0
     # 총 수익 (미실현 + 실현)
     total_profit = total_profit_loss + user.realized_profit
-    total_profit_percentage = (total_profit / (total_investment + user.realized_profit)) * 100 if (total_investment + user.realized_profit) > 0 else 0
+    
+    # 총 수익률 계산 개선
+    # 초기 투자금액 (1천만원)을 기준으로 계산
+    initial_investment = 10000000  # 1천만원
+    
+    # 총 수익률 = 총 수익 / 초기 투자금액
+    total_profit_percentage = (total_profit / initial_investment) * 100
     return {
         "total_balance": user.total_balance,
         "total_portfolio_value": total_portfolio_value,
@@ -730,6 +758,44 @@ async def get_transaction_history(
             period_str = ""
         print(f"Transaction period: {period_str}")
         
+        # 해당 기간의 현재가 조회
+        current_price = None
+        if period_str and stock:
+            # 해당 기간의 끝 가격 조회 (6개월 후)
+            from datetime import datetime
+            if period_str.endswith("H1"):
+                year = int(period_str.split()[0])
+                end_date = datetime(year, 6, 30).date()
+            else:
+                year = int(period_str.split()[0])
+                end_date = datetime(year, 12, 31).date()
+            
+            print(f"Looking for price for stock {stock.symbol} on or before {end_date}")
+            
+            end_price_result = await db.execute(
+                select(StockPrice.close_price)
+                .where(StockPrice.stock_id == stock.id)
+                .where(StockPrice.date <= end_date)
+                .order_by(StockPrice.date.desc())
+                .limit(1)
+            )
+            current_price = end_price_result.scalar_one_or_none()
+            print(f"Found current price for {stock.symbol}: {current_price}")
+            
+            # 만약 해당 기간의 가격이 없으면, 가장 가까운 가격을 찾기
+            if current_price is None:
+                print(f"No price found for {stock.symbol} on or before {end_date}, looking for closest price")
+                closest_price_result = await db.execute(
+                    select(StockPrice.close_price)
+                    .where(StockPrice.stock_id == stock.id)
+                    .order_by(StockPrice.date.desc())
+                    .limit(1)
+                )
+                current_price = closest_price_result.scalar_one_or_none()
+                print(f"Found closest price for {stock.symbol}: {current_price}")
+        else:
+            print(f"No period_str ({period_str}) or stock ({stock}) for transaction {tx.id}")
+        
         tx_list.append({
             "id": tx.id,
             "stock_id": tx.stock_id,
@@ -741,6 +807,7 @@ async def get_transaction_history(
             "total_amount": tx.total_amount,
             "round_number": tx.round_number,
             "period": period_str,  # 거래시점(라운드)
+            "current_price": current_price,  # 해당 기간의 현재가
             "created_at": tx.created_at.isoformat() if tx.created_at else None,
         })
     
