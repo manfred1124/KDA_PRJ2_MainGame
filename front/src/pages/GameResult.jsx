@@ -246,33 +246,39 @@ const GameResult = () => {
               </div>
 
               {/* 최종 자산 */}
-              <div className="text-center">
-                <div>
-                  <p className="text-sm text-[#a67c3c]">최종 자산</p>
-                  <p className="text-2xl font-bold text-[#7c5c2b]">
-                    {(
-                      (gameState?.total_balance || 0) +
-                      (gameState?.total_investment || 0)
-                    ).toLocaleString()}
-                    원
-                  </p>
+              <div className="bg-[#f3e7c4] rounded-xl p-6 border-2 border-[#e6d3a3]">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-[#a67c3c]">최종 자산</p>
+                    <p className="text-2xl font-bold text-[#7c5c2b]">
+                      {(
+                        (gameState?.total_balance || 0) +
+                        (gameState?.total_portfolio_value || 0)
+                      ).toLocaleString()}
+                      원
+                    </p>
+                  </div>
+                  <span className="text-3xl">🏦</span>
                 </div>
               </div>
 
               {/* 미실현 손익 */}
-              <div className="text-center">
-                <div>
-                  <p className="text-sm text-[#a67c3c]">미실현 손익</p>
-                  <p
-                    className={`text-xl font-bold ${
-                      (gameState?.total_profit_loss || 0) >= 0
-                        ? "text-[#3b7c2b]"
-                        : "text-[#a63c2b]"
-                    }`}
-                  >
-                    {(gameState?.total_profit_loss || 0) >= 0 ? "+" : ""}
-                    {gameState?.total_profit_loss?.toLocaleString() || "0"}원
-                  </p>
+              <div className="bg-[#f3e7c4] rounded-xl p-6 border-2 border-[#e6d3a3]">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-[#a67c3c]">미실현 손익</p>
+                    <p
+                      className={`text-2xl font-bold ${
+                        (gameState?.total_profit_loss || 0) >= 0
+                          ? "text-[#3b7c2b]"
+                          : "text-[#a63c2b]"
+                      }`}
+                    >
+                      {(gameState?.total_profit_loss || 0) >= 0 ? "+" : ""}
+                      {gameState?.total_profit_loss?.toLocaleString() || "0"}원
+                    </p>
+                  </div>
+                  <span className="text-3xl">💰</span>
                 </div>
               </div>
             </div>
