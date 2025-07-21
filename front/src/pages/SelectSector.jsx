@@ -118,8 +118,15 @@ const SelectSector = () => {
 
     // 보유 종목 클릭 시 판매하기 모달 열기 이벤트 리스너
     const handleOpenSellModal = async (event) => {
-      const { stock_id, stock_name, stock_symbol, current_price, quantity, average_price } = event.detail;
-      
+      const {
+        stock_id,
+        stock_name,
+        stock_symbol,
+        current_price,
+        quantity,
+        average_price,
+      } = event.detail;
+
       // 해당 주식의 전체 정보를 가져오기
       try {
         const token = localStorage.getItem("token");
@@ -129,18 +136,18 @@ const SelectSector = () => {
           },
         });
         const stockData = response.data;
-        
+
         // 판매하기 모달 열기
         setOrderModal({
           stock: {
             ...stockData,
-            current_price: current_price
+            current_price: current_price,
           },
-          type: "sell"
+          type: "sell",
         });
         setOrderType("sell"); // 판매하기로 설정
         setOrderQty(1); // 수량 초기화
-        
+
         // 매매하기 탭으로 이동
         setOrderTab("trade");
       } catch (error) {
@@ -149,10 +156,10 @@ const SelectSector = () => {
       }
     };
 
-    window.addEventListener('openSellModal', handleOpenSellModal);
+    window.addEventListener("openSellModal", handleOpenSellModal);
 
     return () => {
-      window.removeEventListener('openSellModal', handleOpenSellModal);
+      window.removeEventListener("openSellModal", handleOpenSellModal);
     };
   }, []);
 
@@ -329,7 +336,7 @@ const SelectSector = () => {
       const response = await axios.get(`/api/financial/stock/${symbol}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
-      
+
       if (response.data.data) {
         setFinancialData(response.data.data);
       } else {
@@ -387,7 +394,7 @@ const SelectSector = () => {
     }));
     await fetchStocksBySector(sector);
     await fetchSectorNews(sector);
-    
+
     // 섹터별 장군 분석 호출
     try {
       const token = localStorage.getItem("token");
@@ -395,13 +402,13 @@ const SelectSector = () => {
         "/api/chatbot/sector-analysis",
         {
           sector: sector,
-          period: user?.current_period
+          period: user?.current_period,
         },
         {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         }
       );
-      
+
       if (response.data && response.data.analysis) {
         addGuideMessage(response.data.analysis);
       } else {
@@ -425,7 +432,7 @@ const SelectSector = () => {
     setOrderType("buy");
     setOrderQty(1);
     await fetchStockNews(stock.symbol);
-    
+
     // 장군 분석 호출
     try {
       const token = localStorage.getItem("token");
@@ -434,20 +441,22 @@ const SelectSector = () => {
         {
           symbol: stock.symbol,
           name: stock.name,
-          period: user?.current_period
+          period: user?.current_period,
         },
         {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         }
       );
-      
+
       if (response.data && response.data.analysis) {
         addGuideMessage(response.data.analysis);
       }
     } catch (error) {
       console.error("Stock analysis failed:", error);
       // 에러가 나도 기본 메시지 추가
-      addGuideMessage(`${stock.name} 종목을 선택했구나. 차트와 뉴스를 잘 살펴보시게!`);
+      addGuideMessage(
+        `${stock.name} 종목을 선택했구나. 차트와 뉴스를 잘 살펴보시게!`
+      );
     }
   };
 
@@ -529,7 +538,10 @@ const SelectSector = () => {
           style={{ width: 220, height: 320 }}
           className="mb-6"
         />
-        <span className="text-2xl text-white font-bold animate-blink-slow" style={{ fontFamily: 'Jua, sans-serif' }}>
+        <span
+          className="text-2xl text-white font-bold animate-blink-slow"
+          style={{ fontFamily: "Jua, sans-serif" }}
+        >
           전투 진행중...
         </span>
       </div>
@@ -656,10 +668,10 @@ const SelectSector = () => {
                                 try {
                                   const date = new Date(dateString);
                                   if (isNaN(date.getTime())) return "";
-                                  return date.toLocaleDateString('ko-KR', {
-                                    year: 'numeric',
-                                    month: '2-digit',
-                                    day: '2-digit'
+                                  return date.toLocaleDateString("ko-KR", {
+                                    year: "numeric",
+                                    month: "2-digit",
+                                    day: "2-digit",
                                   });
                                 } catch (e) {
                                   return "";
@@ -1135,10 +1147,10 @@ const SelectSector = () => {
                                     try {
                                       const date = new Date(dateString);
                                       if (isNaN(date.getTime())) return "";
-                                      return date.toLocaleDateString('ko-KR', {
-                                        year: 'numeric',
-                                        month: '2-digit',
-                                        day: '2-digit'
+                                      return date.toLocaleDateString("ko-KR", {
+                                        year: "numeric",
+                                        month: "2-digit",
+                                        day: "2-digit",
                                       });
                                     } catch (e) {
                                       return "";
@@ -1204,30 +1216,42 @@ const SelectSector = () => {
                                       </h4>
                                       <div className="space-y-3">
                                         <div className="flex justify-between">
-                                          <span className="text-gray-600">매출액</span>
+                                          <span className="text-gray-600">
+                                            매출액
+                                          </span>
                                           <span className="font-semibold">
-                                            {financialData.revenue ? 
-                                              (financialData.revenue / 1000000).toFixed(0) + '억원' : 
-                                              'N/A'
-                                            }
+                                            {financialData.revenue
+                                              ? (
+                                                  financialData.revenue /
+                                                  1000000
+                                                ).toFixed(0) + "억원"
+                                              : "N/A"}
                                           </span>
                                         </div>
                                         <div className="flex justify-between">
-                                          <span className="text-gray-600">영업이익</span>
+                                          <span className="text-gray-600">
+                                            영업이익
+                                          </span>
                                           <span className="font-semibold">
-                                            {financialData.operating_income ? 
-                                              (financialData.operating_income / 1000000).toFixed(0) + '억원' : 
-                                              'N/A'
-                                            }
+                                            {financialData.operating_income
+                                              ? (
+                                                  financialData.operating_income /
+                                                  1000000
+                                                ).toFixed(0) + "억원"
+                                              : "N/A"}
                                           </span>
                                         </div>
                                         <div className="flex justify-between">
-                                          <span className="text-gray-600">당기순이익</span>
+                                          <span className="text-gray-600">
+                                            당기순이익
+                                          </span>
                                           <span className="font-semibold">
-                                            {financialData.net_income ? 
-                                              (financialData.net_income / 1000000).toFixed(0) + '억원' : 
-                                              'N/A'
-                                            }
+                                            {financialData.net_income
+                                              ? (
+                                                  financialData.net_income /
+                                                  1000000
+                                                ).toFixed(0) + "억원"
+                                              : "N/A"}
                                           </span>
                                         </div>
                                       </div>
@@ -1240,39 +1264,45 @@ const SelectSector = () => {
                                       </h4>
                                       <div className="space-y-3">
                                         <div className="flex justify-between">
-                                          <span className="text-gray-600">ROE</span>
+                                          <span className="text-gray-600">
+                                            ROE
+                                          </span>
                                           <span className="font-semibold">
-                                            {financialData.roe ? 
-                                              financialData.roe.toFixed(2) + '%' : 
-                                              'N/A'
-                                            }
+                                            {financialData.roe
+                                              ? financialData.roe.toFixed(2) +
+                                                "%"
+                                              : "N/A"}
                                           </span>
                                         </div>
                                         <div className="flex justify-between">
-                                          <span className="text-gray-600">PER</span>
+                                          <span className="text-gray-600">
+                                            PER
+                                          </span>
                                           <span className="font-semibold">
-                                            {financialData.per ? 
-                                              financialData.per.toFixed(2) : 
-                                              'N/A'
-                                            }
+                                            {financialData.per
+                                              ? financialData.per.toFixed(2)
+                                              : "N/A"}
                                           </span>
                                         </div>
                                         <div className="flex justify-between">
-                                          <span className="text-gray-600">PBR</span>
+                                          <span className="text-gray-600">
+                                            PBR
+                                          </span>
                                           <span className="font-semibold">
-                                            {financialData.pbr ? 
-                                              financialData.pbr.toFixed(2) : 
-                                              'N/A'
-                                            }
+                                            {financialData.pbr
+                                              ? financialData.pbr.toFixed(2)
+                                              : "N/A"}
                                           </span>
                                         </div>
                                         <div className="flex justify-between">
-                                          <span className="text-gray-600">EPS</span>
+                                          <span className="text-gray-600">
+                                            EPS
+                                          </span>
                                           <span className="font-semibold">
-                                            {financialData.eps ? 
-                                              financialData.eps.toLocaleString() + '원' : 
-                                              'N/A'
-                                            }
+                                            {financialData.eps
+                                              ? financialData.eps.toLocaleString() +
+                                                "원"
+                                              : "N/A"}
                                           </span>
                                         </div>
                                       </div>
@@ -1285,30 +1315,41 @@ const SelectSector = () => {
                                       </h4>
                                       <div className="space-y-3">
                                         <div className="flex justify-between">
-                                          <span className="text-gray-600">부채비율</span>
+                                          <span className="text-gray-600">
+                                            부채비율
+                                          </span>
                                           <span className="font-semibold">
-                                            {financialData.debt_ratio ? 
-                                              financialData.debt_ratio.toFixed(2) + '%' : 
-                                              'N/A'
-                                            }
+                                            {financialData.debt_ratio
+                                              ? financialData.debt_ratio.toFixed(
+                                                  2
+                                                ) + "%"
+                                              : "N/A"}
                                           </span>
                                         </div>
                                         <div className="flex justify-between">
-                                          <span className="text-gray-600">부채총계</span>
+                                          <span className="text-gray-600">
+                                            부채총계
+                                          </span>
                                           <span className="font-semibold">
-                                            {financialData.total_debt ? 
-                                              (financialData.total_debt / 1000000).toFixed(0) + '억원' : 
-                                              'N/A'
-                                            }
+                                            {financialData.total_debt
+                                              ? (
+                                                  financialData.total_debt /
+                                                  1000000
+                                                ).toFixed(0) + "억원"
+                                              : "N/A"}
                                           </span>
                                         </div>
                                         <div className="flex justify-between">
-                                          <span className="text-gray-600">자본총계</span>
+                                          <span className="text-gray-600">
+                                            자본총계
+                                          </span>
                                           <span className="font-semibold">
-                                            {financialData.total_equity ? 
-                                              (financialData.total_equity / 1000000).toFixed(0) + '억원' : 
-                                              'N/A'
-                                            }
+                                            {financialData.total_equity
+                                              ? (
+                                                  financialData.total_equity /
+                                                  1000000
+                                                ).toFixed(0) + "억원"
+                                              : "N/A"}
                                           </span>
                                         </div>
                                       </div>
@@ -1321,18 +1362,24 @@ const SelectSector = () => {
                                       </h4>
                                       <div className="space-y-3">
                                         <div className="flex justify-between">
-                                          <span className="text-gray-600">기준일</span>
+                                          <span className="text-gray-600">
+                                            기준일
+                                          </span>
                                           <span className="font-semibold">
-                                            {financialData.date ? 
-                                              financialData.date.replace('.', '년 ') + '월' : 
-                                              'N/A'
-                                            }
+                                            {financialData.date
+                                              ? financialData.date.replace(
+                                                  ".",
+                                                  "년 "
+                                                ) + "월"
+                                              : "N/A"}
                                           </span>
                                         </div>
                                         <div className="flex justify-between">
-                                          <span className="text-gray-600">종목코드</span>
+                                          <span className="text-gray-600">
+                                            종목코드
+                                          </span>
                                           <span className="font-semibold">
-                                            {financialData.symbol || 'N/A'}
+                                            {financialData.symbol || "N/A"}
                                           </span>
                                         </div>
                                       </div>
@@ -1522,13 +1569,23 @@ const SelectSector = () => {
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
           <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full text-center flex flex-col justify-center">
             {/* <h2 className="text-2xl font-bold mb-4">전투 결과</h2> */}
-            <p className="text-gray-700 mb-8" style={{ fontFamily: "Jua, sans-serif", fontSize: "1.3rem", fontWeight: 700 }}>
+            <p
+              className="text-gray-700 mb-8"
+              style={{
+                fontFamily: "Jua, sans-serif",
+                fontSize: "1.3rem",
+                fontWeight: 700,
+              }}
+            >
               전투를 끝내고, 결과를 확인하겠는가?
             </p>
             <div className="flex justify-center gap-8">
               <button
                 className="px-8 py-3 bg-[#7c5c2b] hover:bg-[#a67c3c] text-white rounded-full font-bold text-lg"
-                onClick={() => { setResultModalOpen(false); navigate("/my-page"); }}
+                onClick={() => {
+                  setResultModalOpen(false);
+                  navigate("/my-page");
+                }}
               >
                 예
               </button>
