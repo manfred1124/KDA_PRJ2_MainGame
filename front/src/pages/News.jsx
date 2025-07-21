@@ -3,6 +3,7 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useRef } from "react";
 
 import { useAuth } from "../contexts/AuthContext";
 import { GuideMessageContext } from "../App";
@@ -202,6 +203,9 @@ const News = () => {
   const { user } = useAuth();
   const { addGuideMessage } = useContext(GuideMessageContext);
   const currentRound = (user?.current_round_idx ?? 0) + 1;
+  const [explainedNews, setExplainedNews] = useState({}); // 뉴스별 LLM 설명 완료 여부
+  const [explainingNews, setExplainingNews] = useState({}); // 뉴스별 LLM 설명 요청 중 여부
+  const requestedNewsRef = useRef({}); // 요청 추적용 ref
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -285,9 +289,49 @@ const News = () => {
     }
   };
 
-  // 카드 클릭 핸들러
+  // 카드 클릭 핸들러 (flip + LLM 설명 요청)
   const handleCardFlip = (id) => {
-    setFlippedCards((prev) => ({ ...prev, [id]: !prev[id] }));
+    setFlippedCards((prev) => {
+      const wasFlipped = !!prev[id];
+      const next = { ...prev, [id]: !wasFlipped };
+      // 카드가 처음 뒤집힐 때만 요청
+      if (!wasFlipped && !requestedNewsRef.current[id]) {
+        if (currentRound === 3) {
+          addGuideMessage("이번에는 자네가 스스로 판단해 보시게나");
+        } else {
+          fetchLlmExplanation(id);
+        }
+      }
+      return next;
+    });
+  };
+
+  // LLM 설명 요청 함수 (POST /api/chatbot)
+  const fetchLlmExplanation = async (id) => {
+    // 이미 요청했으면 중복 방지
+    if (requestedNewsRef.current[id]) return;
+    requestedNewsRef.current[id] = true;
+    try {
+      const newsItem = news.find((n) => n.id === id);
+      if (!newsItem) return;
+      const token = localStorage.getItem("token");
+      const res = await fetch("/api/chatbot", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ message: newsItem.content || newsItem.summary }),
+      });
+      const data = await res.json();
+      const llmText = data.answer || "(설명이 도착하지 않았습니다)";
+      console.log("LLM 응답:", llmText);
+      addGuideMessage(`${llmText}`);
+    } catch (e) {
+      addGuideMessage("🧙‍♂️ 용사의 해설을 불러오지 못했습니다.");
+      // 실패 시 다시 요청 가능하게
+      delete requestedNewsRef.current[id];
+    }
   };
 
   // 감정 분석 한글 및 색상 반환 함수
@@ -379,7 +423,7 @@ const News = () => {
         {news.slice(0, 4).map((item) => (
           <div
             key={item.id}
-            className={`flip-card card news-card transition-all duration-200 h-48 flex flex-col ${getImpactColor(
+            className={`flip-card card news-card transition-all duration-200 h-64 flex flex-col ${getImpactColor(
               item.impact_type
             )} ${flippedCards[item.id] ? "flipped" : ""}`}
             onClick={() => handleCardFlip(item.id)}
@@ -396,7 +440,7 @@ const News = () => {
                       </span>
                       {item.title}
                     </h3>
-                    <p className="text-gray-600 text-sm leading-relaxed line-clamp-3">
+                    <p className="text-gray-600 text-sm leading-relaxed">
                       {item.summary || item.content}
                     </p>
                   </div>
