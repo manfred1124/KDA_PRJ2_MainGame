@@ -162,7 +162,7 @@ const GameResult = () => {
                     </>
                   ) : (
                     <>
-                      "전장을 완주한 모두가 전사이니라.<br/>
+                      "전장을 완주한 모두가 승자이니라.<br/>
                       검을 거두지 말라, 전사여.<br/>
                       다음 싸움이 곧 시작될 것이다."
                     </>
@@ -257,7 +257,7 @@ const GameResult = () => {
               {!isFirstPlace && (
                 <div className="mt-4 p-4 bg-gradient-to-r from-yellow-100 to-orange-100 rounded-lg border-2 border-yellow-300">
                   <p className="text-lg font-bold text-[#7c5c2b]" style={{ fontFamily: "Jua, sans-serif" }}>
-                    "전장을 완주한 모두가 전사이니라.<br/>
+                    "전장을 완주한 모두가 승자이니라.<br/>
                     검을 거두지 말라, 전사여.<br/>
                     다음 싸움이 곧 시작될 것이다."
                   </p>
