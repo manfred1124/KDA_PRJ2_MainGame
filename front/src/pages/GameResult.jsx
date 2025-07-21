@@ -25,6 +25,7 @@ const GameResult = () => {
   const [showGif, setShowGif] = useState(true);
   const [gifLoaded, setGifLoaded] = useState(false);
   const { addGuideMessage } = useContext(GuideMessageContext);
+  const [overlayHeight, setOverlayHeight] = useState('100vh');
 
   useEffect(() => {
     addGuideMessage(GUIDE_MSG);
@@ -41,6 +42,12 @@ const GameResult = () => {
       return () => clearTimeout(timer);
     }
   }, [gifLoaded]);
+
+  useEffect(() => {
+    if (showGif) {
+      setOverlayHeight(`${Math.max(document.body.scrollHeight, window.innerHeight)}px`);
+    }
+  }, [showGif]);
 
   const fetchGameResult = async () => {
     try {
@@ -117,41 +124,54 @@ const GameResult = () => {
 
   // GIF 오버레이
   const gifOverlay = showGif && (
-    <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-xl bg-black bg-opacity-30">
-      <div className="text-center relative transform -translate-x-16">
-        <img
-          src="/result.gif"
-          alt="결과 애니메이션"
-          className="max-w-full max-h-screen object-contain"
-          onLoad={() => setGifLoaded(true)}
-        />
-        {/* 장군의 말풍선 - 1등과 나머지 구분 */}
-        <div className="absolute top-1/3 right-0 transform translate-x-full -translate-y-1/2">
-          <div className="bg-white rounded-2xl p-4 shadow-2xl border-4 border-[#bfa76a] max-w-xs">
-            <div className="text-center">
-              <p className="text-lg font-bold text-[#7c5c2b] text-center" style={{ fontFamily: "Jua, sans-serif" }}>
-                {isFirstPlace ? (
-                  <>
-                    "공포의 곰조차 그대의 앞길을<br/>
-                    막지 못했도다<br/>
-                    전장을 지배한 이는 단 한 사람<br/>
-                    영광의 1등, 바로 그대다!"
-                  </>
-                ) : (
-                  <>
-                    "전장을 완주한 모두가 전사이니라.<br/>
-                    검을 거두지 말라, 전사여.<br/>
-                    다음 싸움이 곧 시작될 것이다."
-                  </>
-                )}
-              </p>
+    <>
+      {/* 블러 배경만 전체 덮기 */}
+      <div
+        className="fixed top-0 left-0 w-full z-50 backdrop-blur-xl bg-black bg-opacity-30 pointer-events-none"
+        style={{
+          minHeight: '1300px',
+          height: '100%',
+          width: '100%',
+          minWidth: '100vw',
+        }}
+      />
+      {/* 캐릭터/애니메이션은 중앙에 */}
+      <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="text-center relative transform -translate-x-16">
+          <img
+            src="/result.gif"
+            alt="결과 애니메이션"
+            className="max-w-full max-h-screen object-contain"
+            onLoad={() => setGifLoaded(true)}
+          />
+          {/* 장군의 말풍선 - 1등과 나머지 구분 */}
+          <div className="absolute top-1/3 right-0 transform translate-x-full -translate-y-1/2">
+            <div className="bg-white rounded-2xl p-4 shadow-2xl border-4 border-[#bfa76a] max-w-xs">
+              <div className="text-center">
+                <p className="text-lg font-bold text-[#7c5c2b] text-center" style={{ fontFamily: "Jua, sans-serif" }}>
+                  {isFirstPlace ? (
+                    <>
+                      "공포의 곰조차 그대의 앞길을<br/>
+                      막지 못했도다<br/>
+                      전장을 지배한 이는 단 한 사람<br/>
+                      영광의 1등, 바로 그대다!"
+                    </>
+                  ) : (
+                    <>
+                      "전장을 완주한 모두가 전사이니라.<br/>
+                      검을 거두지 말라, 전사여.<br/>
+                      다음 싸움이 곧 시작될 것이다."
+                    </>
+                  )}
+                </p>
+              </div>
+              {/* 말풍선 꼬리 - 왼쪽으로 향하도록 수정 */}
+              <div className="absolute top-1/2 -left-2 transform -translate-y-1/2 w-0 h-0 border-t-8 border-b-8 border-r-8 border-transparent border-r-[#bfa76a]"></div>
             </div>
-            {/* 말풍선 꼬리 - 왼쪽으로 향하도록 수정 */}
-            <div className="absolute top-1/2 -left-2 transform -translate-y-1/2 w-0 h-0 border-t-8 border-b-8 border-r-8 border-transparent border-r-[#bfa76a]"></div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 
   if (loading) {
