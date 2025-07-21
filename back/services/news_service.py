@@ -80,7 +80,7 @@ class NewsService:
         news_list = result.scalars().all()
         
         if news_list:
-            return [NewsResponse.from_orm(news) for news in news_list]
+            return [NewsResponse.from_orm(news) for news in news_list] 
         
         # 뉴스가 없으면 period에 맞는 더미 뉴스 생성
         try:

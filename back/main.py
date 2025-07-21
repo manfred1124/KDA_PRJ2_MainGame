@@ -206,8 +206,8 @@ async def get_portfolio(credentials: HTTPAuthorizationCredentials = Depends(secu
             )
             end_price = end_price_result.scalar_one_or_none()
             
-            # 현재가로는 끝 가격 사용
-            current_price = end_price if end_price is not None else start_price
+            # 현재가로는 시작 가격 사용 (미래 정보 노출 방지)
+            current_price = start_price if start_price is not None else 0
             if current_price is None:
                 current_price = 0
                 
@@ -238,9 +238,13 @@ async def get_portfolio(credentials: HTTPAuthorizationCredentials = Depends(secu
     
     # 총 수익률 = 총 수익 / 초기 투자금액
     total_profit_percentage = (total_profit / initial_investment) * 100
+    # 총자산 = 예수금 + 평가금액
+    total_assets = user.total_balance + total_portfolio_value
+    
     return {
         "total_balance": user.total_balance,
         "total_portfolio_value": total_portfolio_value,
+        "total_assets": total_assets,  # 총자산 추가
         "total_profit_loss": total_profit_loss,
         "total_profit_loss_percentage": total_profit_loss_percentage,
         "realized_profit": user.realized_profit,

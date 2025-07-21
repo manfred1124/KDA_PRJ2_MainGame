@@ -118,7 +118,7 @@ class RoundReview(Base):
     sector_reviews = Column(JSON)  # JSON 형식으로 섹터별 리뷰 저장
     stocks_review = Column(Text)
     final_review = Column(Text)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now()) 
 
 class FinancialStatement(Base):
     __tablename__ = "financial_statements"
