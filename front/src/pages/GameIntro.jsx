@@ -4,6 +4,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { GuideMessageContext } from "../App";
 import { Play } from "lucide-react";
 import pathOfHeroLogo from "../assets/pathofhero.png";
+import { useAudio } from "../contexts/AudioContext";
 
 // 다양한 환영 메시지 배열
 const WELCOME_MESSAGES = [
@@ -37,11 +38,14 @@ const GameIntro = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { addGuideMessage } = useContext(GuideMessageContext);
+  const { playAudio } = useAudio();
 
   useEffect(() => {
     window.scrollTo(0, 0);
     addGuideMessage(GUIDE_MSG);
-  }, [addGuideMessage]);
+    // 홈페이지 진입 시 오디오 재생
+    playAudio("/Take1-9_감정을 뒤로하고 근거에 집중하시오._2025-07-19.wav");
+  }, [addGuideMessage, playAudio]);
 
   const handleStartGame = () => {
     // 게임 시작 이벤트 발생 (BGM 재생 트리거)

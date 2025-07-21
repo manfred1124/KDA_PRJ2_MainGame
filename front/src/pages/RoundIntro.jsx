@@ -4,6 +4,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { GuideMessageContext } from "../App";
 import axios from "axios";
 import { toast } from "react-hot-toast";
+import { useAudio } from "../contexts/AudioContext";
 
 // CSS 애니메이션 스타일
 const fadeInStyle = `
@@ -30,6 +31,23 @@ const RoundIntro = () => {
   const [currentRound, setCurrentRound] = useState(1);
   const [loading, setLoading] = useState(true);
   const { addGuideMessage } = useContext(GuideMessageContext);
+  const { playAudio } = useAudio();
+
+  // 라운드별 효과음 파일 매핑
+  const getRoundSound = (round) => {
+    const soundFiles = {
+      1: "/Take1-6_지금의 시장은 안개 속 전장과도 같소. 신중하게 정보를 살피시오._2025-07-19.wav",
+      2: "/Take1-10_적의 함정일 수도 있소. 탐욕은 항상 덫이 되지_2025-07-19.wav",
+      3: "/Take1-15_아주 좋소. 승패는 계속되니 중심을 잃지 마시오._2025-07-19.wav",
+    };
+    return soundFiles[round] || soundFiles[1];
+  };
+
+  // 효과음 재생 함수
+  const playRoundSound = (round) => {
+    const soundSrc = getRoundSound(round);
+    playAudio(soundSrc);
+  };
 
   // 라운드별 용사 조언
   const getHeroAdvice = (round) => {
@@ -61,9 +79,14 @@ const RoundIntro = () => {
     setLoading(false);
   }, [location.search, user]);
 
-  // 라운드가 변경될 때 용사의 조언을 채팅창에 표시
+  // 라운드가 변경될 때 효과음 재생 및 용사의 조언 표시
   useEffect(() => {
     if (!loading) {
+      // 라운드별 효과음 재생 (0.5초 후)
+      setTimeout(() => {
+        playRoundSound(currentRound);
+      }, 500);
+
       const heroAdvice = getHeroAdvice(currentRound);
       // 1초 후에 용사의 조언을 표시
       setTimeout(() => {
@@ -152,6 +175,7 @@ const RoundIntro = () => {
   const roundInfo = getRoundInfo(currentRound);
 
   const handleStartRound = () => {
+    // 오디오 정지
     // 라운드에 따라 적절한 페이지로 이동
     if (currentRound === 1) {
       navigate("/news");

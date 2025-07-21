@@ -29,6 +29,7 @@ import ScrollToTop from "./components/ScrollToTop";
 import BackgroundMusic from "./components/BackgroundMusic";
 import BearTopLeftAnimation from "./components/BearTopLeftAnimation";
 import { useAuth } from "./contexts/AuthContext";
+import { AudioProvider } from "./contexts/AudioContext";
 
 // 가이드 메시지 Context 생성
 export const GuideMessageContext = createContext({ addGuideMessage: () => {} });
@@ -160,240 +161,242 @@ function App() {
           <LoadingScreen />
         ) : (
           <GuideMessageContext.Provider value={{ addGuideMessage }}>
-            <ScrollToTop />
-            <div className="h-screen bg-[url('/bg.jpg')] bg-cover bg-center bg-no-repeat bg-fixed flex flex-col overflow-hidden">
-              {/* 게임 화면에서만 Bear 애니메이션 표시 */}
-              {showGameBox && <BearTopLeftAnimation />}
-              {/* Navbar 표시 */}
-              <Navbar />
-              <div
-                className={`flex-1 container mx-auto px-4 py-4 flex flex-row gap-8 items-stretch min-h-0 ${
-                  location.pathname === "/" ? "p-0" : ""
-                }`}
-              >
-                {/* 메인 컨텐츠 */}
-                <main
-                  className={`flex-1 min-w-0 flex items-start justify-center ${
-                    location.pathname === "/" ? "w-full" : ""
+            <AudioProvider>
+              <ScrollToTop />
+              <div className="h-screen bg-[url('/bg.jpg')] bg-cover bg-center bg-no-repeat bg-fixed flex flex-col overflow-hidden">
+                {/* 게임 화면에서만 Bear 애니메이션 표시 */}
+                {showGameBox && <BearTopLeftAnimation />}
+                {/* Navbar 표시 */}
+                <Navbar />
+                <div
+                  className={`flex-1 container mx-auto px-4 py-4 flex flex-row gap-8 items-stretch min-h-0 ${
+                    location.pathname === "/" ? "p-0" : ""
                   }`}
                 >
-                  <div
-                    ref={showGameBox ? gameBoxRef : null}
-                    className={`w-full max-w-2xl game-scrollbar flex flex-col items-center justify-center relative z-30`}
-                    style={
-                      showBoardBg
-                        ? {
-                            backgroundImage: `url(${boardImage1})`,
-                            backgroundSize: "contain",
-                            backgroundPosition: "center",
-                            backgroundRepeat: "no-repeat",
-                            maxHeight: 3500,
-                            width: "120%",
-                          }
-                        : showGameBox
-                        ? {
-                            backgroundColor: "rgba(0, 30, 90, 0.3)",
-                            border: "3px solid rgba(139, 69, 19, 0.6)",
-                            borderRadius: "15px",
-                            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.2)",
-                            backdropFilter: "blur(8px)",
-                            height: "100%",
-                            width: "100%",
-                            maxWidth: "900px",
-                            overflow: "auto",
-                            padding: "20px",
-                            display: "flex",
-                            flexDirection: "column",
-                          }
-                        : {}
-                    }
+                  {/* 메인 컨텐츠 */}
+                  <main
+                    className={`flex-1 min-w-0 flex items-start justify-center ${
+                      location.pathname === "/" ? "w-full" : ""
+                    }`}
                   >
-                    <Routes>
-                      <Route path="/login" element={<Login />} />
-                      <Route path="/register" element={<Register />} />
+                    <div
+                      ref={showGameBox ? gameBoxRef : null}
+                      className={`w-full max-w-2xl game-scrollbar flex flex-col items-center justify-center relative z-30`}
+                      style={
+                        showBoardBg
+                          ? {
+                              backgroundImage: `url(${boardImage1})`,
+                              backgroundSize: "contain",
+                              backgroundPosition: "center",
+                              backgroundRepeat: "no-repeat",
+                              maxHeight: 3500,
+                              width: "120%",
+                            }
+                          : showGameBox
+                          ? {
+                              backgroundColor: "rgba(0, 30, 90, 0.3)",
+                              border: "3px solid rgba(139, 69, 19, 0.6)",
+                              borderRadius: "15px",
+                              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.2)",
+                              backdropFilter: "blur(8px)",
+                              height: "100%",
+                              width: "100%",
+                              maxWidth: "900px",
+                              overflow: "auto",
+                              padding: "20px",
+                              display: "flex",
+                              flexDirection: "column",
+                            }
+                          : {}
+                      }
+                    >
+                      <Routes>
+                        <Route path="/login" element={<Login />} />
+                        <Route path="/register" element={<Register />} />
 
-                      {/* 메인 페이지 */}
-                      <Route
-                        path="/"
-                        element={
-                          <PrivateRoute>
-                            <div
-                              className={
-                                showGameBox
-                                  ? "flex-1 flex flex-col h-full w-full"
-                                  : ""
-                              }
-                            >
-                              <GameIntro />
-                            </div>
-                          </PrivateRoute>
-                        }
-                      />
+                        {/* 메인 페이지 */}
+                        <Route
+                          path="/"
+                          element={
+                            <PrivateRoute>
+                              <div
+                                className={
+                                  showGameBox
+                                    ? "flex-1 flex flex-col h-full w-full"
+                                    : ""
+                                }
+                              >
+                                <GameIntro />
+                              </div>
+                            </PrivateRoute>
+                          }
+                        />
 
-                      <Route
-                        path="/dashboard"
-                        element={
-                          <PrivateRoute>
-                            <div
-                              className={
-                                showGameBox
-                                  ? "flex-1 flex flex-col h-full w-full"
-                                  : ""
-                              }
-                            >
-                              <Dashboard />
-                            </div>
-                          </PrivateRoute>
-                        }
-                      />
-                      <Route
-                        path="/stocks"
-                        element={
-                          <PrivateRoute>
-                            <div
-                              className={
-                                showGameBox
-                                  ? "flex-1 flex flex-col h-full w-full"
-                                  : ""
-                              }
-                            >
-                              <Stocks />
-                            </div>
-                          </PrivateRoute>
-                        }
-                      />
-                      <Route
-                        path="/news"
-                        element={
-                          <PrivateRoute>
-                            <div
-                              className={
-                                showGameBox
-                                  ? "flex-1 flex flex-col h-full w-full"
-                                  : ""
-                              }
-                            >
-                              <News />
-                            </div>
-                          </PrivateRoute>
-                        }
-                      />
-                      <Route
-                        path="/ranking"
-                        element={
-                          <PrivateRoute>
-                            <div
-                              className={
-                                showGameBox
-                                  ? "flex-1 flex flex-col h-full w-full"
-                                  : ""
-                              }
-                            >
-                              <Ranking />
-                            </div>
-                          </PrivateRoute>
-                        }
-                      />
-                      <Route
-                        path="/select-sector"
-                        element={
-                          <PrivateRoute>
-                            <div
-                              className={
-                                showGameBox
-                                  ? "flex-1 flex flex-col h-full w-full"
-                                  : ""
-                              }
-                            >
-                              <SelectSector />
-                            </div>
-                          </PrivateRoute>
-                        }
-                      />
-                      <Route
-                        path="/my-page"
-                        element={
-                          <PrivateRoute>
-                            <div
-                              className={
-                                showGameBox
-                                  ? "flex-1 flex flex-col h-full w-full"
-                                  : ""
-                              }
-                            >
-                              <MyPage />
-                            </div>
-                          </PrivateRoute>
-                        }
-                      />
-                      <Route
-                        path="/game-result"
-                        element={
-                          <PrivateRoute>
-                            <div
-                              className={
-                                showGameBox
-                                  ? "flex-1 flex flex-col h-full w-full"
-                                  : ""
-                              }
-                            >
-                              <GameResult />
-                            </div>
-                          </PrivateRoute>
-                        }
-                      />
-                      <Route
-                        path="/review"
-                        element={
-                          <PrivateRoute>
-                            <div
-                              className={
-                                showGameBox
-                                  ? "flex-1 flex flex-col h-full w-full"
-                                  : ""
-                              }
-                            >
-                              <Review />
-                            </div>
-                          </PrivateRoute>
-                        }
-                      />
-                      <Route
-                        path="/roundintro"
-                        element={
-                          <PrivateRoute>
-                            <div
-                              className={
-                                showGameBox
-                                  ? "flex-1 flex flex-col h-full w-full"
-                                  : ""
-                              }
-                            >
-                              <RoundIntro />
-                            </div>
-                          </PrivateRoute>
-                        }
-                      />
-                    </Routes>
-                  </div>
-                </main>
-                {/* 챗봇 표시 */}
-                {isLoggedIn && (
-                  <aside
-                    className="w-[420px] max-w-full flex-shrink-0 flex flex-col justify-start h-full"
-                    style={{ zIndex: 5 }}
-                  >
-                    <div className="h-full flex flex-col">
-                      <ChatbotWidget
-                        ref={chatbotRef}
-                        fixedPanel
-                        currentRound={currentRound}
-                      />
+                        <Route
+                          path="/dashboard"
+                          element={
+                            <PrivateRoute>
+                              <div
+                                className={
+                                  showGameBox
+                                    ? "flex-1 flex flex-col h-full w-full"
+                                    : ""
+                                }
+                              >
+                                <Dashboard />
+                              </div>
+                            </PrivateRoute>
+                          }
+                        />
+                        <Route
+                          path="/stocks"
+                          element={
+                            <PrivateRoute>
+                              <div
+                                className={
+                                  showGameBox
+                                    ? "flex-1 flex flex-col h-full w-full"
+                                    : ""
+                                }
+                              >
+                                <Stocks />
+                              </div>
+                            </PrivateRoute>
+                          }
+                        />
+                        <Route
+                          path="/news"
+                          element={
+                            <PrivateRoute>
+                              <div
+                                className={
+                                  showGameBox
+                                    ? "flex-1 flex flex-col h-full w-full"
+                                    : ""
+                                }
+                              >
+                                <News />
+                              </div>
+                            </PrivateRoute>
+                          }
+                        />
+                        <Route
+                          path="/ranking"
+                          element={
+                            <PrivateRoute>
+                              <div
+                                className={
+                                  showGameBox
+                                    ? "flex-1 flex flex-col h-full w-full"
+                                    : ""
+                                }
+                              >
+                                <Review />
+                              </div>
+                            </PrivateRoute>
+                          }
+                        />
+                        <Route
+                          path="/select-sector"
+                          element={
+                            <PrivateRoute>
+                              <div
+                                className={
+                                  showGameBox
+                                    ? "flex-1 flex flex-col h-full w-full"
+                                    : ""
+                                }
+                              >
+                                <SelectSector />
+                              </div>
+                            </PrivateRoute>
+                          }
+                        />
+                        <Route
+                          path="/my-page"
+                          element={
+                            <PrivateRoute>
+                              <div
+                                className={
+                                  showGameBox
+                                    ? "flex-1 flex flex-col h-full w-full"
+                                    : ""
+                                }
+                              >
+                                <MyPage />
+                              </div>
+                            </PrivateRoute>
+                          }
+                        />
+                        <Route
+                          path="/game-result"
+                          element={
+                            <PrivateRoute>
+                              <div
+                                className={
+                                  showGameBox
+                                    ? "flex-1 flex flex-col h-full w-full"
+                                    : ""
+                                }
+                              >
+                                <GameResult />
+                              </div>
+                            </PrivateRoute>
+                          }
+                        />
+                        <Route
+                          path="/review"
+                          element={
+                            <PrivateRoute>
+                              <div
+                                className={
+                                  showGameBox
+                                    ? "flex-1 flex flex-col h-full w-full"
+                                    : ""
+                                }
+                              >
+                                <Review />
+                              </div>
+                            </PrivateRoute>
+                          }
+                        />
+                        <Route
+                          path="/roundintro"
+                          element={
+                            <PrivateRoute>
+                              <div
+                                className={
+                                  showGameBox
+                                    ? "flex-1 flex flex-col h-full w-full"
+                                    : ""
+                                }
+                              >
+                                <RoundIntro />
+                              </div>
+                            </PrivateRoute>
+                          }
+                        />
+                      </Routes>
                     </div>
-                  </aside>
-                )}
+                  </main>
+                  {/* 챗봇 표시 */}
+                  {isLoggedIn && (
+                    <aside
+                      className="w-[420px] max-w-full flex-shrink-0 flex flex-col justify-start h-full"
+                      style={{ zIndex: 5 }}
+                    >
+                      <div className="h-full flex flex-col">
+                        <ChatbotWidget
+                          ref={chatbotRef}
+                          fixedPanel
+                          currentRound={currentRound}
+                        />
+                      </div>
+                    </aside>
+                  )}
+                </div>
               </div>
-            </div>
+            </AudioProvider>
           </GuideMessageContext.Provider>
         )}
       </IntroContext.Provider>

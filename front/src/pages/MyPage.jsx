@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import faceImage from "../assets/face.png";
 import { GuideMessageContext } from "../App";
+import { useAudio } from "../contexts/AudioContext";
 
 const MyPage = () => {
   const { user, updateUser } = useAuth();
@@ -24,6 +25,42 @@ const MyPage = () => {
   const [portfolio, setPortfolio] = useState(null);
   const [loading, setLoading] = useState(true);
   const [tradeHistory, setTradeHistory] = useState([]); // 거래내역
+  const { playAudio } = useAudio();
+
+  // 라운드별 수익률에 따른 오디오 파일 매핑
+  const getPerformanceSound = (round, isPositive) => {
+    const soundFiles = {
+      1: {
+        positive:
+          "/Take1-4_좋은 선택이오. 검처럼 날카롭고 군자처럼 침착하구려._2025-07-19.wav",
+        negative:
+          "/Take1-11_패배가 아니라 교훈이오. 다음 기회에 칼날을 더욱 예리하게 다듬으시오._2025-07-19.wav",
+      },
+      2: {
+        positive:
+          "/Take1-8_바람이 우리를 돕고 있소. 적절히 파도를 타는 것이 지혜요._2025-07-19.wav",
+        negative:
+          "/Take1-16_진군 중에 좌절은 있는 법. 낙담은 병이오, 복기는 무기요._2025-07-19.wav",
+      },
+      3: {
+        positive:
+          "/Take1-14_훌륭하오! 이 전투는 그대의 전략 승리요. 명장이라 불릴 자격이 있소._2025-07-19.wav",
+        negative:
+          "/Take1-17_대의를 위해 때로는 희생도 감수해야 하오. 허나 다음 전투에선 방심 말아야 할 것이오._2025-07-19.wav",
+      },
+    };
+
+    const roundSounds = soundFiles[round] || soundFiles[1];
+    return isPositive ? roundSounds.positive : roundSounds.negative;
+  };
+
+  // 성과에 따른 오디오 재생 함수
+  const playPerformanceSound = (round, totalProfitPercentage) => {
+    // 수익률이 0% 이상이면 긍정적, 미만이면 부정적
+    const isPositive = totalProfitPercentage >= 0;
+    const soundSrc = getPerformanceSound(round, isPositive);
+    playAudio(soundSrc);
+  };
 
   useEffect(() => {
     fetchPortfolio();
@@ -31,12 +68,17 @@ const MyPage = () => {
     fetchTradeHistory();
   }, []);
 
-  // 마이페이지 진입 시 LLM 기반 라운드 성과 피드백 표시
+  // 마이페이지 진입 시 LLM 기반 라운드 성과 피드백 표시 및 오디오 재생
   useEffect(() => {
     if (portfolio && user && !loading && addGuideMessage) {
-      // 약간의 지연 후 피드백 표시 (UI 렌더링 완료 후)
-      const timer = setTimeout(async () => {
+      // 즉시 피드백 표시 및 오디오 재생
+      const executeFeedback = async () => {
         try {
+          // 성과에 따른 오디오 재생 (바로 재생)
+          const currentRound = (user.current_round_idx ?? 0) + 1;
+          const totalProfitPercentage = portfolio.total_profit_percentage;
+          playPerformanceSound(currentRound, totalProfitPercentage);
+
           const feedback = await generateLLMFeedback();
           if (feedback) {
             addGuideMessage(feedback);
@@ -49,9 +91,9 @@ const MyPage = () => {
             addGuideMessage(basicFeedback);
           }
         }
-      }, 1500);
+      };
 
-      return () => clearTimeout(timer);
+      executeFeedback();
     }
   }, [portfolio, user, loading, addGuideMessage]);
 
