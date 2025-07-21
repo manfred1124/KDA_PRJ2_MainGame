@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect, useContext, useRef } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -26,6 +26,7 @@ const MyPage = () => {
   const [loading, setLoading] = useState(true);
   const [tradeHistory, setTradeHistory] = useState([]); // 거래내역
   const { playAudio } = useAudio();
+  const isMountedRef = useRef(false); // 컴포넌트 마운트 상태 추적
 
   // 라운드별 수익률에 따른 오디오 파일 매핑
   const getPerformanceSound = (round, isPositive) => {
@@ -68,39 +69,53 @@ const MyPage = () => {
     fetchTradeHistory();
   }, []);
 
-  // 마이페이지 진입 시 LLM 기반 라운드 성과 피드백 표시 및 오디오 재생
+  // 로딩 완료 후 효과음 재생
   useEffect(() => {
-    if (portfolio && user && !loading && addGuideMessage) {
-      // 즉시 피드백 표시 및 오디오 재생
-      const executeFeedback = async () => {
-        try {
-          // 성과에 따른 오디오 재생 (바로 재생)
-          const currentRound = (user.current_round_idx ?? 0) + 1;
-          const totalProfitPercentage = portfolio.total_profit_percentage;
-          playPerformanceSound(currentRound, totalProfitPercentage);
+    console.log("MyPage 로딩 완료 useEffect 실행:", {
+      loading,
+      hasPortfolio: !!portfolio,
+      hasUser: !!user,
+      isMounted: isMountedRef.current,
+    });
 
+    if (!loading && portfolio && user && !isMountedRef.current) {
+      isMountedRef.current = true;
+
+      // 성과에 따른 오디오 재생
+      const currentRound = (user.current_round_idx ?? 0) + 1;
+      const totalProfitPercentage = portfolio.total_profit_percentage;
+      console.log("MyPage 로딩 완료 후 오디오 재생:", {
+        currentRound,
+        totalProfitPercentage,
+      });
+      playPerformanceSound(currentRound, totalProfitPercentage);
+    }
+  }, [loading, portfolio, user]);
+
+  // 기존의 마이페이지 진입 시 useEffect 제거됨
+
+  const fetchPortfolio = async () => {
+    try {
+      const response = await axios.get("/api/portfolio");
+      setPortfolio(response.data);
+
+      // 포트폴리오 로드 완료 후 피드백 생성
+      if (user && addGuideMessage && !isMountedRef.current) {
+        try {
+          // LLM 피드백 생성
           const feedback = await generateLLMFeedback();
           if (feedback) {
             addGuideMessage(feedback);
           }
         } catch (error) {
-          console.error("피드백 표시 실패:", error);
+          console.error("피드백 생성 실패:", error);
           // 에러 발생 시 기본 피드백 사용
           const basicFeedback = generateBasicFeedback();
           if (basicFeedback) {
             addGuideMessage(basicFeedback);
           }
         }
-      };
-
-      executeFeedback();
-    }
-  }, [portfolio, user, loading, addGuideMessage]);
-
-  const fetchPortfolio = async () => {
-    try {
-      const response = await axios.get("/api/portfolio");
-      setPortfolio(response.data);
+      }
     } catch (error) {
       toast.error("포트폴리오를 불러오는데 실패했습니다.");
     } finally {
