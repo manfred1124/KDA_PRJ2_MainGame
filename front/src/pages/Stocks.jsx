@@ -39,7 +39,11 @@ const Stocks = () => {
         price: selectedStock.current_price
       })
 
-      toast.success(response.data.message)
+      toast.success(response.data.message || `${selectedStock.name} ${transactionType === 'buy' ? '매수' : '매도'} 완료!`)
+      
+      // 거래 완료 이벤트 발생 (Navbar 업데이트용)
+      window.dispatchEvent(new Event("transactionComplete"))
+      
       setShowModal(false)
       setQuantity('')
       setSelectedStock(null)
