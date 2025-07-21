@@ -313,23 +313,6 @@ const GameResult = () => {
                 </div>
               </div>
 
-              {/* 최종 자산 */}
-              <div className="bg-[#f3e7c4] rounded-xl p-6 border-2 border-[#e6d3a3]">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-[#a67c3c]">최종 자산</p>
-                    <p className="text-2xl font-bold text-[#7c5c2b]">
-                      {(
-                        (gameState?.total_balance || 0) +
-                        (gameState?.total_portfolio_value || 0)
-                      ).toLocaleString()}
-                      원
-                    </p>
-                  </div>
-                  <span className="text-3xl">🏦</span>
-                </div>
-              </div>
-
               {/* 미실현 손익 */}
               <div className="bg-[#f3e7c4] rounded-xl p-6 border-2 border-[#e6d3a3]">
                 <div className="flex items-center justify-between">
@@ -347,6 +330,19 @@ const GameResult = () => {
                     </p>
                   </div>
                   <span className="text-3xl">💰</span>
+                </div>
+              </div>
+
+              {/* 최종 자산 */}
+              <div className="bg-[#f3e7c4] rounded-xl p-6 border-2 border-[#e6d3a3]">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-[#a67c3c]">최종 자산</p>
+                    <p className="text-2xl font-bold text-[#7c5c2b]">
+                      {(userRank?.total_portfolio_value || 0).toLocaleString()}원
+                    </p>
+                  </div>
+                  <span className="text-3xl">🏦</span>
                 </div>
               </div>
             </div>
