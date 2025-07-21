@@ -269,21 +269,15 @@ const MyPage = () => {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="flex items-center space-x-2 text-[#7c5c2b]">
-            <Calendar size={20} />
-            <span style={{ fontFamily: "Jua, sans-serif" }}>
-              현재 라운드: {(user?.current_round_idx ?? 0) + 1}
-            </span>
-          </div>
-          <div className="flex items-center space-x-2 text-[#7c5c2b]">
-            <Trophy size={20} />
-            <span style={{ fontFamily: "Jua, sans-serif" }}>
+            <Trophy size={24} />
+            <span style={{ fontFamily: "Jua, sans-serif", fontSize: "1.1rem" }}>
               총 수익률: {portfolio.total_profit_percentage >= 0 ? "+" : ""}
               {portfolio.total_profit_percentage.toFixed(2)}%
             </span>
           </div>
           <div className="flex items-center space-x-2 text-[#7c5c2b]">
-            <DollarSign size={20} />
-            <span style={{ fontFamily: "Jua, sans-serif" }}>
+            <DollarSign size={24} />
+            <span style={{ fontFamily: "Jua, sans-serif", fontSize: "1.1rem" }}>
               총 자산:{" "}
               {(
                 portfolio.total_balance + portfolio.total_portfolio_value
@@ -291,11 +285,17 @@ const MyPage = () => {
               원
             </span>
           </div>
+          <div className="flex items-center space-x-2 text-[#7c5c2b]">
+            <Package size={24} />
+            <span style={{ fontFamily: "Jua, sans-serif", fontSize: "1.1rem" }}>
+              예수금: {portfolio.total_balance.toLocaleString()}원
+            </span>
+          </div>
         </div>
       </div>
 
       {/* 포트폴리오 요약 */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
         {/** 카드 반복: 각 카드에 RPG풍 스타일 적용 **/}
         <div
           className="rounded-xl p-4 border-2 border-[#e6d3a3] bg-[#f7e6b6] shadow"
@@ -303,25 +303,10 @@ const MyPage = () => {
         >
           <div className="flex items-center justify-between">
             <div className="w-full">
-              <p className="text-xs font-medium text-[#a67c3c] mb-1">
-                보유 현금
+              <p className="text-sm font-medium text-[#a67c3c] mb-1">
+                평가금액
               </p>
-              <p className="text-sm font-bold text-[#7c5c2b] whitespace-nowrap overflow-hidden text-ellipsis">
-                {portfolio.total_balance.toLocaleString()}원
-              </p>
-            </div>
-          </div>
-        </div>
-        <div
-          className="rounded-xl p-4 border-2 border-[#e6d3a3] bg-[#f7e6b6] shadow"
-          style={{ boxShadow: "0 2px 8px #c2b28033" }}
-        >
-          <div className="flex items-center justify-between">
-            <div className="w-full">
-              <p className="text-xs font-medium text-[#a67c3c] mb-1">
-                포트폴리오 가치
-              </p>
-              <p className="text-sm font-bold text-[#7c5c2b] whitespace-nowrap overflow-hidden text-ellipsis">
+              <p className="text-base font-bold text-[#7c5c2b] whitespace-nowrap overflow-hidden text-ellipsis">
                 {portfolio.total_portfolio_value.toLocaleString()}원
               </p>
             </div>
@@ -333,11 +318,11 @@ const MyPage = () => {
         >
           <div className="flex items-center justify-between">
             <div className="w-full">
-              <p className="text-xs font-medium text-[#a67c3c] mb-1">
+              <p className="text-sm font-medium text-[#a67c3c] mb-1">
                 미실현 손익
               </p>
               <p
-                className={`text-sm font-bold whitespace-nowrap overflow-hidden text-ellipsis ${
+                className={`text-base font-bold whitespace-nowrap overflow-hidden text-ellipsis ${
                   portfolio.total_profit_loss >= 0
                     ? "text-[#3b7c2b]"
                     : "text-[#a63c2b]"
@@ -355,11 +340,11 @@ const MyPage = () => {
         >
           <div className="flex items-center justify-between">
             <div className="w-full">
-              <p className="text-xs font-medium text-[#a67c3c] mb-1">
+              <p className="text-sm font-medium text-[#a67c3c] mb-1">
                 실현 수익
               </p>
               <p
-                className={`text-sm font-bold whitespace-nowrap overflow-hidden text-ellipsis ${
+                className={`text-base font-bold whitespace-nowrap overflow-hidden text-ellipsis ${
                   portfolio.realized_profit >= 0
                     ? "text-[#3b7c2b]"
                     : "text-[#a63c2b]"
@@ -377,9 +362,9 @@ const MyPage = () => {
         >
           <div className="flex items-center justify-between">
             <div className="w-full">
-              <p className="text-xs font-medium text-[#a67c3c] mb-1">총 수익</p>
+              <p className="text-sm font-medium text-[#a67c3c] mb-1">총 수익</p>
               <p
-                className={`text-sm font-bold whitespace-nowrap overflow-hidden text-ellipsis ${
+                className={`text-base font-bold whitespace-nowrap overflow-hidden text-ellipsis ${
                   portfolio.total_profit >= 0
                     ? "text-[#3b7c2b]"
                     : "text-[#a63c2b]"
@@ -397,11 +382,11 @@ const MyPage = () => {
         >
           <div className="flex items-center justify-between">
             <div className="w-full">
-              <p className="text-xs font-medium text-[#a67c3c] mb-1">
+              <p className="text-sm font-medium text-[#a67c3c] mb-1">
                 총 수익률
               </p>
               <p
-                className={`text-sm font-bold whitespace-nowrap overflow-hidden text-ellipsis ${
+                className={`text-base font-bold whitespace-nowrap overflow-hidden text-ellipsis ${
                   portfolio.total_profit_percentage >= 0
                     ? "text-[#3b7c2b]"
                     : "text-[#a63c2b]"

@@ -663,7 +663,7 @@ async def mypage_feedback(
         - 이름: {user.username}
         - 현재 라운드: {current_round} ({current_period})
         - 보유 현금: {user.total_balance:,}원
-        - 포트폴리오 가치: {total_portfolio_value:,}원
+        - 평가금액: {total_portfolio_value:,}원
         - 총 자산: {total_assets:,}원
         - 총 수익률 (초기 투자금 대비): {total_profit_percentage:.2f}% (수익률 평가: {'훌륭함' if total_profit_percentage >= 20 else '좋음' if total_profit_percentage >= 10 else '양호함' if total_profit_percentage >= 0 else '손실'}) - 이는 매우 좋은 성과입니다!
         - 미실현 손익: {total_profit_loss:,}원
