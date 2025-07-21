@@ -69,53 +69,41 @@ const MyPage = () => {
     fetchTradeHistory();
   }, []);
 
-  // 로딩 완료 후 효과음 재생
+  // 데이터 로딩 완료 후, 오디오 재생 및 LLM 피드백 요청 (한 번만 실행)
   useEffect(() => {
-    console.log("MyPage 로딩 완료 useEffect 실행:", {
-      loading,
-      hasPortfolio: !!portfolio,
-      hasUser: !!user,
-      isMounted: isMountedRef.current,
-    });
-
+    // 로딩이 완료되고, 포트폴리오와 유저 정보가 있으며, 아직 초기 로직이 실행되지 않았을 때
     if (!loading && portfolio && user && !isMountedRef.current) {
-      isMountedRef.current = true;
+      isMountedRef.current = true; // 이 로직이 다시 실행되지 않도록 플래그 설정
 
-      // 성과에 따른 오디오 재생
+      // 1. 성과에 따른 오디오 재생
       const currentRound = (user.current_round_idx ?? 0) + 1;
       const totalProfitPercentage = portfolio.total_profit_percentage;
-      console.log("MyPage 로딩 완료 후 오디오 재생:", {
-        currentRound,
-        totalProfitPercentage,
-      });
       playPerformanceSound(currentRound, totalProfitPercentage);
-    }
-  }, [loading, portfolio, user]);
 
-  // 기존의 마이페이지 진입 시 useEffect 제거됨
-
-  const fetchPortfolio = async () => {
-    try {
-      const response = await axios.get("/api/portfolio");
-      setPortfolio(response.data);
-
-      // 포트폴리오 로드 완료 후 피드백 생성
-      if (user && addGuideMessage && !isMountedRef.current) {
+      // 2. LLM 피드백 생성 및 표시
+      const getFeedback = async () => {
         try {
-          // LLM 피드백 생성
           const feedback = await generateLLMFeedback();
           if (feedback) {
             addGuideMessage(feedback);
           }
         } catch (error) {
           console.error("피드백 생성 실패:", error);
-          // 에러 발생 시 기본 피드백 사용
           const basicFeedback = generateBasicFeedback();
           if (basicFeedback) {
             addGuideMessage(basicFeedback);
           }
         }
-      }
+      };
+      
+      getFeedback();
+    }
+  }, [loading, portfolio, user]); // 의존성 배열은 유지
+
+  const fetchPortfolio = async () => {
+    try {
+      const response = await axios.get("/api/portfolio");
+      setPortfolio(response.data);
     } catch (error) {
       toast.error("포트폴리오를 불러오는데 실패했습니다.");
     } finally {
