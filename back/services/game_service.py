@@ -266,8 +266,8 @@ class GameService:
                 "total_portfolio_value": total_portfolio_value + user.total_balance
             })
         
-        # 수익률 기준으로 정렬
-        rankings.sort(key=lambda x: x["total_profit_loss_percentage"], reverse=True)
+        # 총 자산 기준으로 정렬 (내림차순)
+        rankings.sort(key=lambda x: x["total_portfolio_value"], reverse=True)
         
         # 랭킹 추가
         for i, ranking in enumerate(rankings):
