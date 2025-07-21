@@ -910,12 +910,15 @@ const StockDetailModal = ({ stock, period, onClose }) => {
 
     setAnalyzingStock(true);
     try {
+      // 해당 기간의 가격 데이터만 필터링
+      const periodPriceHistory = filterPriceDataByPeriod(priceHistory, period);
+
       const analysisData = {
         stockName: stockData.name,
         stockSymbol: stockData.symbol,
         period: period,
         news: stockNews,
-        priceHistory: priceHistory,
+        priceHistory: periodPriceHistory, // 필터링된 데이터만 전송
         sector: stockData.sector,
       };
 

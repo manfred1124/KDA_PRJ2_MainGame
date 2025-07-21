@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import List
-from datetime import datetime
+from datetime import datetime, timedelta
 import random
 
 from models import News, Stock
@@ -78,4 +78,124 @@ class NewsService:
             .order_by(News.date.desc())
         )
         news_list = result.scalars().all()
-        return [NewsResponse.from_orm(news) for news in news_list] 
+        
+        if news_list:
+            return [NewsResponse.from_orm(news) for news in news_list]
+        
+        # 뉴스가 없으면 period에 맞는 더미 뉴스 생성
+        try:
+            year, half = period.split()
+            year = int(year)
+            if half == "H1":
+                # 상반기: 1월~6월
+                base_date = datetime(year, 3, 15)  # 3월 15일 기준
+            else:
+                # 하반기: 7월~12월
+                base_date = datetime(year, 9, 15)  # 9월 15일 기준
+        except:
+            base_date = datetime.now()
+        
+        # 섹터별 더미 뉴스 생성
+        sector_news = []
+        if "헬스케어" in sector or "바이오" in sector:
+            sector_news = [
+                {
+                    "id": 1,
+                    "title": f"{sector} 신약 개발 성과",
+                    "date": (base_date - timedelta(days=30)).strftime("%Y-%m-%d"),
+                    "summary": f"{sector} 업계에서 새로운 신약 개발이 활발히 진행되고 있습니다.",
+                    "period": period,
+                    "category": "MarketTrend",
+                    "ticker": None,
+                    "sentiment": "positive"
+                },
+                {
+                    "id": 2,
+                    "title": f"{sector} 규제 완화 기대",
+                    "date": (base_date - timedelta(days=15)).strftime("%Y-%m-%d"),
+                    "summary": f"{sector} 관련 규제 완화로 업계 성장이 기대됩니다.",
+                    "period": period,
+                    "category": "MarketTrend",
+                    "ticker": None,
+                    "sentiment": "positive"
+                },
+                {
+                    "id": 3,
+                    "title": f"{sector} 글로벌 시장 진출",
+                    "date": base_date.strftime("%Y-%m-%d"),
+                    "summary": f"{sector} 기업들의 해외 시장 진출이 활발해지고 있습니다.",
+                    "period": period,
+                    "category": "MarketTrend",
+                    "ticker": None,
+                    "sentiment": "neutral"
+                }
+            ]
+        elif "반도체" in sector:
+            sector_news = [
+                {
+                    "id": 1,
+                    "title": f"{sector} 수요 증가 전망",
+                    "date": (base_date - timedelta(days=30)).strftime("%Y-%m-%d"),
+                    "summary": f"{sector} 시장의 수요가 지속적으로 증가할 것으로 전망됩니다.",
+                    "period": period,
+                    "category": "MarketTrend",
+                    "ticker": None,
+                    "sentiment": "positive"
+                },
+                {
+                    "id": 2,
+                    "title": f"{sector} 기술 혁신 가속화",
+                    "date": (base_date - timedelta(days=15)).strftime("%Y-%m-%d"),
+                    "summary": f"{sector} 업계에서 새로운 기술 개발이 가속화되고 있습니다.",
+                    "period": period,
+                    "category": "MarketTrend",
+                    "ticker": None,
+                    "sentiment": "positive"
+                },
+                {
+                    "id": 3,
+                    "title": f"{sector} 글로벌 경쟁 심화",
+                    "date": base_date.strftime("%Y-%m-%d"),
+                    "summary": f"{sector} 시장에서 글로벌 경쟁이 더욱 치열해지고 있습니다.",
+                    "period": period,
+                    "category": "MarketTrend",
+                    "ticker": None,
+                    "sentiment": "neutral"
+                }
+            ]
+        else:
+            # 일반적인 섹터 뉴스
+            sector_news = [
+                {
+                    "id": 1,
+                    "title": f"{sector} 업계 성장 전망",
+                    "date": (base_date - timedelta(days=30)).strftime("%Y-%m-%d"),
+                    "summary": f"{sector} 업계의 성장이 지속될 것으로 전망됩니다.",
+                    "period": period,
+                    "category": "MarketTrend",
+                    "ticker": None,
+                    "sentiment": "positive"
+                },
+                {
+                    "id": 2,
+                    "title": f"{sector} 신규 사업 진출",
+                    "date": (base_date - timedelta(days=15)).strftime("%Y-%m-%d"),
+                    "summary": f"{sector} 기업들의 새로운 사업 영역 진출이 활발합니다.",
+                    "period": period,
+                    "category": "MarketTrend",
+                    "ticker": None,
+                    "sentiment": "positive"
+                },
+                {
+                    "id": 3,
+                    "title": f"{sector} 시장 동향 분석",
+                    "date": base_date.strftime("%Y-%m-%d"),
+                    "summary": f"{sector} 시장의 전반적인 동향을 분석한 결과입니다.",
+                    "period": period,
+                    "category": "MarketTrend",
+                    "ticker": None,
+                    "sentiment": "neutral"
+                }
+            ]
+        
+        return [NewsResponse(**news) for news in sector_news] 

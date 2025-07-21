@@ -50,7 +50,7 @@ function getSectorGuide(sector) {
   for (const key of Object.keys(SECTOR_GUIDE)) {
     if (sector.includes(key)) return SECTOR_GUIDE[key];
   }
-  return `허허, ${sector} 섹터에 오신 것을 환영하구나!\n\n그대가 신중하게 판단하시게.`;
+  return `허허, ${sector} 섹터에 온걸 환영하구나!\n\n그대가 신중하게 판단하시게.`;
 }
 
 const ROUND_TREND_GUIDE = {
@@ -105,12 +105,53 @@ const SelectSector = () => {
   const [portfolioOpen, setPortfolioOpen] = useState(false);
   const { addGuideMessage } = useContext(GuideMessageContext);
   const [showAllNews, setShowAllNews] = useState(false);
+  const [financialData, setFinancialData] = useState(null);
+  const [financialLoading, setFinancialLoading] = useState(false);
 
   useEffect(() => {
     addGuideMessage(GUIDE_MSG);
     // 라운드/시점 동향 메시지 출력 제거 (메인에서만 출력)
     fetchSectors();
     fetchPortfolio();
+
+    // 보유 종목 클릭 시 판매하기 모달 열기 이벤트 리스너
+    const handleOpenSellModal = async (event) => {
+      const { stock_id, stock_name, stock_symbol, current_price, quantity, average_price } = event.detail;
+      
+      // 해당 주식의 전체 정보를 가져오기
+      try {
+        const token = localStorage.getItem("token");
+        const response = await axios.get(`/api/stocks/${stock_id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const stockData = response.data;
+        
+        // 판매하기 모달 열기
+        setOrderModal({
+          stock: {
+            ...stockData,
+            current_price: current_price
+          },
+          type: "sell"
+        });
+        setOrderType("sell"); // 판매하기로 설정
+        setOrderQty(1); // 수량 초기화
+        
+        // 매매하기 탭으로 이동
+        setOrderTab("trade");
+      } catch (error) {
+        console.error("주식 정보를 가져오는데 실패했습니다:", error);
+        toast.error("주식 정보를 불러오는데 실패했습니다.");
+      }
+    };
+
+    window.addEventListener('openSellModal', handleOpenSellModal);
+
+    return () => {
+      window.removeEventListener('openSellModal', handleOpenSellModal);
+    };
   }, []);
 
   useEffect(() => {
@@ -124,6 +165,13 @@ const SelectSector = () => {
       fetchSectorNews(selected);
     }
   }, [selected]);
+
+  // 재무지표 탭 클릭 시 데이터 가져오기
+  useEffect(() => {
+    if (orderTab === "financial" && orderModal?.stock?.symbol) {
+      fetchFinancialData(orderModal.stock.symbol);
+    }
+  }, [orderTab, orderModal?.stock?.symbol]);
 
   useEffect(() => {
     if (!selected && sectors.length > 0 && user?.current_period) {
@@ -268,6 +316,31 @@ const SelectSector = () => {
     }
   };
 
+  const fetchFinancialData = async (symbol) => {
+    if (!symbol || (user?.current_round_idx ?? 0) < 2) {
+      return;
+    }
+
+    setFinancialLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(`/api/financial/stock/${symbol}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      
+      if (response.data.data) {
+        setFinancialData(response.data.data);
+      } else {
+        setFinancialData(null);
+      }
+    } catch (error) {
+      console.error("재무지표 데이터 조회 실패:", error);
+      setFinancialData(null);
+    } finally {
+      setFinancialLoading(false);
+    }
+  };
+
   // ESC 키로 모달 닫기
   useEffect(() => {
     const handleEscKey = (event) => {
@@ -312,8 +385,30 @@ const SelectSector = () => {
     }));
     await fetchStocksBySector(sector);
     await fetchSectorNews(sector);
-    // 섹터별 설명 챗봇에 출력 (부분 일치 포함)
-    if (addGuideMessage) {
+    
+    // 섹터별 장군 분석 호출
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.post(
+        "/api/chatbot/sector-analysis",
+        {
+          sector: sector,
+          period: user?.current_period
+        },
+        {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        }
+      );
+      
+      if (response.data && response.data.analysis) {
+        addGuideMessage(response.data.analysis);
+      } else {
+        // 기본 섹터 가이드 메시지
+        addGuideMessage(getSectorGuide(sector));
+      }
+    } catch (error) {
+      console.error("Sector analysis failed:", error);
+      // 에러가 나도 기본 메시지 추가
       addGuideMessage(getSectorGuide(sector));
     }
   };
@@ -328,6 +423,30 @@ const SelectSector = () => {
     setOrderType("buy");
     setOrderQty(1);
     await fetchStockNews(stock.symbol);
+    
+    // 장군 분석 호출
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.post(
+        "/api/chatbot/stock-analysis",
+        {
+          symbol: stock.symbol,
+          name: stock.name,
+          period: user?.current_period
+        },
+        {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        }
+      );
+      
+      if (response.data && response.data.analysis) {
+        addGuideMessage(response.data.analysis);
+      }
+    } catch (error) {
+      console.error("Stock analysis failed:", error);
+      // 에러가 나도 기본 메시지 추가
+      addGuideMessage(`${stock.name} 종목을 선택했구나. 차트와 뉴스를 잘 살펴보시게!`);
+    }
   };
 
   const handleOrder = async () => {
@@ -472,7 +591,7 @@ const SelectSector = () => {
               {/* 안내/정보 영역: 안내 박스는 버튼 5개 아래에만 렌더링, 기존 오른쪽 안내 박스 완전 삭제 */}
               <div className="w-full">
                 {selected ? (
-                  <div className="bg-gradient-to-br from-[#f7e6b6] to-[#f3e7c4] rounded-xl p-6 shadow-lg border-2 border-[#e6d3a3] min-h-[500px] max-h-[calc(100vh-200px)] w-full flex flex-col">
+                  <div className="bg-gradient-to-br from-[#f7e6b6] to-[#f3e7c4] rounded-xl p-6 shadow-lg border-2 border-[#e6d3a3] min-h-[512px] max-h-[calc(100vh-200px)] w-full flex flex-col">
                     <h3
                       className="text-2xl font-medium text-[#7c5c2b] mb-6 flex-shrink-0"
                       style={{ fontFamily: "Jua, sans-serif" }}
@@ -531,19 +650,37 @@ const SelectSector = () => {
                             {(showAllNews
                               ? allSectorNews[selected] || []
                               : (allSectorNews[selected] || []).slice(0, 5)
-                            ).map((news) => (
-                              <li
-                                key={news.id}
-                                className="bg-white rounded-lg p-4 shadow border-2 border-[#e6d3a3]"
-                              >
-                                <div className="text-xs text-[#a67c3c] mb-2">
-                                  {news.date?.slice(0, 10)}
-                                </div>
-                                <div className="font-medium text-[#7c5c2b] text-base">
-                                  {news.title}
-                                </div>
-                              </li>
-                            ))}
+                            ).map((news) => {
+                              // 날짜 포맷팅 함수
+                              const formatDate = (dateString) => {
+                                if (!dateString) return "";
+                                try {
+                                  const date = new Date(dateString);
+                                  if (isNaN(date.getTime())) return "";
+                                  return date.toLocaleDateString('ko-KR', {
+                                    year: 'numeric',
+                                    month: '2-digit',
+                                    day: '2-digit'
+                                  });
+                                } catch (e) {
+                                  return "";
+                                }
+                              };
+
+                              return (
+                                <li
+                                  key={news.id}
+                                  className="bg-white rounded-lg p-4 shadow border-2 border-[#e6d3a3]"
+                                >
+                                  <div className="text-xs text-[#a67c3c] mb-2">
+                                    {formatDate(news.date)}
+                                  </div>
+                                  <div className="font-medium text-[#7c5c2b] text-base">
+                                    {news.title}
+                                  </div>
+                                </li>
+                              );
+                            })}
                           </ul>
                           {(allSectorNews[selected] || []).length > 5 &&
                             !showAllNews && (
@@ -992,19 +1129,44 @@ const SelectSector = () => {
                             </h3>
                             <div className="space-y-4">
                               {stockNews.length > 0 ? (
-                                stockNews.map((news, index) => (
-                                  <div
-                                    key={index}
-                                    className="bg-gradient-to-br from-[#f7e6b6] to-[#f3e7c4] rounded-xl p-4 shadow-md border-2 border-[#e6d3a3]"
-                                  >
-                                    <div className="text-lg font-medium text-[#7c5c2b] mb-3">
-                                      {news.title}
+                                stockNews.map((news, index) => {
+                                  // 날짜 포맷팅 함수
+                                  const formatDate = (dateString) => {
+                                    if (!dateString) return "";
+                                    try {
+                                      const date = new Date(dateString);
+                                      if (isNaN(date.getTime())) return "";
+                                      return date.toLocaleDateString('ko-KR', {
+                                        year: 'numeric',
+                                        month: '2-digit',
+                                        day: '2-digit'
+                                      });
+                                    } catch (e) {
+                                      return "";
+                                    }
+                                  };
+
+                                  return (
+                                    <div
+                                      key={index}
+                                      className="bg-gradient-to-br from-[#f7e6b6] to-[#f3e7c4] rounded-xl p-4 shadow-md border-2 border-[#e6d3a3]"
+                                    >
+                                      <div className="flex items-start justify-between mb-3">
+                                        <div className="text-lg font-medium text-[#7c5c2b] flex-1">
+                                          {news.title}
+                                        </div>
+                                        {news.date && (
+                                          <div className="text-sm text-[#a67c3c] ml-4 whitespace-nowrap">
+                                            {formatDate(news.date)}
+                                          </div>
+                                        )}
+                                      </div>
+                                      <div className="text-base text-[#a67c3c] leading-relaxed">
+                                        {news.content || news.summary}
+                                      </div>
                                     </div>
-                                    <div className="text-base text-[#a67c3c] leading-relaxed">
-                                      {news.content}
-                                    </div>
-                                  </div>
-                                ))
+                                  );
+                                })
                               ) : (
                                 <div className="text-[#a67c3c] text-center py-8 text-base">
                                   관련 뉴스가 없습니다.
@@ -1021,17 +1183,176 @@ const SelectSector = () => {
                               <h3 className="text-lg font-bold text-gray-800 mb-4">
                                 재무지표
                               </h3>
-                              <div className="bg-gray-100 rounded-xl p-8 shadow-sm border-2 border-dashed border-gray-300 flex items-center justify-center min-h-[300px]">
-                                <div className="text-gray-500 text-center">
-                                  <div className="text-2xl mb-2">📊</div>
-                                  <div className="text-lg font-medium">
-                                    재무지표 데이터 준비 중
-                                  </div>
-                                  <div className="text-sm">
-                                    곧 재무지표가 표시됩니다
+                              {financialLoading ? (
+                                <div className="bg-gray-100 rounded-xl p-8 shadow-sm border-2 border-dashed border-gray-300 flex items-center justify-center min-h-[300px]">
+                                  <div className="text-gray-500 text-center">
+                                    <div className="text-2xl mb-2">📊</div>
+                                    <div className="text-lg font-medium">
+                                      재무지표 데이터 로딩 중...
+                                    </div>
+                                    <div className="text-sm">
+                                      잠시만 기다려주세요
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
+                              ) : financialData ? (
+                                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                                  <div className="grid grid-cols-2 gap-6">
+                                    {/* 매출 및 수익 */}
+                                    <div className="space-y-4">
+                                      <h4 className="text-lg font-semibold text-gray-800 border-b pb-2">
+                                        매출 및 수익
+                                      </h4>
+                                      <div className="space-y-3">
+                                        <div className="flex justify-between">
+                                          <span className="text-gray-600">매출액</span>
+                                          <span className="font-semibold">
+                                            {financialData.revenue ? 
+                                              (financialData.revenue / 1000000).toFixed(0) + '억원' : 
+                                              'N/A'
+                                            }
+                                          </span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                          <span className="text-gray-600">영업이익</span>
+                                          <span className="font-semibold">
+                                            {financialData.operating_income ? 
+                                              (financialData.operating_income / 1000000).toFixed(0) + '억원' : 
+                                              'N/A'
+                                            }
+                                          </span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                          <span className="text-gray-600">당기순이익</span>
+                                          <span className="font-semibold">
+                                            {financialData.net_income ? 
+                                              (financialData.net_income / 1000000).toFixed(0) + '억원' : 
+                                              'N/A'
+                                            }
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    {/* 투자 지표 */}
+                                    <div className="space-y-4">
+                                      <h4 className="text-lg font-semibold text-gray-800 border-b pb-2">
+                                        투자 지표
+                                      </h4>
+                                      <div className="space-y-3">
+                                        <div className="flex justify-between">
+                                          <span className="text-gray-600">ROE</span>
+                                          <span className="font-semibold">
+                                            {financialData.roe ? 
+                                              financialData.roe.toFixed(2) + '%' : 
+                                              'N/A'
+                                            }
+                                          </span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                          <span className="text-gray-600">PER</span>
+                                          <span className="font-semibold">
+                                            {financialData.per ? 
+                                              financialData.per.toFixed(2) : 
+                                              'N/A'
+                                            }
+                                          </span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                          <span className="text-gray-600">PBR</span>
+                                          <span className="font-semibold">
+                                            {financialData.pbr ? 
+                                              financialData.pbr.toFixed(2) : 
+                                              'N/A'
+                                            }
+                                          </span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                          <span className="text-gray-600">EPS</span>
+                                          <span className="font-semibold">
+                                            {financialData.eps ? 
+                                              financialData.eps.toLocaleString() + '원' : 
+                                              'N/A'
+                                            }
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    {/* 재무상태 */}
+                                    <div className="space-y-4">
+                                      <h4 className="text-lg font-semibold text-gray-800 border-b pb-2">
+                                        재무상태
+                                      </h4>
+                                      <div className="space-y-3">
+                                        <div className="flex justify-between">
+                                          <span className="text-gray-600">부채비율</span>
+                                          <span className="font-semibold">
+                                            {financialData.debt_ratio ? 
+                                              financialData.debt_ratio.toFixed(2) + '%' : 
+                                              'N/A'
+                                            }
+                                          </span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                          <span className="text-gray-600">부채총계</span>
+                                          <span className="font-semibold">
+                                            {financialData.total_debt ? 
+                                              (financialData.total_debt / 1000000).toFixed(0) + '억원' : 
+                                              'N/A'
+                                            }
+                                          </span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                          <span className="text-gray-600">자본총계</span>
+                                          <span className="font-semibold">
+                                            {financialData.total_equity ? 
+                                              (financialData.total_equity / 1000000).toFixed(0) + '억원' : 
+                                              'N/A'
+                                            }
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    {/* 기간 정보 */}
+                                    <div className="space-y-4">
+                                      <h4 className="text-lg font-semibold text-gray-800 border-b pb-2">
+                                        기간 정보
+                                      </h4>
+                                      <div className="space-y-3">
+                                        <div className="flex justify-between">
+                                          <span className="text-gray-600">기준일</span>
+                                          <span className="font-semibold">
+                                            {financialData.date ? 
+                                              financialData.date.replace('.', '년 ') + '월' : 
+                                              'N/A'
+                                            }
+                                          </span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                          <span className="text-gray-600">종목코드</span>
+                                          <span className="font-semibold">
+                                            {financialData.symbol || 'N/A'}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="bg-gray-100 rounded-xl p-8 shadow-sm border-2 border-dashed border-gray-300 flex items-center justify-center min-h-[300px]">
+                                  <div className="text-gray-500 text-center">
+                                    <div className="text-2xl mb-2">📊</div>
+                                    <div className="text-lg font-medium">
+                                      재무지표 데이터가 없습니다
+                                    </div>
+                                    <div className="text-sm">
+                                      해당 종목의 재무지표를 찾을 수 없습니다
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           )}
 

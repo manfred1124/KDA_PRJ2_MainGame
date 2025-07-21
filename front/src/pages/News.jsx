@@ -410,6 +410,17 @@ const News = () => {
                       </span>
                     )}
                   </div>
+                  <div>
+                    {item.date && (
+                      <span className="text-gray-500 text-xs">
+                        {new Date(item.date).toLocaleDateString('ko-KR', {
+                          year: 'numeric',
+                          month: '2-digit',
+                          day: '2-digit'
+                        })}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
               {/* 뒷면 */}
@@ -467,9 +478,20 @@ const News = () => {
               ×
             </button>
             <h2 className="text-3xl font-medium mb-8 text-gray-900">
-              <span className="inline-block bg-blue-100 text-blue-700 text-base font-bold rounded-full px-3 py-1 mr-3 align-middle">
-                {selectedNews.period}
-              </span>
+              <div className="flex items-center gap-3 mb-4">
+                <span className="inline-block bg-blue-100 text-blue-700 text-base font-bold rounded-full px-3 py-1 align-middle">
+                  {selectedNews.period}
+                </span>
+                {selectedNews.date && (
+                  <span className="text-gray-600 text-base">
+                    {new Date(selectedNews.date).toLocaleDateString('ko-KR', {
+                      year: 'numeric',
+                      month: '2-digit',
+                      day: '2-digit'
+                    })}
+                  </span>
+                )}
+              </div>
               {selectedNews.title}
             </h2>
             <p className="text-gray-700 mb-8 text-lg">{selectedNews.content}</p>
