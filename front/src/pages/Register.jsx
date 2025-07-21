@@ -54,7 +54,10 @@ const Register = () => {
     <div className="h-screen overflow-hidden flex items-center justify-center auth-page relative">
       <SwordAnimation />
       <BearAnimation />
-      <div className="max-w-md w-full space-y-2" style={{ marginTop: "-28vh" }}>
+      <div
+        className="max-w-md w-full space-y-2 relative z-30"
+        style={{ marginTop: "-28vh" }}
+      >
         <div className="text-center">
           <img
             src={pathofheroImage}

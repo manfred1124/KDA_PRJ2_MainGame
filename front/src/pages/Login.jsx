@@ -38,27 +38,27 @@ const Login = () => {
 
   return (
     <div className="h-screen overflow-hidden flex items-center justify-center auth-page relative">
-      <SwordAnimation />
-      <BearAnimation />
-      <div className="max-w-md w-full space-y-2" style={{ marginTop: "-28vh" }}>
-        <div className="text-center">
-          <img
-            src={pathofheroImage}
-            alt="Path of Hero"
-            style={{
-              width: "17vw",
-              maxWidth: "400px",
-              height: "auto",
-              marginBottom: "-4rem",
-            }}
-            className="mx-auto object-contain"
-          />
+      <div
+        className="max-w-md w-full space-y-2 relative z-30"
+        style={{ marginTop: "-28vh" }}
+      >
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="text-center">
+            <img
+              src={pathofheroImage}
+              alt="Path of Hero"
+              style={{
+                width: "17vw",
+                maxWidth: "400px",
+                height: "auto",
+                marginBottom: "-4rem",
+              }}
+              className="mx-auto object-contain"
+            />
+          </div>
           {/* <h2 className="text-3xl font-bold text-gray-900">로그인</h2> */}
           {/* <p className="mt-2 text-gray-600">주식 투자 시뮬레이션 게임</p> */}
-        </div>
 
-        {/* card div 제거, 내부 내용만 남김 */}
-        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label
               htmlFor="username"
@@ -138,6 +138,8 @@ const Login = () => {
           <p>🏆 다른 플레이어들과 경쟁하며 투자 실력 향상</p>
         </div> */}
       </div>
+      <SwordAnimation />
+      <BearAnimation />
     </div>
   );
 };
