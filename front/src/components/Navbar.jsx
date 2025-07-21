@@ -12,11 +12,7 @@ import {
   User,
   BarChart3,
   ChevronDown,
-  ChevronUp,
 } from "lucide-react";
-import menu1Bg from "../assets/menu1.png";
-import navbarBg from "../assets/navbar.png";
-import menu2Bg from "../assets/menu2.png";
 import logoImage from "../assets/logoimage.png";
 
 const Navbar = () => {
@@ -113,11 +109,9 @@ const Navbar = () => {
     // 거래 완료 이벤트 리스너 추가
     const handleTransactionComplete = () => {
       fetchUserBalance();
-      // 포트폴리오가 열려있으면 데이터 새로고침
-      if (isPortfolioOpen) {
-        setPortfolioData(null);
-        fetchPortfolioData();
-      }
+      // 포트폴리오 데이터 항상 새로고침 (열려있든 안열려있든)
+      setPortfolioData(null);
+      fetchPortfolioData();
     };
 
     window.addEventListener("transactionComplete", handleTransactionComplete);
@@ -213,6 +207,7 @@ const Navbar = () => {
       setPortfolioData(response.data);
       setCachedPortfolioData(response.data); // 항상 캐시도 갱신
     } catch (error) {
+      console.error("포트폴리오 데이터 조회 실패:", error);
       setPortfolioData(null);
     } finally {
       setPortfolioLoading(false);
@@ -221,13 +216,8 @@ const Navbar = () => {
 
   const handlePortfolioClick = () => {
     setIsPortfolioOpen(!isPortfolioOpen);
-    // 라운드가 넘어가기 전(결과 확인 전)에는 fetchPortfolioData를 실행하지 않음
-    if (!isPortfolioOpen && user && user.can_advance_round === false) {
-      // fetchPortfolioData()를 실행하지 않고, 캐시된 데이터만 사용
-      setPortfolioData(cachedPortfolioData);
-    }
-    // 라운드가 넘어간 후에만 fetchPortfolioData 실행
-    if (!isPortfolioOpen && user && user.can_advance_round === true) {
+    // 포트폴리오를 열 때마다 최신 데이터를 가져옴
+    if (!isPortfolioOpen) {
       setPortfolioData(null); // 데이터 초기화
       fetchPortfolioData();
     }

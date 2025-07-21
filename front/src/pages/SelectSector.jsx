@@ -485,8 +485,13 @@ const SelectSector = () => {
         const userResponse = await axios.get("/api/auth/me");
         updateUser(userResponse.data);
 
-        // 네비게이션 바 잔고 업데이트를 위한 이벤트 발생
+        // 네비게이션 바 잔고 및 포트폴리오 업데이트를 위한 이벤트 발생
         window.dispatchEvent(new Event("transactionComplete"));
+
+        // 포트폴리오 데이터 업데이트 (약간의 지연 후)
+        setTimeout(() => {
+          fetchPortfolio();
+        }, 100);
       } catch (error) {
         console.error("사용자 정보 업데이트 실패:", error);
       }
