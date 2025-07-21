@@ -552,12 +552,7 @@ const Review = () => {
         <div className="mb-6">
           {loading ? (
             <div className="flex justify-center items-center h-96 bg-gradient-to-br from-[#f7e6b6] to-[#f3e7c4] rounded-xl border-2 border-[#e6d3a3]">
-              <img
-                src="/result.gif"
-                alt="로딩 애니메이션"
-                className="max-w-full max-h-screen object-contain"
-                style={{ width: 160, height: 160 }}
-              />
+              <div className="animate-spin rounded-full h-32 w-32 border-b-4 border-[#bfa76a]"></div>
             </div>
           ) : (
             <div className="bg-gradient-to-br from-[#f7e6b6] to-[#f3e7c4] p-6 rounded-xl shadow-lg border-2 border-[#e6d3a3]">
