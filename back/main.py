@@ -1886,10 +1886,10 @@ async def get_financial_data_by_period(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    # 3라운드(2024 H1)에만 재무제표 데이터 제공
-    if not financial_service.is_financial_data_available(period):
+    # 3라운드에만 재무제표 데이터 제공
+    if user.current_round_idx != 2:  # 0-based index이므로 2가 3라운드
         return {
-            "message": "재무제표 데이터는 3라운드(2024 H1)에서만 제공됩니다.",
+            "message": "재무제표 데이터는 3라운드에서만 제공됩니다.",
             "data": []
         }
     
@@ -1921,10 +1921,10 @@ async def get_financial_data_by_stock(
         else:
             period = periods[user.current_round_idx]
     
-    # 3라운드(2024 H1)에만 재무제표 데이터 제공
-    if not financial_service.is_financial_data_available(period):
+    # 3라운드에만 재무제표 데이터 제공
+    if user.current_round_idx != 2:  # 0-based index이므로 2가 3라운드
         return {
-            "message": "재무제표 데이터는 3라운드(2024 H1)에서만 제공됩니다.",
+            "message": "재무제표 데이터는 3라운드에서만 제공됩니다.",
             "data": None
         }
     
@@ -1948,10 +1948,10 @@ async def get_financial_summary(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    # 3라운드(2024 H1)에만 재무제표 데이터 제공
-    if not financial_service.is_financial_data_available(period):
+    # 3라운드에만 재무제표 데이터 제공
+    if user.current_round_idx != 2:  # 0-based index이므로 2가 3라운드
         return {
-            "message": "재무제표 데이터는 3라운드(2024 H1)에서만 제공됩니다.",
+            "message": "재무제표 데이터는 3라운드에서만 제공됩니다.",
             "summary": {}
         }
     
