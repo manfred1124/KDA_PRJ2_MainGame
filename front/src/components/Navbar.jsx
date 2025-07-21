@@ -172,10 +172,10 @@ const Navbar = () => {
     }
   };
 
-  // 사용자 정보가 변경될 때마다 잔고 업데이트
+  // 사용자 정보가 변경될 때마다 총자산 업데이트
   useEffect(() => {
     if (user) {
-      setUserBalance(user.total_balance || 0);
+      fetchUserBalance();
     }
   }, [user]);
 
@@ -187,10 +187,14 @@ const Navbar = () => {
           Authorization: `Bearer ${token}`,
         },
       });
-      setUserBalance(response.data.total_balance);
+      console.log("포트폴리오 응답:", response.data);
+      const totalAssets = response.data.total_assets || (response.data.total_balance + response.data.total_portfolio_value);
+      setUserBalance(totalAssets);
     } catch (error) {
       console.error("Failed to fetch user balance:", error);
-      setUserBalance(user?.total_balance || 0);
+      // 에러 시에도 총자산 계산 시도
+      const fallbackTotalAssets = (user?.total_balance || 0) + (portfolioData?.total_portfolio_value || 0);
+      setUserBalance(fallbackTotalAssets);
     }
   };
 
@@ -380,14 +384,14 @@ const Navbar = () => {
             </div>
           </div>
 
-          {/* 평가금액 정보 */}
+                      {/* 총자산 정보 */}
           <div className="flex-shrink-0 relative portfolio-container">
             <button
               onClick={handlePortfolioClick}
               className="bg-white rounded-2xl shadow-md px-6 py-4 hover:shadow-lg transition-all duration-300 cursor-pointer"
             >
               <div className="flex items-center space-x-2">
-                <span className="text-sm text-[#a67c3c] font-medium">평가금액</span>
+                                    <span className="text-sm text-[#a67c3c] font-medium">총자산</span>
                 <span className="text-2xl font-bold text-[#7c5c2b]">
                   {userBalance.toLocaleString()}원
                 </span>
@@ -461,12 +465,12 @@ const Navbar = () => {
                             </div>
                             <div className="text-right ml-3">
                               <div className={`text-sm font-bold ${
-                                item.profit_loss >= 0 ? 'text-green-600' : 'text-red-600'
+                                item.profit_loss >= 0 ? 'text-red-600' : 'text-blue-600'
                               }`}>
                                 {item.profit_loss >= 0 ? '+' : ''}{item.profit_loss.toLocaleString()}원
                               </div>
                               <div className={`text-xs ${
-                                item.profit_loss_percentage >= 0 ? 'text-green-600' : 'text-red-600'
+                                item.profit_loss_percentage >= 0 ? 'text-red-600' : 'text-blue-600'
                               }`}>
                                 {item.profit_loss_percentage >= 0 ? '+' : ''}{item.profit_loss_percentage.toFixed(1)}%
                               </div>
@@ -485,15 +489,15 @@ const Navbar = () => {
                   {portfolioData && (
                     <div className="mt-4 pt-3 border-t border-gray-200">
                       <div className="flex justify-between items-center text-sm">
-                        <span className="text-[#a67c3c]">총 평가금액:</span>
+                        <span className="text-[#a67c3c]">총자산:</span>
                         <span className="font-bold text-[#7c5c2b]">
-                          {portfolioData.total_portfolio_value?.toLocaleString() || 0}원
+                          {portfolioData.total_assets?.toLocaleString() || 0}원
                         </span>
                       </div>
                       <div className="flex justify-between items-center text-sm mt-1">
                         <span className="text-[#a67c3c]">총 손익:</span>
                         <span className={`font-bold ${
-                          portfolioData.total_profit_loss >= 0 ? 'text-green-600' : 'text-red-600'
+                          portfolioData.total_profit_loss >= 0 ? 'text-red-600' : 'text-blue-600'
                         }`}>
                           {portfolioData.total_profit_loss >= 0 ? '+' : ''}{portfolioData.total_profit_loss?.toLocaleString() || 0}원
                         </span>
@@ -655,7 +659,7 @@ const Navbar = () => {
               </div>
             </div>
 
-            {/* 평가금액 정보 */}
+            {/* 총자산 정보 */}
             <div className="flex-1 relative portfolio-container">
               <button
                 onClick={handlePortfolioClick}
@@ -663,7 +667,7 @@ const Navbar = () => {
               >
                 <div className="flex items-center justify-center space-x-1">
                   <span className="text-xs text-[#a67c3c] font-medium">
-                    평가금액
+                    총자산
                   </span>
                   <span className="text-sm font-bold text-[#7c5c2b] truncate">
                     {userBalance.toLocaleString()}원
@@ -738,12 +742,12 @@ const Navbar = () => {
                               </div>
                               <div className="text-right ml-2">
                                 <div className={`text-xs font-bold ${
-                                  item.profit_loss >= 0 ? 'text-green-600' : 'text-red-600'
+                                  item.profit_loss >= 0 ? 'text-red-600' : 'text-blue-600'
                                 }`}>
                                   {item.profit_loss >= 0 ? '+' : ''}{item.profit_loss.toLocaleString()}원
                                 </div>
                                 <div className={`text-xs ${
-                                  item.profit_loss_percentage >= 0 ? 'text-green-600' : 'text-red-600'
+                                  item.profit_loss_percentage >= 0 ? 'text-red-600' : 'text-blue-600'
                                 }`}>
                                   {item.profit_loss_percentage >= 0 ? '+' : ''}{item.profit_loss_percentage.toFixed(1)}%
                                 </div>
@@ -762,15 +766,15 @@ const Navbar = () => {
                     {portfolioData && (
                       <div className="mt-3 pt-2 border-t border-gray-200">
                         <div className="flex justify-between items-center text-xs">
-                          <span className="text-[#a67c3c]">총 평가금액:</span>
+                          <span className="text-[#a67c3c]">총자산:</span>
                           <span className="font-bold text-[#7c5c2b]">
-                            {portfolioData.total_portfolio_value?.toLocaleString() || 0}원
+                            {portfolioData.total_assets?.toLocaleString() || 0}원
                           </span>
                         </div>
                         <div className="flex justify-between items-center text-xs mt-1">
                           <span className="text-[#a67c3c]">총 손익:</span>
                           <span className={`font-bold ${
-                            portfolioData.total_profit_loss >= 0 ? 'text-green-600' : 'text-red-600'
+                            portfolioData.total_profit_loss >= 0 ? 'text-red-600' : 'text-blue-600'
                           }`}>
                             {portfolioData.total_profit_loss >= 0 ? '+' : ''}{portfolioData.total_profit_loss?.toLocaleString() || 0}원
                           </span>
