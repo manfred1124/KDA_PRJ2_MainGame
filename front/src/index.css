@@ -9,6 +9,7 @@
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
+    cursor: url('/sword1.png'), auto;
   }
 
   /* 로그인/회원가입 페이지 폰트 적용 */

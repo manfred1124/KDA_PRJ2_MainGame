@@ -178,7 +178,7 @@ const RoundIntro = () => {
     // 오디오 정지
     // 라운드에 따라 적절한 페이지로 이동
     if (currentRound === 1) {
-      navigate("/news");
+      navigate("/select-sector");
     } else {
       navigate("/news");
     }
