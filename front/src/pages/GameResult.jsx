@@ -164,15 +164,6 @@ const GameResult = () => {
         {/* 헤더 */}
         <div className="text-center mb-8">
           <div className="bg-[#f7e6b6] rounded-2xl shadow-xl p-8 border-4 border-[#bfa76a] w-full max-w-6xl mx-auto relative">
-            <div className="absolute top-1/2 left-8 transform -translate-y-1/2">
-              <button
-                onClick={() => navigate("/review")}
-                className="bg-[#bfa76a] hover:bg-[#a67c3c] text-white px-6 py-3 rounded-full font-bold flex items-center space-x-2 transition-colors border-2 border-[#e6d3a3]"
-                style={{ fontFamily: "Jua, sans-serif" }}
-              >
-                <span className="text-2xl">←</span>
-              </button>
-            </div>
             <div className="text-center">
               <h1
                 className="text-4xl font-bold text-[#7c5c2b] mb-4 drop-shadow"
