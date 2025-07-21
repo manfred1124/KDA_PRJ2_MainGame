@@ -24,6 +24,7 @@ const ChatbotWidget = forwardRef(
     const [showSpeechBubble, setShowSpeechBubble] = useState(false); // 말풍선 표시 여부
     const [heroAnimating, setHeroAnimating] = useState(false); // 캐릭터 애니메이션 여부
     const [loadingAnimating, setLoadingAnimating] = useState(false); // 로딩 애니메이션 여부
+    const [isThinking, setIsThinking] = useState(false);
 
     const typingIntervalRef = useRef(null);
     const speechTimeoutRef = useRef(null);
@@ -224,6 +225,8 @@ const ChatbotWidget = forwardRef(
         // 새 메시지 타이핑 시작
         typeMessage(safeText);
       },
+      startThinking: () => setIsThinking(true),
+      stopThinking: () => setIsThinking(false),
     }));
 
     // 컴포넌트 언마운트 시 정리
@@ -587,7 +590,9 @@ const ChatbotWidget = forwardRef(
                 <div className="relative transform translate-x-16">
                   <img
                     src={
-                      loading
+                      isThinking
+                        ? heroThinking2
+                        : loading
                         ? loadingAnimating
                           ? heroThinking
                           : heroThinking2
@@ -600,8 +605,8 @@ const ChatbotWidget = forwardRef(
                     style={{
                       width: "25vw",
                       height: "20vw",
-                      filter: isSpeaking ? "brightness(1.1)" : "brightness(1)",
-                      transform: isSpeaking ? "scale(1.05)" : "scale(1)",
+                      filter: isSpeaking || isThinking ? "brightness(1.1)" : "brightness(1)",
+                      transform: isSpeaking || isThinking ? "scale(1.05)" : "scale(1)",
                     }}
                   />
                 </div>
