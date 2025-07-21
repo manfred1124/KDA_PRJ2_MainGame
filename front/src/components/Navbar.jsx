@@ -109,9 +109,11 @@ const Navbar = () => {
     // 거래 완료 이벤트 리스너 추가
     const handleTransactionComplete = () => {
       fetchUserBalance();
-      // 포트폴리오 데이터 항상 새로고침 (열려있든 안열려있든)
-      setPortfolioData(null);
-      fetchPortfolioData();
+      // 포트폴리오가 열려있으면 데이터 새로고침
+      if (isPortfolioOpen) {
+        setPortfolioData(null);
+        fetchPortfolioData();
+      }
     };
 
     window.addEventListener("transactionComplete", handleTransactionComplete);
@@ -207,7 +209,6 @@ const Navbar = () => {
       setPortfolioData(response.data);
       setCachedPortfolioData(response.data); // 항상 캐시도 갱신
     } catch (error) {
-      console.error("포트폴리오 데이터 조회 실패:", error);
       setPortfolioData(null);
     } finally {
       setPortfolioLoading(false);
@@ -216,8 +217,13 @@ const Navbar = () => {
 
   const handlePortfolioClick = () => {
     setIsPortfolioOpen(!isPortfolioOpen);
-    // 포트폴리오를 열 때마다 최신 데이터를 가져옴
-    if (!isPortfolioOpen) {
+    // 라운드가 넘어가기 전(결과 확인 전)에는 fetchPortfolioData를 실행하지 않음
+    if (!isPortfolioOpen && user && user.can_advance_round === false) {
+      // fetchPortfolioData()를 실행하지 않고, 캐시된 데이터만 사용
+      setPortfolioData(cachedPortfolioData);
+    }
+    // 라운드가 넘어간 후에만 fetchPortfolioData 실행
+    if (!isPortfolioOpen && user && user.can_advance_round === true) {
       setPortfolioData(null); // 데이터 초기화
       fetchPortfolioData();
     }
@@ -382,14 +388,14 @@ const Navbar = () => {
             </div>
           </div>
 
-          {/* 평가금액 정보 */}
+          {/* 총자산 정보 */}
           <div className="flex-shrink-0 relative portfolio-container">
             <button
               onClick={handlePortfolioClick}
               className="bg-white rounded-2xl shadow-md px-6 py-4 hover:shadow-lg transition-all duration-300 cursor-pointer"
             >
               <div className="flex items-center space-x-2">
-                <span className="text-sm text-[#a67c3c] font-medium">평가금액</span>
+                <span className="text-sm text-[#a67c3c] font-medium">총자산</span>
                 <span className="text-2xl font-bold text-[#7c5c2b]">
                   {userBalance.toLocaleString()}원
                 </span>
@@ -654,7 +660,7 @@ const Navbar = () => {
               </div>
             </div>
 
-            {/* 평가금액 정보 */}
+            {/* 총자산 정보 */}
             <div className="flex-1 relative portfolio-container">
               <button
                 onClick={handlePortfolioClick}
@@ -662,7 +668,7 @@ const Navbar = () => {
               >
                 <div className="flex items-center justify-center space-x-1">
                   <span className="text-xs text-[#a67c3c] font-medium">
-                    평가금액
+                    총자산
                   </span>
                   <span className="text-sm font-bold text-[#7c5c2b] truncate">
                     {userBalance.toLocaleString()}원
