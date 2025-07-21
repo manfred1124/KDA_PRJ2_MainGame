@@ -205,7 +205,7 @@ const News = () => {
   const [flippedCards, setFlippedCards] = useState({}); // 카드별 flip 상태
   const navigate = useNavigate(); // 추가
   const { user } = useAuth();
-  const { addGuideMessage } = useContext(GuideMessageContext);
+  const { addGuideMessage, chatbotRef } = useContext(GuideMessageContext);
   const currentRound = (user?.current_round_idx ?? 0) + 1;
   const [explainedNews, setExplainedNews] = useState({}); // 뉴스별 LLM 설명 완료 여부
   const [explainingNews, setExplainingNews] = useState({}); // 뉴스별 LLM 설명 요청 중 여부
@@ -315,6 +315,12 @@ const News = () => {
     // 이미 요청했으면 중복 방지
     if (requestedNewsRef.current[id]) return;
     requestedNewsRef.current[id] = true;
+
+    // LLM 호출 전: 생각하는 이미지로 변경
+    if (chatbotRef && chatbotRef.current && chatbotRef.current.startThinking) {
+      chatbotRef.current.startThinking();
+    }
+
     try {
       const newsItem = news.find((n) => n.id === id);
       if (!newsItem) return;
@@ -329,12 +335,16 @@ const News = () => {
       });
       const data = await res.json();
       const llmText = data.answer || "(설명이 도착하지 않았습니다)";
-      console.log("LLM 응답:", llmText);
       addGuideMessage(`${llmText}`);
     } catch (e) {
       addGuideMessage("🧙‍♂️ 용사의 해설을 불러오지 못했습니다.");
       // 실패 시 다시 요청 가능하게
       delete requestedNewsRef.current[id];
+    } finally {
+      // LLM 응답 후: 원래 이미지로 복귀
+      if (chatbotRef && chatbotRef.current && chatbotRef.current.stopThinking) {
+        chatbotRef.current.stopThinking();
+      }
     }
   };
 
@@ -435,7 +445,7 @@ const News = () => {
         {news.slice(0, 4).map((item) => (
           <div
             key={item.id}
-            className={`flip-card card news-card transition-all duration-200 h-56 flex flex-col ${getImpactColor(
+            className={`flip-card card news-card transition-all duration-200 h-64 flex flex-col ${getImpactColor(
               item.impact_type
             )} ${flippedCards[item.id] ? "flipped" : ""}`}
             onClick={() => handleCardFlip(item.id)}

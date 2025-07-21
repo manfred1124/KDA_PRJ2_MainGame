@@ -69,53 +69,41 @@ const MyPage = () => {
     fetchTradeHistory();
   }, []);
 
-  // 로딩 완료 후 효과음 재생
+  // 데이터 로딩 완료 후, 오디오 재생 및 LLM 피드백 요청 (한 번만 실행)
   useEffect(() => {
-    console.log("MyPage 로딩 완료 useEffect 실행:", {
-      loading,
-      hasPortfolio: !!portfolio,
-      hasUser: !!user,
-      isMounted: isMountedRef.current,
-    });
-
+    // 로딩이 완료되고, 포트폴리오와 유저 정보가 있으며, 아직 초기 로직이 실행되지 않았을 때
     if (!loading && portfolio && user && !isMountedRef.current) {
-      isMountedRef.current = true;
+      isMountedRef.current = true; // 이 로직이 다시 실행되지 않도록 플래그 설정
 
-      // 성과에 따른 오디오 재생
+      // 1. 성과에 따른 오디오 재생
       const currentRound = (user.current_round_idx ?? 0) + 1;
       const totalProfitPercentage = portfolio.total_profit_percentage;
-      console.log("MyPage 로딩 완료 후 오디오 재생:", {
-        currentRound,
-        totalProfitPercentage,
-      });
       playPerformanceSound(currentRound, totalProfitPercentage);
-    }
-  }, [loading, portfolio, user]);
 
-  // 기존의 마이페이지 진입 시 useEffect 제거됨
-
-  const fetchPortfolio = async () => {
-    try {
-      const response = await axios.get("/api/portfolio");
-      setPortfolio(response.data);
-
-      // 포트폴리오 로드 완료 후 피드백 생성
-      if (user && addGuideMessage && !isMountedRef.current) {
+      // 2. LLM 피드백 생성 및 표시
+      const getFeedback = async () => {
         try {
-          // LLM 피드백 생성
           const feedback = await generateLLMFeedback();
           if (feedback) {
             addGuideMessage(feedback);
           }
         } catch (error) {
           console.error("피드백 생성 실패:", error);
-          // 에러 발생 시 기본 피드백 사용
           const basicFeedback = generateBasicFeedback();
           if (basicFeedback) {
             addGuideMessage(basicFeedback);
           }
         }
-      }
+      };
+      
+      getFeedback();
+    }
+  }, [loading, portfolio, user]); // 의존성 배열은 유지
+
+  const fetchPortfolio = async () => {
+    try {
+      const response = await axios.get("/api/portfolio");
+      setPortfolio(response.data);
     } catch (error) {
       toast.error("포트폴리오를 불러오는데 실패했습니다.");
     } finally {
@@ -276,21 +264,18 @@ const MyPage = () => {
           </button>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="flex items-center space-x-2 text-[#7c5c2b]">
+          <div className="flex items-center space-x-2">
             <Trophy size={24} />
-            <span style={{ fontFamily: "Jua, sans-serif", fontSize: "1.1rem" }}>
-              총 수익률: {portfolio.total_profit_percentage >= 0 ? "+" : ""}
-              {portfolio.total_profit_percentage.toFixed(2)}%
+            <span style={{ fontFamily: "Jua, sans-serif", fontSize: "1.1rem" }} className="text-[#7c5c2b]">
+              총 수익률: {portfolio.total_profit_percentage > 0 ? "+" : portfolio.total_profit_percentage < 0 ? "-" : ""}
+              {Math.abs(portfolio.total_profit_percentage).toFixed(2)}%
             </span>
           </div>
-          <div className="flex items-center space-x-2 text-[#7c5c2b]">
+          <div className="flex items-center space-x-2">
             <DollarSign size={24} />
-            <span style={{ fontFamily: "Jua, sans-serif", fontSize: "1.1rem" }}>
-              총 자산:{" "}
-              {(
-                portfolio.total_balance + portfolio.total_portfolio_value
-              ).toLocaleString()}
-              원
+            <span style={{ fontFamily: "Jua, sans-serif", fontSize: "1.1rem" }} className="text-[#7c5c2b]">
+              총 수익: {portfolio.total_profit > 0 ? "+" : portfolio.total_profit < 0 ? "-" : ""}
+              {Math.abs(portfolio.total_profit).toLocaleString()}원
             </span>
           </div>
           <div className="flex items-center space-x-2 text-[#7c5c2b]">
@@ -320,91 +305,61 @@ const MyPage = () => {
             </div>
           </div>
         </div>
-        <div
-          className="rounded-xl p-4 border-2 border-[#e6d3a3] bg-[#f7e6b6] shadow"
-          style={{ boxShadow: "0 2px 8px #c2b28033" }}
-        >
-          <div className="flex items-center justify-between">
-            <div className="w-full">
-              <p className="text-sm font-medium text-[#a67c3c] mb-1">
-                미실현 손익
-              </p>
-              <p
-                className={`text-base font-bold whitespace-nowrap overflow-hidden text-ellipsis ${
-                  portfolio.total_profit_loss >= 0
-                    ? "text-[#3b7c2b]"
-                    : "text-[#a63c2b]"
-                }`}
-              >
-                {portfolio.total_profit_loss >= 0 ? "+" : ""}
-                {portfolio.total_profit_loss.toLocaleString()}원
-              </p>
-            </div>
-          </div>
+        {/* 미실현 손익 */}
+        <div className="rounded-xl bg-[#f7e6b6] px-6 py-4 shadow border border-[#e6d3a3] flex flex-col items-center justify-center">
+          <p className="text-[#a67c3c] font-medium">미실현 손익</p>
+          <p className={`text-base font-bold whitespace-nowrap overflow-hidden text-ellipsis ${
+            portfolio.total_profit_loss > 0
+              ? "text-[#e53a40]"
+              : portfolio.total_profit_loss < 0
+              ? "text-[#2563eb]"
+              : ""
+          }`}>
+            {portfolio.total_profit_loss > 0 ? "+" : portfolio.total_profit_loss < 0 ? "-" : ""}
+            {Math.abs(portfolio.total_profit_loss).toLocaleString()}원
+          </p>
         </div>
-        <div
-          className="rounded-xl p-4 border-2 border-[#e6d3a3] bg-[#f7e6b6] shadow"
-          style={{ boxShadow: "0 2px 8px #c2b28033" }}
-        >
-          <div className="flex items-center justify-between">
-            <div className="w-full">
-              <p className="text-sm font-medium text-[#a67c3c] mb-1">
-                실현 수익
-              </p>
-              <p
-                className={`text-base font-bold whitespace-nowrap overflow-hidden text-ellipsis ${
-                  portfolio.realized_profit >= 0
-                    ? "text-[#3b7c2b]"
-                    : "text-[#a63c2b]"
-                }`}
-              >
-                {portfolio.realized_profit >= 0 ? "+" : ""}
-                {portfolio.realized_profit.toLocaleString()}원
-              </p>
-            </div>
-          </div>
+        {/* 실현 수익 */}
+        <div className="rounded-xl bg-[#f7e6b6] px-6 py-4 shadow border border-[#e6d3a3] flex flex-col items-center justify-center">
+          <p className="text-[#a67c3c] font-medium">실현 수익</p>
+          <p className={`text-base font-bold whitespace-nowrap overflow-hidden text-ellipsis ${
+            portfolio.realized_profit > 0
+              ? "text-[#e53a40]"
+              : portfolio.realized_profit < 0
+              ? "text-[#2563eb]"
+              : ""
+          }`}>
+            {portfolio.realized_profit > 0 ? "+" : portfolio.realized_profit < 0 ? "-" : ""}
+            {Math.abs(portfolio.realized_profit).toLocaleString()}원
+          </p>
         </div>
-        <div
-          className="rounded-xl p-4 border-2 border-[#e6d3a3] bg-[#f7e6b6] shadow"
-          style={{ boxShadow: "0 2px 8px #c2b28033" }}
-        >
-          <div className="flex items-center justify-between">
-            <div className="w-full">
-              <p className="text-sm font-medium text-[#a67c3c] mb-1">총 수익</p>
-              <p
-                className={`text-base font-bold whitespace-nowrap overflow-hidden text-ellipsis ${
-                  portfolio.total_profit >= 0
-                    ? "text-[#3b7c2b]"
-                    : "text-[#a63c2b]"
-                }`}
-              >
-                {portfolio.total_profit >= 0 ? "+" : ""}
-                {portfolio.total_profit.toLocaleString()}원
-              </p>
-            </div>
-          </div>
+        {/* 총 수익 */}
+        <div className="rounded-xl bg-[#f7e6b6] px-6 py-4 shadow border border-[#e6d3a3] flex flex-col items-center justify-center">
+          <p className="text-[#a67c3c] font-medium">총 수익</p>
+          <p className={`text-base font-bold whitespace-nowrap overflow-hidden text-ellipsis ${
+            portfolio.total_profit > 0
+              ? "text-[#e53a40]"
+              : portfolio.total_profit < 0
+              ? "text-[#2563eb]"
+              : ""
+          }`}>
+            {portfolio.total_profit > 0 ? "+" : portfolio.total_profit < 0 ? "-" : ""}
+            {Math.abs(portfolio.total_profit).toLocaleString()}원
+          </p>
         </div>
-        <div
-          className="rounded-xl p-4 border-2 border-[#e6d3a3] bg-[#f7e6b6] shadow"
-          style={{ boxShadow: "0 2px 8px #c2b28033" }}
-        >
-          <div className="flex items-center justify-between">
-            <div className="w-full">
-              <p className="text-sm font-medium text-[#a67c3c] mb-1">
-                총 수익률
-              </p>
-              <p
-                className={`text-base font-bold whitespace-nowrap overflow-hidden text-ellipsis ${
-                  portfolio.total_profit_percentage >= 0
-                    ? "text-[#3b7c2b]"
-                    : "text-[#a63c2b]"
-                }`}
-              >
-                {portfolio.total_profit_percentage >= 0 ? "+" : ""}
-                {portfolio.total_profit_percentage.toFixed(2)}%
-              </p>
-            </div>
-          </div>
+        {/* 총 수익률 */}
+        <div className="rounded-xl bg-[#f7e6b6] px-6 py-4 shadow border border-[#e6d3a3] flex flex-col items-center justify-center">
+          <p className="text-[#a67c3c] font-medium">총 수익률</p>
+          <p className={`text-base font-bold whitespace-nowrap overflow-hidden text-ellipsis ${
+            portfolio.total_profit_percentage > 0
+              ? "text-[#e53a40]"
+              : portfolio.total_profit_percentage < 0
+              ? "text-[#2563eb]"
+              : ""
+          }`}>
+            {portfolio.total_profit_percentage > 0 ? "+" : portfolio.total_profit_percentage < 0 ? "-" : ""}
+            {Math.abs(portfolio.total_profit_percentage).toFixed(2)}%
+          </p>
         </div>
       </div>
 
@@ -492,23 +447,27 @@ const MyPage = () => {
                     </td>
                     <td
                       className={`text-right py-4 px-6 font-semibold whitespace-nowrap text-sm ${
-                        (item.profit_loss ?? 0) >= 0
+                        (item.profit_loss ?? 0) > 0
                           ? "text-[#e53a40]"
-                          : "text-[#2563eb]"
+                          : (item.profit_loss ?? 0) < 0
+                          ? "text-[#2563eb]"
+                          : ""
                       }`}
                     >
-                      {(item.profit_loss ?? 0) >= 0 ? "+" : ""}
-                      {(item.profit_loss ?? 0).toLocaleString()}원
+                      {(item.profit_loss ?? 0) > 0 ? "+" : (item.profit_loss ?? 0) < 0 ? "-" : ""}
+                      {Math.abs(item.profit_loss ?? 0).toLocaleString()}원
                     </td>
                     <td
                       className={`text-right py-4 px-6 font-semibold whitespace-nowrap text-sm ${
-                        (item.profit_loss_percentage ?? 0) >= 0
+                        (item.profit_loss_percentage ?? 0) > 0
                           ? "text-[#e53a40]"
-                          : "text-[#2563eb]"
+                          : (item.profit_loss_percentage ?? 0) < 0
+                          ? "text-[#2563eb]"
+                          : ""
                       }`}
                     >
-                      {(item.profit_loss_percentage ?? 0) >= 0 ? "+" : ""}
-                      {(item.profit_loss_percentage ?? 0).toFixed(2)}%
+                      {(item.profit_loss_percentage ?? 0) > 0 ? "+" : (item.profit_loss_percentage ?? 0) < 0 ? "-" : ""}
+                      {Math.abs(item.profit_loss_percentage ?? 0).toFixed(2)}%
                     </td>
                   </tr>
                 ))}
@@ -650,39 +609,40 @@ const MyPage = () => {
                         {tx.period || "-"}
                       </td>
                       <td className="py-3 px-4 whitespace-nowrap text-xs">
-                        {currentPrice !== null && currentPrice > 0
-                          ? currentPrice.toLocaleString() + "원"
+                        {tx.current_price !== null && tx.current_price > 0
+                          ? tx.current_price.toLocaleString() + "원"
                           : "-"}
                       </td>
                       <td
                         className={`py-3 px-4 whitespace-nowrap text-xs ${
-                          profitRate !== null
-                            ? profitRate >= 0
+                          tx.transaction_type === "sell" && profitRate !== null
+                            ? profitRate > 0
                               ? "text-[#e53a40]"
-                              : "text-[#2563eb]"
+                              : profitRate < 0
+                              ? "text-[#2563eb]"
+                              : ""
                             : ""
                         }`}
                       >
-                        {profitRate !== null
-                          ? (profitRate >= 0 ? "+" : "") +
-                            profitRate.toFixed(2) +
-                            "%"
+                        {tx.transaction_type === "sell" && profitRate !== null
+                          ? (profitRate > 0 ? "+" : profitRate < 0 ? "-" : "") +
+                            Math.abs(profitRate).toFixed(2) + "%"
                           : "-"}
                       </td>
                       <td
                         className={`py-3 px-4 whitespace-nowrap text-xs ${
-                          tx.transaction_type === "sell" &&
-                          opportunityCost !== null
-                            ? opportunityCost >= 0
-                              ? "text-[#3b7c2b]"
-                              : "text-[#a63c2b]"
+                          tx.transaction_type === "sell" && opportunityCost !== null
+                            ? opportunityCost > 0
+                              ? "text-[#e53a40]"
+                              : opportunityCost < 0
+                              ? "text-[#2563eb]"
+                              : ""
                             : ""
                         }`}
                       >
-                        {tx.transaction_type === "sell" &&
-                        opportunityCost !== null
-                          ? (opportunityCost >= 0 ? "+" : "") +
-                            opportunityCost.toFixed(2) +
+                        {tx.transaction_type === "sell" && opportunityCost !== null
+                          ? (opportunityCost > 0 ? "+" : opportunityCost < 0 ? "-" : "") +
+                            Math.abs(opportunityCost).toFixed(2) +
                             "%"
                           : "-"}
                       </td>

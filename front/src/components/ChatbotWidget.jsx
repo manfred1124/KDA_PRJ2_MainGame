@@ -27,6 +27,7 @@ const ChatbotWidget = forwardRef(
     const [isAttacking, setIsAttacking] = useState(false);
     const [attackFrame, setAttackFrame] = useState(0);
     const attackIntervalRef = useRef(null);
+    const [isThinking, setIsThinking] = useState(false);
 
     const typingIntervalRef = useRef(null);
     const speechTimeoutRef = useRef(null);
@@ -247,6 +248,8 @@ const ChatbotWidget = forwardRef(
           clearInterval(attackIntervalRef.current);
         }, 1000);
       },
+      startThinking: () => setIsThinking(true),
+      stopThinking: () => setIsThinking(false),
     }));
 
     // 컴포넌트 언마운트 시 정리
@@ -627,6 +630,8 @@ const ChatbotWidget = forwardRef(
                         ? `/attack${
                             attackFrame === 0 ? "" : "(2)"
                           }.png?v=${attackFrame}&t=${isAttacking ? "a" : "n"}`
+                        : isThinking
+                        ? heroThinking2
                         : loading
                         ? loadingAnimating
                           ? heroThinking
@@ -638,10 +643,16 @@ const ChatbotWidget = forwardRef(
                     alt="용사"
                     className="object-contain transition-all duration-200"
                     style={{
-                      width: isAttacking ? "32.5vw" : "25vw", // 1.3배
-                      height: isAttacking ? "26vw" : "20vw", // 1.3배
-                      filter: isSpeaking ? "brightness(1.1)" : "brightness(1)",
-                      transform: isSpeaking ? "scale(1.05)" : "scale(1)",
+                      width: isAttacking ? "27.5vw" : "25vw", // 1.1배
+                      height: isAttacking ? "22vw" : "20vw", // 1.1배
+                      filter:
+                        isAttacking || isSpeaking || isThinking
+                          ? "brightness(1.1)"
+                          : "brightness(1)",
+                      transform:
+                        isAttacking || isSpeaking || isThinking
+                          ? "scale(1.1)"
+                          : "scale(1)",
                     }}
                   />
                 </div>

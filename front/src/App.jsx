@@ -160,7 +160,7 @@ function App() {
         {showLoading ? (
           <LoadingScreen />
         ) : (
-          <GuideMessageContext.Provider value={{ addGuideMessage }}>
+          <GuideMessageContext.Provider value={{ addGuideMessage, chatbotRef }}>
             <AudioProvider>
               <ScrollToTop />
               <div className="h-screen bg-[url('/bg.jpg')] bg-cover bg-center bg-no-repeat bg-fixed flex flex-col overflow-hidden">

@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useContext } from "react";
 import axios from "axios";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { GuideMessageContext } from "../App";
 
 import {
   BarChart,
@@ -54,6 +55,7 @@ const formatPeriodToDateRange = (period) => {
 const Review = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { addGuideMessage, startThinking, stopThinking } = useContext(GuideMessageContext);
 
   // 사용자의 현재 라운드에 따른 기간 계산
   const getCurrentPeriods = () => {
@@ -81,6 +83,7 @@ const Review = () => {
   const [tradingHistory, setTradingHistory] = useState([]); // 거래 기록
   const [llmAnalysis, setLlmAnalysis] = useState(null); // LLM 분석 결과
   const [analyzing, setAnalyzing] = useState(false); // LLM 분석 중 상태
+  const analysisTriggeredForPeriodRef = useRef(null); // 분석 반복 호출 방지용 ref
 
   // 사용자 정보가 업데이트되면 선택된 기간도 업데이트
   useEffect(() => {
@@ -93,18 +96,21 @@ const Review = () => {
   useEffect(() => {
     fetchStockPerformance();
     fetchTradingHistory();
+    analysisTriggeredForPeriodRef.current = null; // 기간이 변경되면 분석 플래그 초기화
   }, [selectedPeriod]);
 
-  // 데이터가 로드되면 LLM 분석 실행
+  // 데이터가 로드되면 LLM 분석 실행 (useRef로 반복 실행 방지)
   useEffect(() => {
     if (
       tradingHistory.length > 0 &&
       stockPerformanceData.length > 0 &&
-      !analyzing
+      !analyzing &&
+      analysisTriggeredForPeriodRef.current !== selectedPeriod
     ) {
+      analysisTriggeredForPeriodRef.current = selectedPeriod; // 현재 기간에 대해 분석 실행됨을 기록
       analyzeTradingPerformance();
     }
-  }, [tradingHistory, stockPerformanceData]);
+  }, [tradingHistory, stockPerformanceData, selectedPeriod, analyzing]);
 
   const fetchStockPerformance = async () => {
     setLoading(true);
@@ -181,13 +187,15 @@ const Review = () => {
     navigate("/game-result");
   };
 
-  // LLM 분석 함수
+  // LLM 분석 함수 (ChatbotWidget 연동)
   const analyzeTradingPerformance = async () => {
     if (tradingHistory.length === 0 || !stockPerformanceData.length) {
       return;
     }
 
     setAnalyzing(true);
+    if (startThinking) startThinking(); // 챗봇 생각 시작
+
     try {
       // 거래한 종목들의 성과 분석
       const tradedStocks = [
@@ -209,13 +217,19 @@ const Review = () => {
         analysisData
       );
       setLlmAnalysis(response.data);
+      if (addGuideMessage && response.data.summary) {
+        addGuideMessage(response.data.summary); // 챗봇에 결과 표시
+      }
     } catch (error) {
       console.error("LLM 분석 실패:", error);
-      // 오프라인 분석으로 대체
       const offlineAnalysis = generateOfflineAnalysis();
       setLlmAnalysis(offlineAnalysis);
+      if (addGuideMessage && offlineAnalysis.summary) {
+        addGuideMessage(offlineAnalysis.summary); // 챗봇에 결과 표시
+      }
     } finally {
       setAnalyzing(false);
+      if (stopThinking) stopThinking(); // 챗봇 생각 종료
     }
   };
 
@@ -869,13 +883,15 @@ const Review = () => {
 
 // 종목 상세 모달 컴포넌트
 const StockDetailModal = ({ stock, period, onClose }) => {
+  const { addGuideMessage, startThinking, stopThinking } = useContext(GuideMessageContext);
   const [stockNews, setStockNews] = useState([]);
   const [priceHistory, setPriceHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [stockAnalysis, setStockAnalysis] = useState(null);
   const [analyzingStock, setAnalyzingStock] = useState(false);
   const [stockTransactions, setStockTransactions] = useState([]);
-  const [analysisCache, setAnalysisCache] = useState(new Map()); // 분석 결과 캐시
+  const [analysisCache, setAnalysisCache] = useState(new Map());
+  const analysisTriggeredRef = useRef(false); // 개별 종목 분석 반복 호출 방지용 ref
 
   // 거래 기록 데이터를 stock 형태로 변환
   const stockData = {
@@ -888,32 +904,36 @@ const StockDetailModal = ({ stock, period, onClose }) => {
   useEffect(() => {
     fetchStockDetail();
     fetchStockTransactions();
+    analysisTriggeredRef.current = false; // 모달이 새로 열릴 때마다 플래그 초기화
   }, [stock, period]);
 
-  // 데이터가 로드되면 개별 종목 분석 실행
+  // 데이터 로드 후 개별 종목 분석 (useRef로 반복 실행 방지)
   useEffect(() => {
-    if (stockNews.length > 0 || priceHistory.length > 0) {
+    if ((stockNews.length > 0 || priceHistory.length > 0) && !analysisTriggeredRef.current) {
+      analysisTriggeredRef.current = true; // 분석 실행됨을 기록
       analyzeIndividualStock();
     }
   }, [stockNews, priceHistory]);
 
-  // 개별 종목 LLM 분석 함수
+  // 개별 종목 LLM 분석 함수 (ChatbotWidget 연동)
   const analyzeIndividualStock = async () => {
     if (!stockNews.length && !priceHistory.length) {
       return;
     }
 
-    // 캐시 키 생성 (종목 + 기간)
     const cacheKey = `${stockData.symbol}_${period}`;
-
-    // 캐시된 분석 결과가 있는지 확인
     if (analysisCache.has(cacheKey)) {
-      console.log(`캐시된 분석 결과 사용: ${cacheKey}`);
-      setStockAnalysis(analysisCache.get(cacheKey));
+      const cachedAnalysis = analysisCache.get(cacheKey);
+      setStockAnalysis(cachedAnalysis);
+      if (addGuideMessage && cachedAnalysis.summary) {
+        addGuideMessage(cachedAnalysis.summary);
+      }
       return;
     }
 
     setAnalyzingStock(true);
+    if (startThinking) startThinking(); // 챗봇 생각 시작
+
     try {
       // 해당 기간의 가격 데이터만 필터링
       const periodPriceHistory = filterPriceDataByPeriod(priceHistory, period);
@@ -932,21 +952,23 @@ const StockDetailModal = ({ stock, period, onClose }) => {
         analysisData
       );
 
-      // 분석 결과를 캐시에 저장
       setAnalysisCache((prev) => new Map(prev).set(cacheKey, response.data));
       setStockAnalysis(response.data);
+      if (addGuideMessage && response.data.summary) {
+        addGuideMessage(response.data.summary); // 챗봇에 결과 표시
+      }
     } catch (error) {
       console.error("개별 종목 LLM 분석 실패:", error);
-      // 오프라인 분석으로 대체
       const offlineStockAnalysis = generateOfflineStockAnalysis();
 
-      // 오프라인 분석 결과도 캐시에 저장
-      setAnalysisCache((prev) =>
-        new Map(prev).set(cacheKey, offlineStockAnalysis)
-      );
+      setAnalysisCache((prev) => new Map(prev).set(cacheKey, offlineStockAnalysis));
       setStockAnalysis(offlineStockAnalysis);
+      if (addGuideMessage && offlineStockAnalysis.summary) {
+        addGuideMessage(offlineStockAnalysis.summary); // 챗봇에 결과 표시
+      }
     } finally {
       setAnalyzingStock(false);
+      if (stopThinking) stopThinking(); // 챗봇 생각 종료
     }
   };
 
