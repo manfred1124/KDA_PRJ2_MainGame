@@ -296,17 +296,25 @@ const GameResult = () => {
                     rankItem.username === user?.username
                       ? "bg-[#f3e7c4] border-[#bfa76a]"
                       : "bg-[#f7f3e8] border-[#e6d3a3]"
+                  } ${
+                    index === 0
+                      ? "bg-gradient-to-r from-yellow-100 via-yellow-200 to-yellow-100 border-yellow-300"
+                      : index === 1
+                      ? "bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 border-gray-300"
+                      : index === 2
+                      ? "bg-gradient-to-r from-orange-100 via-orange-200 to-orange-100 border-orange-300"
+                      : ""
                   }`}
                 >
                   <div className="flex items-center space-x-4">
                     <div
                       className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
                         index === 0
-                          ? "bg-[#bfa76a] text-white"
+                          ? "bg-gradient-to-br from-yellow-400 to-yellow-600 text-white shadow-lg border-2 border-yellow-300"
                           : index === 1
-                          ? "bg-[#e6d3a3] text-white"
+                          ? "bg-gradient-to-br from-gray-300 to-gray-500 text-white shadow-lg border-2 border-gray-200"
                           : index === 2
-                          ? "bg-[#a67c3c] text-white"
+                          ? "bg-gradient-to-br from-orange-400 to-orange-600 text-white shadow-lg border-2 border-orange-300"
                           : "bg-[#f3e7c4] text-[#7c5c2b]"
                       }`}
                     >
