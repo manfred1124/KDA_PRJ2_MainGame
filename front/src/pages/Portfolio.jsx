@@ -32,7 +32,7 @@ const Portfolio = () => {
           className="mb-6"
         />
         <span className="text-2xl text-white font-bold animate-blink-slow" style={{ fontFamily: 'Jua, sans-serif' }}>
-          전투 준비중...
+          전투 진행중...
         </span>
       </div>
     );

@@ -1242,6 +1242,10 @@ const StockDetailModal = ({ stock, period, onClose }) => {
     }
   };
 
+  // 1라운드 여부 판별 (period가 round_periods[0]와 같으면 1라운드)
+  const { user } = useAuth();
+  const isFirstRound = user?.round_periods && user.round_periods[0] === period;
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-2 sm:p-4">
       <div className="bg-gradient-to-br from-[#f7e6b6] to-[#f3e7c4] rounded-xl w-full max-w-6xl max-h-[85vh] shadow-2xl flex flex-col border-2 border-[#e6d3a3] overflow-hidden">
@@ -1367,87 +1371,89 @@ const StockDetailModal = ({ stock, period, onClose }) => {
                 </div>
               </div>
 
-              {/* 관련 뉴스 */}
-              <div className="flex-shrink-0">
-                <h3
-                  className="text-lg font-bold mb-3 text-[#7c5c2b]"
-                  style={{ fontFamily: "Jua, sans-serif" }}
-                >
-                  관련 뉴스
-                </h3>
-                <div className="space-y-2 md:space-y-3 max-h-48 overflow-y-auto">
-                  {stockNews.length > 0 ? (
-                    stockNews.map((news, index) => (
-                      <div
-                        key={index}
-                        className={`p-4 border-2 rounded-xl transition-all duration-200 hover:shadow-lg ${
-                          news.sentiment === "positive"
-                            ? "border-[#4ade80] bg-gradient-to-br from-[#f0fdf4] to-[#dcfce7] hover:from-[#dcfce7] hover:to-[#bbf7d0]"
-                            : news.sentiment === "negative"
-                            ? "border-[#f87171] bg-gradient-to-br from-[#fef2f2] to-[#fee2e2] hover:from-[#fee2e2] hover:to-[#fecaca]"
-                            : "border-[#e6d3a3] bg-gradient-to-br from-[#f9f6ef] to-[#f3e7c4] hover:from-[#f7e6b6] hover:to-[#f3e7c4]"
-                        }`}
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <h4
-                              className="font-bold text-[#7c5c2b] mb-1"
-                              style={{ fontFamily: "Jua, sans-serif" }}
-                            >
-                              {news.title}
-                            </h4>
-                            <p
-                              className="text-sm text-[#a67c3c] mb-2"
-                              style={{ fontFamily: "Jua, sans-serif" }}
-                            >
-                              {news.date}
-                            </p>
-                            <p
-                              className="text-sm text-[#7c5c2b]"
-                              style={{ fontFamily: "Jua, sans-serif" }}
-                            >
-                              {news.summary}
-                            </p>
-                          </div>
-                          <div className="ml-3">
-                            <span
-                              className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border-2 ${
-                                news.sentiment === "positive"
-                                  ? "bg-gradient-to-r from-[#22c55e] to-[#16a34a] text-white border-[#4ade80]"
+              {/* 관련 뉴스: 2라운드 이상에서만 노출 */}
+              {!isFirstRound && (
+                <div className="flex-shrink-0">
+                  <h3
+                    className="text-lg font-bold mb-3 text-[#7c5c2b]"
+                    style={{ fontFamily: "Jua, sans-serif" }}
+                  >
+                    관련 뉴스
+                  </h3>
+                  <div className="space-y-2 md:space-y-3 max-h-48 overflow-y-auto">
+                    {stockNews.length > 0 ? (
+                      stockNews.map((news, index) => (
+                        <div
+                          key={index}
+                          className={`p-4 border-2 rounded-xl transition-all duration-200 hover:shadow-lg ${
+                            news.sentiment === "positive"
+                              ? "border-[#4ade80] bg-gradient-to-br from-[#f0fdf4] to-[#dcfce7] hover:from-[#dcfce7] hover:to-[#bbf7d0]"
+                              : news.sentiment === "negative"
+                              ? "border-[#f87171] bg-gradient-to-br from-[#fef2f2] to-[#fee2e2] hover:from-[#fee2e2] hover:to-[#fecaca]"
+                              : "border-[#e6d3a3] bg-gradient-to-br from-[#f9f6ef] to-[#f3e7c4] hover:from-[#f7e6b6] hover:to-[#f3e7c4]"
+                          }`}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <h4
+                                className="font-bold text-[#7c5c2b] mb-1"
+                                style={{ fontFamily: "Jua, sans-serif" }}
+                              >
+                                {news.title}
+                              </h4>
+                              <p
+                                className="text-sm text-[#a67c3c] mb-2"
+                                style={{ fontFamily: "Jua, sans-serif" }}
+                              >
+                                {news.date}
+                              </p>
+                              <p
+                                className="text-sm text-[#7c5c2b]"
+                                style={{ fontFamily: "Jua, sans-serif" }}
+                              >
+                                {news.summary}
+                              </p>
+                            </div>
+                            <div className="ml-3">
+                              <span
+                                className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border-2 ${
+                                  news.sentiment === "positive"
+                                    ? "bg-gradient-to-r from-[#22c55e] to-[#16a34a] text-white border-[#4ade80]"
+                                    : news.sentiment === "negative"
+                                    ? "bg-gradient-to-r from-[#ef4444] to-[#dc2626] text-white border-[#f87171]"
+                                    : "bg-gradient-to-r from-[#bfa76a] to-[#a67c3c] text-white border-[#e6d3a3]"
+                                }`}
+                                style={{ fontFamily: "Jua, sans-serif" }}
+                              >
+                                {news.sentiment === "positive"
+                                  ? "긍정적"
                                   : news.sentiment === "negative"
-                                  ? "bg-gradient-to-r from-[#ef4444] to-[#dc2626] text-white border-[#f87171]"
-                                  : "bg-gradient-to-r from-[#bfa76a] to-[#a67c3c] text-white border-[#e6d3a3]"
-                              }`}
-                              style={{ fontFamily: "Jua, sans-serif" }}
-                            >
-                              {news.sentiment === "positive"
-                                ? "긍정적"
-                                : news.sentiment === "negative"
-                                ? "부정적"
-                                : "중립"}
-                            </span>
+                                  ? "부정적"
+                                  : "중립"}
+                              </span>
+                            </div>
                           </div>
                         </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-8 bg-gradient-to-br from-[#f9f6ef] to-[#f3e7c4] rounded-xl border-2 border-[#e6d3a3]">
+                        <p
+                          className="text-[#a67c3c] mb-2"
+                          style={{ fontFamily: "Jua, sans-serif" }}
+                        >
+                          해당 기간의 관련 뉴스가 없습니다.
+                        </p>
+                        <p
+                          className="text-sm text-[#7c5c2b]"
+                          style={{ fontFamily: "Jua, sans-serif" }}
+                        >
+                          뉴스 데이터가 업데이트되면 여기에 표시됩니다.
+                        </p>
                       </div>
-                    ))
-                  ) : (
-                    <div className="text-center py-8 bg-gradient-to-br from-[#f9f6ef] to-[#f3e7c4] rounded-xl border-2 border-[#e6d3a3]">
-                      <p
-                        className="text-[#a67c3c] mb-2"
-                        style={{ fontFamily: "Jua, sans-serif" }}
-                      >
-                        해당 기간의 관련 뉴스가 없습니다.
-                      </p>
-                      <p
-                        className="text-sm text-[#7c5c2b]"
-                        style={{ fontFamily: "Jua, sans-serif" }}
-                      >
-                        뉴스 데이터가 업데이트되면 여기에 표시됩니다.
-                      </p>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* 개별 종목 용사의 투자 분석 */}
               <div className="flex-shrink-0">
