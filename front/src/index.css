@@ -201,6 +201,14 @@
   animation: blink 1s infinite;
 }
 
+@keyframes blink-slow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+.animate-blink-slow {
+  animation: blink-slow 1.5s infinite;
+}
+
 /* 환영 메시지용 serif 폰트 강제 적용 */
 .welcome-message-serif {
   font-family: serif !important;

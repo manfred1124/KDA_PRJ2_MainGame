@@ -207,13 +207,16 @@ const MyPage = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-black bg-opacity-30">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-black bg-opacity-30">
         <img
-          src="/result.gif"
-          alt="로딩 애니메이션"
-          className="max-w-full max-h-screen object-contain"
-          style={{ width: 320, height: 320 }}
+          src="/warrior.png"
+          alt="로딩 캐릭터"
+          style={{ width: 220, height: 320 }}
+          className="mb-6"
         />
+        <span className="text-2xl text-white font-bold animate-blink-slow" style={{ fontFamily: 'Jua, sans-serif' }}>
+          전투 준비중...
+        </span>
       </div>
     );
   }
