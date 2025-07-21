@@ -180,8 +180,13 @@ const GameResult = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[#bfa76a]"></div>
+      <div className="flex items-center justify-center min-h-screen bg-black bg-opacity-30">
+        <img
+          src="/result.gif"
+          alt="로딩 애니메이션"
+          className="max-w-full max-h-screen object-contain"
+          style={{ width: 320, height: 320 }}
+        />
       </div>
     );
   }
