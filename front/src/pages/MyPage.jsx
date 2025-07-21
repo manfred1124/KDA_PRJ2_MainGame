@@ -493,8 +493,8 @@ const MyPage = () => {
                     <td
                       className={`text-right py-4 px-6 font-semibold whitespace-nowrap text-sm ${
                         (item.profit_loss ?? 0) >= 0
-                          ? "text-[#3b7c2b]"
-                          : "text-[#a63c2b]"
+                          ? "text-[#e53a40]"
+                          : "text-[#2563eb]"
                       }`}
                     >
                       {(item.profit_loss ?? 0) >= 0 ? "+" : ""}
@@ -503,8 +503,8 @@ const MyPage = () => {
                     <td
                       className={`text-right py-4 px-6 font-semibold whitespace-nowrap text-sm ${
                         (item.profit_loss_percentage ?? 0) >= 0
-                          ? "text-[#3b7c2b]"
-                          : "text-[#a63c2b]"
+                          ? "text-[#e53a40]"
+                          : "text-[#2563eb]"
                       }`}
                     >
                       {(item.profit_loss_percentage ?? 0) >= 0 ? "+" : ""}
@@ -658,8 +658,8 @@ const MyPage = () => {
                         className={`py-3 px-4 whitespace-nowrap text-xs ${
                           profitRate !== null
                             ? profitRate >= 0
-                              ? "text-[#3b7c2b]"
-                              : "text-[#a63c2b]"
+                              ? "text-[#e53a40]"
+                              : "text-[#2563eb]"
                             : ""
                         }`}
                       >
@@ -816,7 +816,7 @@ const MyPage = () => {
                       </span>
                       <span
                         className={`ml-2 font-semibold ${
-                          profitRate >= 0 ? "text-[#3b7c2b]" : "text-[#a63c2b]"
+                          profitRate >= 0 ? "text-[#e53a40]" : "text-[#2563eb]"
                         }`}
                       >
                         {profitRate
