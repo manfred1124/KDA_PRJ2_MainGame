@@ -117,8 +117,8 @@ const GameResult = () => {
 
   // GIF 오버레이
   const gifOverlay = showGif && (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="text-center relative transform -translate-x-32">
+    <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-xl bg-black bg-opacity-30">
+      <div className="text-center relative transform -translate-x-16">
         <img
           src="/result.gif"
           alt="결과 애니메이션"
@@ -139,8 +139,9 @@ const GameResult = () => {
                   </>
                 ) : (
                   <>
-                    "승자는 단 한 명이나, 전장을 완주한 모두가 전사이니라.<br/>
-                    검을 거두지 말라, 전사여. 다음 싸움이 곧 시작될 것이다."
+                    "전장을 완주한 모두가 전사이니라.<br/>
+                    검을 거두지 말라, 전사여.<br/>
+                    다음 싸움이 곧 시작될 것이다."
                   </>
                 )}
               </p>
@@ -206,6 +207,27 @@ const GameResult = () => {
                   <p className="text-lg font-bold text-[#7c5c2b]" style={{ fontFamily: "Jua, sans-serif" }}>
                     "공포의 곰조차 그대의 앞길을 막지 못했도다.<br/>
                     전장을 지배한 이는 단 한 사람—영광의 1등, 바로 그대다!"
+                  </p>
+                  <div className="mt-4 text-center">
+                    <a 
+                      href="https://www3.kiwoom.com/h/main" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="inline-block px-6 py-3 bg-[#3b7c2b] hover:bg-[#2d5a1f] text-white rounded-full font-bold border-2 border-[#2d5a1f] transition-colors"
+                      style={{ fontFamily: "Jua, sans-serif" }}
+                    >
+                      투자금 받으러 가기
+                    </a>
+                  </div>
+                </div>
+              )}
+              {/* 1위가 아닐 때의 메시지 */}
+              {!isFirstPlace && (
+                <div className="mt-4 p-4 bg-gradient-to-r from-yellow-100 to-orange-100 rounded-lg border-2 border-yellow-300">
+                  <p className="text-lg font-bold text-[#7c5c2b]" style={{ fontFamily: "Jua, sans-serif" }}>
+                    "전장을 완주한 모두가 전사이니라.<br/>
+                    검을 거두지 말라, 전사여.<br/>
+                    다음 싸움이 곧 시작될 것이다."
                   </p>
                   <div className="mt-4 text-center">
                     <a 
