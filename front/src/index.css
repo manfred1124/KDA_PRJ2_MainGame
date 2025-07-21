@@ -200,6 +200,12 @@
   animation: blink 1s infinite;
 }
 
+/* 환영 메시지용 serif 폰트 강제 적용 */
+.welcome-message-serif {
+  font-family: serif !important;
+  font-style: normal !important;
+}
+
 /* 키워드 강조 스타일 */
 .keyword-highlight {
   background: linear-gradient(120deg, #bfa76a 0%, #e6d3a3 100%);

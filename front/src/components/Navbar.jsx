@@ -94,9 +94,12 @@ const Navbar = () => {
         return "🎉 위대한 모험의 대단원";
 
       default:
-        if (currentRound === 1) return "🚩 첫 번째 투자 여정: 차트 속 흐름을 읽어보시게";
-        if (currentRound === 2) return "🚩 두 번째 투자 여정: 소문 속 기회를 엿보시게";
-        if (currentRound === 3) return "🚩 세 번째 투자 여정: 장부 속 진실을 꿰뚫어보시게";
+        if (currentRound === 1)
+          return "🚩 첫 번째 투자 여정: 차트 속 흐름을 읽어보시게";
+        if (currentRound === 2)
+          return "🚩 두 번째 투자 여정: 소문 속 기회를 엿보시게";
+        if (currentRound === 3)
+          return "🚩 세 번째 투자 여정: 장부 속 진실을 꿰뚫어보시게";
         return "🚩 조선왕조 투자실록";
     }
   };
@@ -312,7 +315,7 @@ const Navbar = () => {
         fontFamily: "Jua, sans-serif",
         backgroundColor: "rgba(0, 30, 90, 0.3)",
         backdropFilter: "blur(8px)",
-        zIndex: 1000,
+        zIndex: 10,
         position: "relative",
       }}
     >
@@ -320,26 +323,28 @@ const Navbar = () => {
         {/* 데스크톱 레이아웃 */}
         <div className="hidden lg:flex items-center gap-6">
           {/* 왼쪽: 홈 버튼 */}
-          <div className="flex-shrink-0">
-            <Link
-              to="/"
-              className="flex items-center justify-center w-16 h-16 bg-white rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105"
-            >
-              <img
-                src={logoImage}
-                alt="Home"
-                className="w-[52px] h-[52px] object-contain"
-                onError={(e) => {
-                  // 로고가 없으면 이모지로 대체
-                  e.target.style.display = "none";
-                  e.target.nextSibling.style.display = "block";
-                }}
-              />
-              <span className="text-3xl" style={{ display: "none" }}>
-                🏠
-              </span>
-            </Link>
-          </div>
+          {location.pathname !== "/game-result" && (
+            <div className="flex-shrink-0">
+              <Link
+                to="/"
+                className="flex items-center justify-center w-16 h-16 bg-white rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105"
+              >
+                <img
+                  src={logoImage}
+                  alt="Home"
+                  className="w-[52px] h-[52px] object-contain"
+                  onError={(e) => {
+                    // 로고가 없으면 이모지로 대체
+                    e.target.style.display = "none";
+                    e.target.nextSibling.style.display = "block";
+                  }}
+                />
+                <span className="text-3xl" style={{ display: "none" }}>
+                  🏠
+                </span>
+              </Link>
+            </div>
+          )}
 
           {/* 중앙: 페이지 제목 */}
           <div className="flex-1 min-w-0">
@@ -588,24 +593,26 @@ const Navbar = () => {
         <div className="lg:hidden space-y-3">
           {/* 상단: 홈 + 뉴스 */}
           <div className="flex items-center gap-3">
-            <Link
-              to="/"
-              className="flex items-center justify-center w-12 h-12 bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 flex-shrink-0"
-            >
-              <img
-                src={logoImage}
-                alt="Home"
-                className="w-[42px] h-[42px] object-contain"
-                onError={(e) => {
-                  // 로고가 없으면 이모지로 대체
-                  e.target.style.display = "none";
-                  e.target.nextSibling.style.display = "block";
-                }}
-              />
-              <span className="text-2xl" style={{ display: "none" }}>
-                🏠
-              </span>
-            </Link>
+            {location.pathname !== "/game-result" && (
+              <Link
+                to="/"
+                className="flex items-center justify-center w-12 h-12 bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 flex-shrink-0"
+              >
+                <img
+                  src={logoImage}
+                  alt="Home"
+                  className="w-[42px] h-[42px] object-contain"
+                  onError={(e) => {
+                    // 로고가 없으면 이모지로 대체
+                    e.target.style.display = "none";
+                    e.target.nextSibling.style.display = "block";
+                  }}
+                />
+                <span className="text-2xl" style={{ display: "none" }}>
+                  🏠
+                </span>
+              </Link>
+            )}
 
             <div className="flex-1 min-w-0">
               <div className="bg-white rounded-xl shadow-md px-4 py-3">

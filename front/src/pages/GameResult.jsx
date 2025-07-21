@@ -138,14 +138,14 @@ const GameResult = () => {
         <div className="text-center">
           <h1
             className="text-2xl font-bold text-[#7c5c2b] mb-4"
-            style={{ fontFamily: "serif" }}
+            style={{ fontFamily: "Jua, sans-serif" }}
           >
             게임 결과를 불러올 수 없습니다.
           </h1>
           <button
             onClick={handleGoHome}
             className="px-6 py-3 bg-[#bfa76a] text-white rounded-full font-bold border-2 border-[#e6d3a3] hover:bg-[#a67c3c] transition-all"
-            style={{ fontFamily: "serif" }}
+            style={{ fontFamily: "Jua, sans-serif" }}
           >
             홈으로 돌아가기
           </button>
@@ -158,20 +158,43 @@ const GameResult = () => {
   const rank = userRank ? userRank.rank : "N/A";
 
   return (
-    <div className="min-h-screen p-6" style={{ fontFamily: "serif" }}>
+    <div className="min-h-screen p-6" style={{ fontFamily: "Jua, sans-serif" }}>
       {gifOverlay}
       <div className="max-w-6xl mx-auto">
         {/* 헤더 */}
         <div className="text-center mb-8">
-          <h1
-            className="text-4xl font-bold text-[#7c5c2b] mb-4 drop-shadow"
-            style={{ fontFamily: "serif" }}
-          >
-            🎉 게임 완료! 🎉
-          </h1>
-          <p className="text-xl text-[#a67c3c]" style={{ fontFamily: "serif" }}>
-            {user?.username}님의 투자 여정이 끝났습니다!
-          </p>
+          <div className="bg-[#f7e6b6] rounded-2xl shadow-xl p-8 border-4 border-[#bfa76a] w-full max-w-6xl mx-auto relative">
+            <div className="absolute top-1/2 left-8 transform -translate-y-1/2">
+              <button
+                onClick={() => navigate("/review")}
+                className="bg-[#bfa76a] hover:bg-[#a67c3c] text-white px-6 py-3 rounded-full font-bold flex items-center space-x-2 transition-colors border-2 border-[#e6d3a3]"
+                style={{ fontFamily: "Jua, sans-serif" }}
+              >
+                <span className="text-2xl">←</span>
+              </button>
+            </div>
+            <div className="text-center">
+              <h1
+                className="text-4xl font-bold text-[#7c5c2b] mb-4 drop-shadow"
+                style={{ fontFamily: "Jua, sans-serif" }}
+              >
+                🎉 게임 완료! 🎉
+              </h1>
+              <p className="text-xl text-[#a67c3c]" style={{ fontFamily: "Jua, sans-serif" }}>
+                {user?.username}님의 투자 여정이 끝났습니다!
+              </p>
+            </div>
+            <div className="absolute top-1/2 right-8 transform -translate-y-1/2">
+              <button
+                onClick={handleRestartGame}
+                className="px-6 py-3 bg-[#bfa76a] hover:bg-[#a67c3c] text-white rounded-full font-bold flex items-center space-x-2 transition-colors border-2 border-[#e6d3a3]"
+                style={{ fontFamily: "Jua, sans-serif" }}
+              >
+                <RefreshCw className="w-5 h-5" />
+                <span>새 게임 시작</span>
+              </button>
+            </div>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -179,7 +202,7 @@ const GameResult = () => {
           <div className="bg-[#f7e6b6] rounded-2xl shadow-xl p-8 border-4 border-[#bfa76a]">
             <h2
               className="text-2xl font-bold text-[#7c5c2b] mb-6 flex items-center"
-              style={{ fontFamily: "serif" }}
+              style={{ fontFamily: "Jua, sans-serif" }}
             >
               <Trophy className="mr-3 text-[#bfa76a]" />
               투자 결과
@@ -268,7 +291,7 @@ const GameResult = () => {
           <div className="bg-[#f7e6b6] rounded-2xl shadow-xl p-8 border-4 border-[#bfa76a]">
             <h2
               className="text-2xl font-bold text-[#7c5c2b] mb-6 flex items-center"
-              style={{ fontFamily: "serif" }}
+              style={{ fontFamily: "Jua, sans-serif" }}
             >
               <Trophy className="mr-3 text-[#bfa76a]" />
               전체 랭킹
@@ -353,21 +376,7 @@ const GameResult = () => {
 
         {/* 액션 버튼 */}
         <div className="flex justify-center space-x-4 mt-8">
-          <button
-            onClick={handleRestartGame}
-            className="px-8 py-4 bg-[#bfa76a] hover:bg-[#a67c3c] text-white rounded-full font-bold flex items-center space-x-2 transition-colors border-2 border-[#e6d3a3]"
-            style={{ fontFamily: "serif" }}
-          >
-            <RefreshCw className="w-5 h-5" />
-            <span>새 게임 시작</span>
-          </button>
-          <button
-            onClick={() => navigate("/my-page")}
-            className="px-8 py-4 bg-[#7c5c2b] hover:bg-[#a67c3c] text-white rounded-full font-bold flex items-center space-x-2 transition-colors border-2 border-[#e6d3a3]"
-            style={{ fontFamily: "serif" }}
-          >
-            <span>결과 보기</span>
-          </button>
+          {/* 결과보기 버튼 제거됨 */}
         </div>
       </div>
     </div>
