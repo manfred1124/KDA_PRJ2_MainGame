@@ -107,6 +107,8 @@ const SelectSector = () => {
   const [showAllNews, setShowAllNews] = useState(false);
   const [financialData, setFinancialData] = useState(null);
   const [financialLoading, setFinancialLoading] = useState(false);
+  // 1. 상태 추가
+  const [resultModalOpen, setResultModalOpen] = useState(false);
 
   useEffect(() => {
     addGuideMessage(GUIDE_MSG);
@@ -546,11 +548,7 @@ const SelectSector = () => {
             style={{
               fontFamily: "Jua, sans-serif",
             }}
-            onClick={
-              (user?.current_round_idx ?? 0) >= 3
-                ? () => navigate("/game-result")
-                : handleNextRound
-            }
+            onClick={() => setResultModalOpen(true)}
             disabled={advancing}
           >
             {advancing
@@ -1512,6 +1510,30 @@ const SelectSector = () => {
           )}
         </div>
       </div> */}
+      {resultModalOpen && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+          <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full text-center flex flex-col justify-center">
+            {/* <h2 className="text-2xl font-bold mb-4">전투 결과</h2> */}
+            <p className="text-gray-700 mb-8" style={{ fontFamily: "Jua, sans-serif", fontSize: "1.3rem", fontWeight: 700 }}>
+              전투를 끝내고, 결과를 확인하겠는가?
+            </p>
+            <div className="flex justify-center gap-8">
+              <button
+                className="px-8 py-3 bg-[#7c5c2b] hover:bg-[#a67c3c] text-white rounded-full font-bold text-lg"
+                onClick={() => { setResultModalOpen(false); navigate("/my-page"); }}
+              >
+                예
+              </button>
+              <button
+                className="px-8 py-3 bg-gray-300 hover:bg-gray-400 text-[#7c5c2b] rounded-full font-bold text-lg"
+                onClick={() => setResultModalOpen(false)}
+              >
+                아니오
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
