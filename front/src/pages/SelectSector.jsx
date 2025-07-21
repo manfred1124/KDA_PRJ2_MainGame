@@ -534,14 +534,7 @@ const SelectSector = () => {
       {/* 메인 컨텐츠 */}
       <div className="flex-1">
         {/* 헤더와 버튼들을 flex로 묶어서 배치 */}
-        <div className="w-full grid grid-cols-3 items-center mb-2">
-          <button
-            onClick={() => navigate(-1)}
-            className="justify-self-start bg-[#bfa76a] hover:bg-[#a67c3c] text-white px-6 py-3 rounded-full shadow-lg transition-all duration-300 flex items-center space-x-2 text-lg border-2 border-[#e6d3a3]"
-            style={{ fontFamily: "Jua, sans-serif" }}
-          >
-            <span className="text-2xl">←</span>
-          </button>
+        <div className="w-full grid grid-cols-2 items-center mb-2">
           <div className="flex items-center justify-center mb-2 "></div>
           {/* 우상단 결과 확인 버튼 */}
           <button

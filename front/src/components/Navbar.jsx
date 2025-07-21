@@ -322,16 +322,20 @@ const Navbar = () => {
       <div className="max-w-7xl mx-auto px-3 lg:px-4">
         {/* 데스크톱 레이아웃 */}
         <div className="hidden lg:flex items-center gap-6">
-          {/* 왼쪽: 홈 버튼 */}
+          {/* 왼쪽: 뒤로가기 버튼 */}
           {location.pathname !== "/game-result" && (
             <div className="flex-shrink-0">
-              <Link
-                to="/"
+              <button
+                onClick={() => {
+                  if (!location.pathname.startsWith("/roundintro") && location.pathname !== "/my-page") {
+                    navigate(-1);
+                  }
+                }}
                 className="flex items-center justify-center w-16 h-16 bg-white rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105"
               >
                 <img
                   src={logoImage}
-                  alt="Home"
+                  alt="Back"
                   className="w-[52px] h-[52px] object-contain"
                   onError={(e) => {
                     // 로고가 없으면 이모지로 대체
@@ -342,7 +346,7 @@ const Navbar = () => {
                 <span className="text-3xl" style={{ display: "none" }}>
                   🏠
                 </span>
-              </Link>
+              </button>
             </div>
           )}
 
@@ -591,16 +595,20 @@ const Navbar = () => {
 
         {/* 모바일 레이아웃 */}
         <div className="lg:hidden space-y-3">
-          {/* 상단: 홈 + 뉴스 */}
+          {/* 상단: 뒤로가기 + 뉴스 */}
           <div className="flex items-center gap-3">
             {location.pathname !== "/game-result" && (
-              <Link
-                to="/"
+              <button
+                onClick={() => {
+                  if (!location.pathname.startsWith("/roundintro") && location.pathname !== "/my-page") {
+                    navigate(-1);
+                  }
+                }}
                 className="flex items-center justify-center w-12 h-12 bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 flex-shrink-0"
               >
                 <img
                   src={logoImage}
-                  alt="Home"
+                  alt="Back"
                   className="w-[42px] h-[42px] object-contain"
                   onError={(e) => {
                     // 로고가 없으면 이모지로 대체
@@ -611,7 +619,7 @@ const Navbar = () => {
                 <span className="text-2xl" style={{ display: "none" }}>
                   🏠
                 </span>
-              </Link>
+              </button>
             )}
 
             <div className="flex-1 min-w-0">

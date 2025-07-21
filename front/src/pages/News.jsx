@@ -26,7 +26,7 @@ const ROUND_TREND_GUIDE = {
   // 필요에 따라 실제 period 값에 맞게 추가
 };
 
-function getRoundTrendGuide(period, macroNews = null) {
+function getRoundTrendGuide(period, macroNews = null, currentRound = 1) {
   const formatPeriod = (p) => {
     if (!p || !p.includes(" ")) return p;
     const [year, half] = p.split(" ");
@@ -158,8 +158,12 @@ function getRoundTrendGuide(period, macroNews = null) {
           )} 등의 이슈가 있었구나.`
         : `${formattedPeriod}에는 다양한 경제 이슈들이 있었구나.`;
 
-    const tip =
-      "허허, 이런 시장 상황을 잘 파악하고 어떤 산업이 기회가 될지 신중하게 판단해보시게. 위기 속에 기회가 숨어있는 법이지!";
+    let tip = "";
+    if (currentRound === 3) {
+      tip = "허허, 이런 시장 상황을 잘 파악하고 어떤 산업이 기회가 될지 신중하게 판단해보시게. 위기 속에 기회가 숨어있는 법이지!";
+    } else {
+      tip = "허허, 이런 시장 상황을 잘 파악하고 어떤 산업이 기회가 될지 신중하게 판단해보시게. 위기 속에 기회가 숨어있는 법이지!\n\n뉴스 판단이 어렵다면 카드를 눌러보시게.";
+    }
     return `${summary} ${tip}`;
   }
 
@@ -242,10 +246,10 @@ const News = () => {
             `/api/news/macro?period=${encodeURIComponent(user.current_period)}`
           );
           addGuideMessage(
-            getRoundTrendGuide(user.current_period, macroRes.data)
+            getRoundTrendGuide(user.current_period, macroRes.data, currentRound)
           );
         } catch (e) {
-          addGuideMessage(getRoundTrendGuide(user.current_period));
+          addGuideMessage(getRoundTrendGuide(user.current_period, null, currentRound));
         }
         fetchNews(user.current_period);
       };
@@ -423,7 +427,7 @@ const News = () => {
         {news.slice(0, 4).map((item) => (
           <div
             key={item.id}
-            className={`flip-card card news-card transition-all duration-200 h-64 flex flex-col ${getImpactColor(
+            className={`flip-card card news-card transition-all duration-200 h-72 flex flex-col ${getImpactColor(
               item.impact_type
             )} ${flippedCards[item.id] ? "flipped" : ""}`}
             onClick={() => handleCardFlip(item.id)}
