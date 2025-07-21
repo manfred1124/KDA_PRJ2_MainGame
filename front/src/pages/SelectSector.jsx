@@ -81,7 +81,7 @@ function getRoundTrendGuide(period) {
   return "허허, 현재 시점의 시장 동향을 잘 살펴 투자 전략을 세워보시게!";
 }
 
-const SelectSector = () => {
+const SelectSector = ({ chatbotRef }) => {
   const { user, updateUser } = useAuth();
   const [sectors, setSectors] = useState([]);
   const [selected, setSelected] = useState(null);
@@ -479,6 +479,18 @@ const SelectSector = () => {
               orderModal.stock.name
             } ${orderQty}주 판매하기 완료! (${orderModal.stock.current_price.toLocaleString()}원)`
       );
+
+      // 디버깅: 공격 애니메이션 트리거 시도 로그
+      console.log("주문 성공! 공격 애니메이션 시도");
+      if (chatbotRef.current && chatbotRef.current.triggerAttackAnimation) {
+        console.log("triggerAttackAnimation 호출!", chatbotRef.current);
+        chatbotRef.current.triggerAttackAnimation();
+      } else {
+        console.log(
+          "chatbotRef.current 또는 triggerAttackAnimation 없음",
+          chatbotRef.current
+        );
+      }
 
       // 사용자 정보 업데이트 (잔고 동기화)
       try {
@@ -1503,102 +1515,41 @@ const SelectSector = () => {
           </div>
         )}
 
-        <ChatbotWidget currentRound={(user?.current_round_idx ?? 0) + 1} />
-      </div>
-      {/* 오른쪽 보유종목 사이드바 */}
-      {/* 아래 코드(보유종목 사이드바) 전체를 삭제 */}
-      {/* <div
-        className="w-80 min-w-[320px] max-w-xs ml-8 bg-[#f3e7c4] rounded-xl shadow-lg border-2 border-[#e6d3a3] p-6 h-fit sticky top-8 self-start hidden lg:block"
-        style={{ fontFamily: "serif" }}
-      >
-        <button
-          className="w-full flex items-center justify-between text-xl font-bold text-[#7c5c2b] mb-2 focus:outline-none border-b-2 border-[#e6d3a3] pb-2"
-          onClick={() => setPortfolioOpen((open) => !open)}
-          style={{ fontFamily: "serif" }}
-        >
-          내 보유종목
-          <span
-            className={`ml-2 transition-transform duration-200 ${
-              portfolioOpen ? "rotate-180" : ""
-            }`}
-          >
-            ▼
-          </span>
-        </button>
-        <div
-          className={`overflow-hidden transition-all duration-300 ${
-            portfolioOpen ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"
-          }`}
-        >
-          {portfolio && portfolio.items.length > 0 ? (
-            <ul className="space-y-3 mt-2">
-              {portfolio.items.map((item) => (
-                <li
-                  key={item.stock_id}
-                  className="flex flex-col gap-1 border-b border-[#e6d3a3] pb-2 last:border-b-0 last:pb-0"
-                >
-                  <div className="font-semibold text-[#7c5c2b]">
-                    {item.stock_name}{" "}
-                    <span className="text-xs text-[#a67c3c]">
-                      ({item.stock_symbol})
-                    </span>
-                  </div>
-                  <div className="text-sm text-[#a67c3c]">
-                    보유수량:{" "}
-                    <span className="font-bold">
-                      {item.quantity.toLocaleString()}주
-                    </span>
-                  </div>
-                  <div className="text-sm text-[#a67c3c]">
-                    평균단가:{" "}
-                    <span className="font-bold">
-                      {item.average_price.toLocaleString()}원
-                    </span>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <div className="text-[#a67c3c] text-center py-8">
-              보유한 종목이 없습니다.
-            </div>
-          )}
-        </div>
-      </div> */}
-      {resultModalOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
-          <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full text-center flex flex-col justify-center">
-            {/* <h2 className="text-2xl font-bold mb-4">전투 결과</h2> */}
-            <p
-              className="text-gray-700 mb-8"
-              style={{
-                fontFamily: "Jua, sans-serif",
-                fontSize: "1.3rem",
-                fontWeight: 700,
-              }}
-            >
-              전투를 끝내고, 결과를 확인하겠는가?
-            </p>
-            <div className="flex justify-center gap-8">
-              <button
-                className="px-8 py-3 bg-[#7c5c2b] hover:bg-[#a67c3c] text-white rounded-full font-bold text-lg"
-                onClick={() => {
-                  setResultModalOpen(false);
-                  navigate("/my-page");
+        {resultModalOpen && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+            <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full text-center flex flex-col justify-center">
+              {/* <h2 className="text-2xl font-bold mb-4">전투 결과</h2> */}
+              <p
+                className="text-gray-700 mb-8"
+                style={{
+                  fontFamily: "Jua, sans-serif",
+                  fontSize: "1.3rem",
+                  fontWeight: 700,
                 }}
               >
-                예
-              </button>
-              <button
-                className="px-8 py-3 bg-gray-300 hover:bg-gray-400 text-[#7c5c2b] rounded-full font-bold text-lg"
-                onClick={() => setResultModalOpen(false)}
-              >
-                아니오
-              </button>
+                전투를 끝내고, 결과를 확인하겠는가?
+              </p>
+              <div className="flex justify-center gap-8">
+                <button
+                  className="px-8 py-3 bg-[#7c5c2b] hover:bg-[#a67c3c] text-white rounded-full font-bold text-lg"
+                  onClick={() => {
+                    setResultModalOpen(false);
+                    navigate("/my-page");
+                  }}
+                >
+                  예
+                </button>
+                <button
+                  className="px-8 py-3 bg-gray-300 hover:bg-gray-400 text-[#7c5c2b] rounded-full font-bold text-lg"
+                  onClick={() => setResultModalOpen(false)}
+                >
+                  아니오
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

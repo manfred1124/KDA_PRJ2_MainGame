@@ -307,7 +307,7 @@ function App() {
                                     : ""
                                 }
                               >
-                                <SelectSector />
+                                <SelectSector chatbotRef={chatbotRef} />
                               </div>
                             </PrivateRoute>
                           }
