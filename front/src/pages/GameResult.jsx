@@ -299,7 +299,7 @@ const GameResult = () => {
                     <p className="text-sm text-[#a67c3c]">총 수익률</p>
                     <p
                       className={`text-3xl font-bold ${
-                        totalReturnPercent >= 0 ? "text-[#3b7c2b]" : "text-[#a63c2b]"
+                        totalReturnPercent >= 0 ? "text-[#e53a40]" : "text-[#2563eb]"
                       }`}
                     >
                       {totalReturnPercent >= 0 ? "+" : ""}
@@ -321,9 +321,7 @@ const GameResult = () => {
                     <p className="text-sm text-[#a67c3c]">총 수익</p>
                     <p
                       className={`text-2xl font-bold ${
-                        gameState.total_profit >= 0
-                          ? "text-[#3b7c2b]"
-                          : "text-[#a63c2b]"
+                        gameState.total_profit >= 0 ? "text-[#e53a40]" : "text-[#2563eb]"
                       }`}
                     >
                       {gameState?.total_profit >= 0 ? "+" : ""}
@@ -341,9 +339,7 @@ const GameResult = () => {
                     <p className="text-sm text-[#a67c3c]">미실현 손익</p>
                     <p
                       className={`text-2xl font-bold ${
-                        (gameState?.total_profit_loss || 0) >= 0
-                          ? "text-[#3b7c2b]"
-                          : "text-[#a63c2b]"
+                        (gameState?.total_profit_loss || 0) >= 0 ? "text-[#e53a40]" : "text-[#2563eb]"
                       }`}
                     >
                       {(gameState?.total_profit_loss || 0) >= 0 ? "+" : ""}
