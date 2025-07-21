@@ -2,6 +2,9 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { Eye, EyeOff, UserPlus } from "lucide-react";
+import SwordAnimation from "../components/SwordAnimation";
+import BearAnimation from "../components/BearAnimation";
+import pathofheroImage from "../assets/pathofhero.png";
 
 const Register = () => {
   console.log("Register component rendered");
@@ -48,14 +51,22 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center auth-page">
-      <div className="max-w-md w-full space-y-7">
-        <div className="text-center mt-4">
-          {/* <div className="text-6xl mb-4 animate-float">🎮</div> */}
-          <h2 className="text-3xl font-bold text-gray-900">회원가입</h2>
-          {/* <p className="mt-2 text-gray-600">
-            주식 투자 시뮬레이션 게임에 참여하세요!
-          </p> */}
+    <div className="h-screen overflow-hidden flex items-center justify-center auth-page relative">
+      <SwordAnimation />
+      <BearAnimation />
+      <div className="max-w-md w-full space-y-2" style={{ marginTop: "-28vh" }}>
+        <div className="text-center">
+          <img
+            src={pathofheroImage}
+            alt="Path of Hero"
+            style={{
+              width: "17vw",
+              maxWidth: "400px",
+              height: "auto",
+              marginBottom: "-4rem",
+            }}
+            className="mx-auto object-contain"
+          />
         </div>
 
         <div>
