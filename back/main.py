@@ -224,6 +224,16 @@ async def get_portfolio(credentials: HTTPAuthorizationCredentials = Depends(secu
             total_value = item.quantity * current_price
             profit_loss = total_value - (item.quantity * item.average_price)
             profit_loss_percentage = (profit_loss / (item.quantity * item.average_price)) * 100 if item.average_price > 0 else 0
+            # 해당 주식의 가장 최근 구매 거래 조회하여 라운드 정보 가져오기
+            latest_buy_transaction = await db.execute(
+                select(Transaction)
+                .where(Transaction.user_id == user.id, Transaction.stock_id == stock.id, Transaction.transaction_type == "buy")
+                .order_by(Transaction.created_at.desc())
+                .limit(1)
+            )
+            latest_buy = latest_buy_transaction.scalar_one_or_none()
+            round_purchased = latest_buy.round_number if latest_buy else None
+            
             item_list.append({
                 "stock_id": stock.id,
                 "stock_symbol": stock.symbol,
@@ -233,7 +243,8 @@ async def get_portfolio(credentials: HTTPAuthorizationCredentials = Depends(secu
                 "current_price": current_price,
                 "total_value": total_value,
                 "profit_loss": profit_loss,
-                "profit_loss_percentage": profit_loss_percentage
+                "profit_loss_percentage": profit_loss_percentage,
+                "round_purchased": round_purchased
             })
             total_portfolio_value += total_value
             total_investment += item.quantity * item.average_price

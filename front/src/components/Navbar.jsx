@@ -32,6 +32,8 @@ const Navbar = () => {
   const [portfolioLoading, setPortfolioLoading] = useState(false);
   // 마지막으로 fetch한 포트폴리오 데이터를 저장
   const [cachedPortfolioData, setCachedPortfolioData] = useState(null);
+  // Pending transactions state
+  const [pendingTransactions, setPendingTransactions] = useState([]);
 
   // 현재 기간을 한국어로 변환
   const formatPeriod = (period) => {
@@ -103,26 +105,66 @@ const Navbar = () => {
   };
 
   useEffect(() => {
-    // 사용자 잔고 정보 가져오기 (항상 최신 자산 표시)
-    fetchUserBalance();
+    // Only fetch user balance if round is complete, otherwise use initial balance
+    if (user && user.can_advance_round === true) {
+      fetchUserBalance();
+    }
+    // During the round, do nothing to prevent balance updates
 
     // 거래 완료 이벤트 리스너 추가
     const handleTransactionComplete = () => {
-      // 거래 완료 시 총자산 업데이트
+      // 결과 확인 버튼을 눌렀을 때는 즉시 포트폴리오 새로고침
+      // user 객체가 아직 업데이트되지 않았을 수 있으므로 항상 새로고침
       fetchUserBalance();
-      // 포트폴리오 데이터도 업데이트 (캐시 갱신)
       fetchPortfolioData();
+      
+      // 결과 확인 후에는 pending transactions 초기화
+      setPendingTransactions([]);
+    };
+
+    // 사용자 정보 업데이트 이벤트 리스너 추가
+    const handleUserUpdated = (event) => {
+      const updatedUser = event.detail;
+      // 결과 확인 후 상태로 변경되었을 때 포트폴리오 새로고침
+      if (updatedUser.can_advance_round === true) {
+        fetchUserBalance();
+        fetchPortfolioData();
+      }
+    };
+
+    // Pending transaction event listeners
+    const handlePendingTransactionAdded = (event) => {
+      const transaction = event.detail;
+      setPendingTransactions(prev => [...prev, transaction]);
+      
+      // Update portfolio display if open
+      if (isPortfolioOpen && portfolioData) {
+        updatePortfolioWithPendingTransaction(transaction, 'add');
+      }
+    };
+
+    const handlePendingTransactionRemoved = (event) => {
+      const transaction = event.detail;
+      setPendingTransactions(prev => prev.filter(tx => tx.id !== transaction.id));
+      
+      // Update portfolio display if open
+      if (isPortfolioOpen && portfolioData) {
+        updatePortfolioWithPendingTransaction(transaction, 'remove');
+      }
     };
 
     window.addEventListener("transactionComplete", handleTransactionComplete);
+    window.addEventListener("userUpdated", handleUserUpdated);
+    window.addEventListener("pendingTransactionAdded", handlePendingTransactionAdded);
+    window.addEventListener("pendingTransactionRemoved", handlePendingTransactionRemoved);
 
     return () => {
-      window.removeEventListener(
-        "transactionComplete",
-        handleTransactionComplete
-      );
+      window.removeEventListener("transactionComplete", handleTransactionComplete);
+      window.removeEventListener("userUpdated", handleUserUpdated);
+      window.removeEventListener("pendingTransactionAdded", handlePendingTransactionAdded);
+      window.removeEventListener("pendingTransactionRemoved", handlePendingTransactionRemoved);
     };
-  }, [isPortfolioOpen]);
+  }, [isPortfolioOpen, user]);
 
   // 뉴스 배너는 user.current_period가 준비된 후에만 호출
   useEffect(() => {
@@ -171,12 +213,30 @@ const Navbar = () => {
   // 사용자 정보가 변경될 때마다 잔고 업데이트
   useEffect(() => {
     if (user) {
-      // 최신 자산 정보 가져오기
-      fetchUserBalance();
+      // 라운드 진행 중에는 잔고 업데이트하지 않음
+      if (user.can_advance_round === false) {
+        // 초기 잔고만 설정하고 이후 업데이트하지 않음
+        if (userBalance === 0) {
+          setUserBalance(user.total_balance || 0);
+        }
+      } else {
+        fetchUserBalance();
+      }
     }
   }, [user]);
 
   const fetchUserBalance = async () => {
+    // Double check - if user is not available, don't proceed
+    if (!user) {
+      console.log("No user available - skipping balance fetch");
+      return;
+    }
+    
+    // 라운드 진행 중에는 잔고 업데이트하지 않음
+    if (user && user.can_advance_round === false) {
+      return;
+    }
+    
     try {
       const token = localStorage.getItem("token");
       const response = await axios.get("/api/portfolio", {
@@ -184,7 +244,7 @@ const Navbar = () => {
           Authorization: `Bearer ${token}`,
         },
       });
-      setUserBalance(response.data.total_balance);
+      setUserBalance(response.data.cash_balance || response.data.total_balance || 0);
     } catch (error) {
       console.error("Failed to fetch user balance:", error);
       setUserBalance(user?.total_balance || 0);
@@ -205,8 +265,14 @@ const Navbar = () => {
           Authorization: `Bearer ${token}`,
         },
       });
+      
+      // 결과 확인 후에는 모든 데이터를 설정
       setPortfolioData(response.data);
-      setCachedPortfolioData(response.data); // 항상 캐시도 갱신
+      
+      // 결과 확인 후에는 캐시 업데이트
+      if (user && user.can_advance_round === true) {
+        setCachedPortfolioData(response.data);
+      }
     } catch (error) {
       setPortfolioData(null);
     } finally {
@@ -214,13 +280,118 @@ const Navbar = () => {
     }
   };
 
+  // Update portfolio with pending transactions
+  const updatePortfolioWithPendingTransaction = (transaction, action) => {
+    if (!portfolioData) return;
+
+    const updatedItems = [...portfolioData.items];
+    
+    if (action === 'add') {
+      const existingIndex = updatedItems.findIndex(item => item.stock_id === transaction.stock_id);
+      
+      if (existingIndex >= 0) {
+        const existingItem = updatedItems[existingIndex];
+        if (transaction.transaction_type === 'buy') {
+          existingItem.quantity += transaction.quantity;
+        } else {
+          existingItem.quantity -= transaction.quantity;
+          if (existingItem.quantity <= 0) {
+            updatedItems.splice(existingIndex, 1);
+          }
+        }
+      } else if (transaction.transaction_type === 'buy') {
+        updatedItems.push({
+          stock_id: transaction.stock_id,
+          stock_name: transaction.stock_name,
+          stock_symbol: transaction.stock_symbol,
+          current_price: transaction.price,
+          quantity: transaction.quantity,
+          average_price: transaction.price,
+          profit_loss: 0,
+          profit_loss_percentage: 0
+        });
+      }
+    } else if (action === 'remove') {
+      const existingIndex = updatedItems.findIndex(item => item.stock_id === transaction.stock_id);
+      
+      if (existingIndex >= 0) {
+        const existingItem = updatedItems[existingIndex];
+        if (transaction.transaction_type === 'buy') {
+          existingItem.quantity -= transaction.quantity;
+        } else {
+          existingItem.quantity += transaction.quantity;
+        }
+        
+        if (existingItem.quantity <= 0) {
+          updatedItems.splice(existingIndex, 1);
+        }
+      }
+    }
+
+    setPortfolioData({
+      ...portfolioData,
+      items: updatedItems
+    });
+  };
+
+  // Apply pending transactions to portfolio data
+  const applyPendingTransactionsToPortfolio = (baseData) => {
+    if (!baseData || !baseData.items) return baseData;
+    
+    const updatedItems = [...baseData.items];
+    
+    pendingTransactions.forEach(transaction => {
+      const existingIndex = updatedItems.findIndex(item => item.stock_id === transaction.stock_id);
+      
+      if (existingIndex >= 0) {
+        const existingItem = updatedItems[existingIndex];
+        if (transaction.transaction_type === 'buy') {
+          existingItem.quantity += transaction.quantity;
+        } else {
+          existingItem.quantity -= transaction.quantity;
+          if (existingItem.quantity <= 0) {
+            updatedItems.splice(existingIndex, 1);
+          }
+        }
+      } else if (transaction.transaction_type === 'buy') {
+        updatedItems.push({
+          stock_id: transaction.stock_id,
+          stock_name: transaction.stock_name,
+          stock_symbol: transaction.stock_symbol,
+          current_price: transaction.price,
+          quantity: transaction.quantity,
+          average_price: transaction.price,
+          profit_loss: 0,
+          profit_loss_percentage: 0
+        });
+      }
+    });
+    
+    return {
+      ...baseData,
+      items: updatedItems
+    };
+  };
+
   const handlePortfolioClick = () => {
     setIsPortfolioOpen(!isPortfolioOpen);
     
-    // 포트폴리오를 열 때 항상 최신 데이터 가져오기
+    // 포트폴리오를 열 때
     if (!isPortfolioOpen) {
-      setPortfolioData(null); // 데이터 초기화
-      fetchPortfolioData();
+      if (user && user.can_advance_round === false) {
+        // 라운드 진행 중에는 캐시된 데이터 사용
+        const baseData = cachedPortfolioData || portfolioData;
+        if (baseData) {
+          const updatedData = applyPendingTransactionsToPortfolio(baseData);
+          setPortfolioData(updatedData);
+        } else {
+          fetchPortfolioData();
+        }
+      } else {
+        // 결과 확인 후에는 최신 데이터 사용
+        setPortfolioData(null);
+        fetchPortfolioData();
+      }
     }
   };
 
@@ -392,7 +563,9 @@ const Navbar = () => {
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-[#a67c3c] font-medium">총자산</span>
                 <span className="text-2xl font-bold text-[#7c5c2b]">
-                  {userBalance.toLocaleString()}원
+                  {!user || (user.can_advance_round !== true && user.current_round_idx === 0) ? 
+                   (userBalance + (portfolioData?.items?.reduce((sum, item) => sum + (item.average_price * item.quantity), 0) || 0)).toLocaleString() :
+                   (userBalance + (portfolioData?.total_portfolio_value || 0)).toLocaleString()}원
                 </span>
                 <ChevronDown
                   className={`w-4 h-4 text-[#a67c3c] transition-transform duration-200 ${
@@ -460,18 +633,30 @@ const Navbar = () => {
                                 </span>
                               </div>
                             </div>
-                            <div className="text-right ml-3">
-                              <div className={`text-sm font-bold ${
-                                item.profit_loss >= 0 ? 'text-[#e53a40]' : 'text-[#2563eb]'
-                              }`}>
-                                {item.profit_loss >= 0 ? '+' : ''}{item.profit_loss.toLocaleString()}원
+                                                          <div className="text-right ml-3">
+                                <div className={`text-sm font-bold ${
+                                  !user || user.can_advance_round !== true ? 
+                                   (item.round_purchased === (user?.current_round_idx + 1) ? 'text-gray-500' : 
+                                    item.profit_loss >= 0 ? 'text-[#e53a40]' : 'text-[#2563eb]') :
+                                   item.profit_loss >= 0 ? 'text-[#e53a40]' : 'text-[#2563eb]'
+                                }`}>
+                                  {!user || user.can_advance_round !== true ? 
+                                   (item.round_purchased === (user?.current_round_idx + 1) ? '0원' : 
+                                    `${item.profit_loss >= 0 ? '+' : ''}${item.profit_loss.toLocaleString()}원`) :
+                                   `${item.profit_loss >= 0 ? '+' : ''}${item.profit_loss.toLocaleString()}원`}
+                                </div>
+                                <div className={`text-xs ${
+                                  !user || user.can_advance_round !== true ? 
+                                   (item.round_purchased === (user?.current_round_idx + 1) ? 'text-gray-500' : 
+                                    item.profit_loss_percentage >= 0 ? 'text-[#e53a40]' : 'text-[#2563eb]') :
+                                   item.profit_loss_percentage >= 0 ? 'text-[#e53a40]' : 'text-[#2563eb]'
+                                }`}>
+                                  {!user || user.can_advance_round !== true ? 
+                                   (item.round_purchased === (user?.current_round_idx + 1) ? '0%' : 
+                                    `${item.profit_loss_percentage >= 0 ? '+' : ''}${item.profit_loss_percentage.toFixed(1)}%`) :
+                                   `${item.profit_loss_percentage >= 0 ? '+' : ''}${item.profit_loss_percentage.toFixed(1)}%`}
+                                </div>
                               </div>
-                              <div className={`text-xs ${
-                                item.profit_loss_percentage >= 0 ? 'text-[#e53a40]' : 'text-[#2563eb]'
-                              }`}>
-                                {item.profit_loss_percentage >= 0 ? '+' : ''}{item.profit_loss_percentage.toFixed(1)}%
-                              </div>
-                            </div>
                           </div>
                         ))}
                       </div>
@@ -484,18 +669,29 @@ const Navbar = () => {
                   )}
                   {portfolioData && (
                     <div className="mt-4 pt-3 border-t border-gray-200">
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-[#a67c3c]">총 평가금액:</span>
-                        <span className="font-bold text-[#7c5c2b]">
-                          {portfolioData.total_portfolio_value?.toLocaleString() || 0}원
-                        </span>
-                      </div>
+                                              <div className="flex justify-between items-center text-sm">
+                          <span className="text-[#a67c3c]">총 평가금액:</span>
+                          <span className="font-bold text-[#7c5c2b]">
+                            {!user || user.can_advance_round !== true ? 
+                             (portfolioData.items?.reduce((sum, item) => sum + (item.average_price * item.quantity), 0) || 0).toLocaleString() :
+                             portfolioData.total_portfolio_value?.toLocaleString() || 0}원
+                          </span>
+                        </div>
                       <div className="flex justify-between items-center text-sm mt-1">
                         <span className="text-[#a67c3c]">총 손익:</span>
                         <span className={`font-bold ${
-                          portfolioData.total_profit_loss >= 0 ? 'text-[#e53a40]' : 'text-[#2563eb]'
+                          !user || user.can_advance_round !== true ? 
+                           (portfolioData.items?.some(item => item.round_purchased !== (user?.current_round_idx + 1)) ? 
+                            (portfolioData.items?.filter(item => item.round_purchased !== (user?.current_round_idx + 1))
+                             .reduce((sum, item) => sum + (item.profit_loss || 0), 0) >= 0 ? 'text-[#e53a40]' : 'text-[#2563eb]') : 'text-gray-500') :
+                           portfolioData.total_profit_loss >= 0 ? 'text-[#e53a40]' : 'text-[#2563eb]'
                         }`}>
-                          {portfolioData.total_profit_loss >= 0 ? '+' : ''}{portfolioData.total_profit_loss?.toLocaleString() || 0}원
+                          {!user || user.can_advance_round !== true ? 
+                           (portfolioData.items?.some(item => item.round_purchased !== (user?.current_round_idx + 1)) ? 
+                            `${portfolioData.items?.filter(item => item.round_purchased !== (user?.current_round_idx + 1))
+                             .reduce((sum, item) => sum + (item.profit_loss || 0), 0) >= 0 ? '+' : ''}${portfolioData.items?.filter(item => item.round_purchased !== (user?.current_round_idx + 1))
+                             .reduce((sum, item) => sum + (item.profit_loss || 0), 0).toLocaleString()}원` : '0원') :
+                           `${portfolioData.total_profit_loss >= 0 ? '+' : ''}${portfolioData.total_profit_loss?.toLocaleString() || 0}원`}
                         </span>
                       </div>
                     </div>
@@ -666,7 +862,9 @@ const Navbar = () => {
                     총자산
                   </span>
                   <span className="text-sm font-bold text-[#7c5c2b] truncate">
-                    {userBalance.toLocaleString()}원
+                    {!user || (user.can_advance_round !== true && user.current_round_idx === 0) ? 
+                     (userBalance + (portfolioData?.items?.reduce((sum, item) => sum + (item.average_price * item.quantity), 0) || 0)).toLocaleString() :
+                     (userBalance + (portfolioData?.total_portfolio_value || 0)).toLocaleString()}원
                   </span>
                   <ChevronDown
                     className={`w-3 h-3 text-[#a67c3c] transition-transform duration-200 ${
@@ -737,16 +935,28 @@ const Navbar = () => {
                                 </div>
                               </div>
                               <div className="text-right ml-2">
-                                <div className={`text-xs font-bold ${
-                                  item.profit_loss >= 0 ? 'text-[#e53a40]' : 'text-[#2563eb]'
-                                }`}>
-                                  {item.profit_loss >= 0 ? '+' : ''}{item.profit_loss.toLocaleString()}원
-                                </div>
-                                <div className={`text-xs ${
-                                  item.profit_loss_percentage >= 0 ? 'text-[#e53a40]' : 'text-[#2563eb]'
-                                }`}>
-                                  {item.profit_loss_percentage >= 0 ? '+' : ''}{item.profit_loss_percentage.toFixed(1)}%
-                                </div>
+                                                                  <div className={`text-xs font-bold ${
+                                    !user || user.can_advance_round !== true ? 
+                                     (item.round_purchased === (user?.current_round_idx + 1) ? 'text-gray-500' : 
+                                      item.profit_loss >= 0 ? 'text-[#e53a40]' : 'text-[#2563eb]') :
+                                     item.profit_loss >= 0 ? 'text-[#e53a40]' : 'text-[#2563eb]'
+                                  }`}>
+                                    {!user || user.can_advance_round !== true ? 
+                                     (item.round_purchased === (user?.current_round_idx + 1) ? '0원' : 
+                                      `${item.profit_loss >= 0 ? '+' : ''}${item.profit_loss.toLocaleString()}원`) :
+                                     `${item.profit_loss >= 0 ? '+' : ''}${item.profit_loss.toLocaleString()}원`}
+                                  </div>
+                                                                  <div className={`text-xs ${
+                                    !user || user.can_advance_round !== true ? 
+                                     (item.round_purchased === (user?.current_round_idx + 1) ? 'text-gray-500' : 
+                                      item.profit_loss_percentage >= 0 ? 'text-[#e53a40]' : 'text-[#2563eb]') :
+                                     item.profit_loss_percentage >= 0 ? 'text-[#e53a40]' : 'text-[#2563eb]'
+                                  }`}>
+                                    {!user || user.can_advance_round !== true ? 
+                                     (item.round_purchased === (user?.current_round_idx + 1) ? '0%' : 
+                                      `${item.profit_loss_percentage >= 0 ? '+' : ''}${item.profit_loss_percentage.toFixed(1)}%`) :
+                                     `${item.profit_loss_percentage >= 0 ? '+' : ''}${item.profit_loss_percentage.toFixed(1)}%`}
+                                  </div>
                               </div>
                             </div>
                           ))}
@@ -764,16 +974,27 @@ const Navbar = () => {
                         <div className="flex justify-between items-center text-xs">
                           <span className="text-[#a67c3c]">총 평가금액:</span>
                           <span className="font-bold text-[#7c5c2b]">
-                            {portfolioData.total_portfolio_value?.toLocaleString() || 0}원
+                            {!user || user.can_advance_round !== true ? 
+                             (portfolioData.items?.reduce((sum, item) => sum + (item.average_price * item.quantity), 0) || 0).toLocaleString() :
+                             portfolioData.total_portfolio_value?.toLocaleString() || 0}원
                           </span>
                         </div>
                         <div className="flex justify-between items-center text-xs mt-1">
                           <span className="text-[#a67c3c]">총 손익:</span>
-                          <span className={`font-bold ${
-                            portfolioData.total_profit_loss >= 0 ? 'text-[#e53a40]' : 'text-[#2563eb]'
-                          }`}>
-                            {portfolioData.total_profit_loss >= 0 ? '+' : ''}{portfolioData.total_profit_loss?.toLocaleString() || 0}원
-                          </span>
+                                                      <span className={`font-bold ${
+                              !user || user.can_advance_round !== true ? 
+                               (portfolioData.items?.some(item => item.round_purchased !== (user?.current_round_idx + 1)) ? 
+                                (portfolioData.items?.filter(item => item.round_purchased !== (user?.current_round_idx + 1))
+                                 .reduce((sum, item) => sum + (item.profit_loss || 0), 0) >= 0 ? 'text-[#e53a40]' : 'text-[#2563eb]') : 'text-gray-500') :
+                               portfolioData.total_profit_loss >= 0 ? 'text-[#e53a40]' : 'text-[#2563eb]'
+                            }`}>
+                              {!user || user.can_advance_round !== true ? 
+                               (portfolioData.items?.some(item => item.round_purchased !== (user?.current_round_idx + 1)) ? 
+                                `${portfolioData.items?.filter(item => item.round_purchased !== (user?.current_round_idx + 1))
+                                 .reduce((sum, item) => sum + (item.profit_loss || 0), 0) >= 0 ? '+' : ''}${portfolioData.items?.filter(item => item.round_purchased !== (user?.current_round_idx + 1))
+                                 .reduce((sum, item) => sum + (item.profit_loss || 0), 0).toLocaleString()}원` : '0원') :
+                               `${portfolioData.total_profit_loss >= 0 ? '+' : ''}${portfolioData.total_profit_loss?.toLocaleString() || 0}원`}
+                            </span>
                         </div>
                       </div>
                     )}
