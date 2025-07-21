@@ -33,10 +33,10 @@ const GameResult = () => {
 
   useEffect(() => {
     if (gifLoaded) {
-      // GIF 로드 완료 후 3초 뒤에 GIF 오버레이 숨김
+      // GIF 로드 완료 후 5초 뒤에 GIF 오버레이 숨김
       const timer = setTimeout(() => {
         setShowGif(false);
-      }, 3000);
+      }, 5000);
 
       return () => clearTimeout(timer);
     }
@@ -110,16 +110,45 @@ const GameResult = () => {
     navigate("/");
   };
 
+  // 사용자 랭킹 정보 계산
+  const userRank = ranking.find((r) => r.username === user?.username);
+  const rank = userRank ? userRank.rank : "N/A";
+  const isFirstPlace = rank === 1;
+
   // GIF 오버레이
   const gifOverlay = showGif && (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="text-center">
+      <div className="text-center relative transform -translate-x-32">
         <img
           src="/result.gif"
           alt="결과 애니메이션"
           className="max-w-full max-h-screen object-contain"
           onLoad={() => setGifLoaded(true)}
         />
+        {/* 장군의 말풍선 - 1등과 나머지 구분 */}
+        <div className="absolute top-1/3 right-0 transform translate-x-full -translate-y-1/2">
+          <div className="bg-white rounded-2xl p-4 shadow-2xl border-4 border-[#bfa76a] max-w-xs">
+            <div className="text-center">
+              <p className="text-lg font-bold text-[#7c5c2b] text-center" style={{ fontFamily: "Jua, sans-serif" }}>
+                {isFirstPlace ? (
+                  <>
+                    "공포의 곰조차 그대의 앞길을<br/>
+                    막지 못했도다<br/>
+                    전장을 지배한 이는 단 한 사람<br/>
+                    영광의 1등, 바로 그대다!"
+                  </>
+                ) : (
+                  <>
+                    "승자는 단 한 명이나, 전장을 완주한 모두가 전사이니라.<br/>
+                    검을 거두지 말라, 전사여. 다음 싸움이 곧 시작될 것이다."
+                  </>
+                )}
+              </p>
+            </div>
+            {/* 말풍선 꼬리 - 왼쪽으로 향하도록 수정 */}
+            <div className="absolute top-1/2 -left-2 transform -translate-y-1/2 w-0 h-0 border-t-8 border-b-8 border-r-8 border-transparent border-r-[#bfa76a]"></div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -154,9 +183,6 @@ const GameResult = () => {
     );
   }
 
-  const userRank = ranking.find((r) => r.username === user?.username);
-  const rank = userRank ? userRank.rank : "N/A";
-
   return (
     <div className="min-h-screen p-6" style={{ fontFamily: "Jua, sans-serif" }}>
       {gifOverlay}
@@ -174,8 +200,28 @@ const GameResult = () => {
               <p className="text-xl text-[#a67c3c]" style={{ fontFamily: "Jua, sans-serif" }}>
                 {user?.username}님의 투자 여정이 끝났습니다!
               </p>
+              {/* 1위 달성 시 장군의 특별 메시지 */}
+              {isFirstPlace && (
+                <div className="mt-4 p-4 bg-gradient-to-r from-yellow-100 to-orange-100 rounded-lg border-2 border-yellow-300">
+                  <p className="text-lg font-bold text-[#7c5c2b]" style={{ fontFamily: "Jua, sans-serif" }}>
+                    "공포의 곰조차 그대의 앞길을 막지 못했도다.<br/>
+                    전장을 지배한 이는 단 한 사람—영광의 1등, 바로 그대다!"
+                  </p>
+                  <div className="mt-4 text-center">
+                    <a 
+                      href="https://www3.kiwoom.com/h/main" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="inline-block px-6 py-3 bg-[#3b7c2b] hover:bg-[#2d5a1f] text-white rounded-full font-bold border-2 border-[#2d5a1f] transition-colors"
+                      style={{ fontFamily: "Jua, sans-serif" }}
+                    >
+                      투자금 받으러 가기
+                    </a>
+                  </div>
+                </div>
+              )}
             </div>
-            <div className="absolute top-1/2 right-8 transform -translate-y-1/2">
+            <div className="absolute top-1/4 right-8 transform -translate-y-1/2">
               <button
                 onClick={handleRestartGame}
                 className="px-6 py-3 bg-[#bfa76a] hover:bg-[#a67c3c] text-white rounded-full font-bold flex items-center space-x-2 transition-colors border-2 border-[#e6d3a3]"
@@ -246,33 +292,39 @@ const GameResult = () => {
               </div>
 
               {/* 최종 자산 */}
-              <div className="text-center">
-                <div>
-                  <p className="text-sm text-[#a67c3c]">최종 자산</p>
-                  <p className="text-2xl font-bold text-[#7c5c2b]">
-                    {(
-                      (gameState?.total_balance || 0) +
-                      (gameState?.total_investment || 0)
-                    ).toLocaleString()}
-                    원
-                  </p>
+              <div className="bg-[#f3e7c4] rounded-xl p-6 border-2 border-[#e6d3a3]">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-[#a67c3c]">최종 자산</p>
+                    <p className="text-2xl font-bold text-[#7c5c2b]">
+                      {(
+                        (gameState?.total_balance || 0) +
+                        (gameState?.total_portfolio_value || 0)
+                      ).toLocaleString()}
+                      원
+                    </p>
+                  </div>
+                  <span className="text-3xl">🏦</span>
                 </div>
               </div>
 
               {/* 미실현 손익 */}
-              <div className="text-center">
-                <div>
-                  <p className="text-sm text-[#a67c3c]">미실현 손익</p>
-                  <p
-                    className={`text-xl font-bold ${
-                      (gameState?.total_profit_loss || 0) >= 0
-                        ? "text-[#3b7c2b]"
-                        : "text-[#a63c2b]"
-                    }`}
-                  >
-                    {(gameState?.total_profit_loss || 0) >= 0 ? "+" : ""}
-                    {gameState?.total_profit_loss?.toLocaleString() || "0"}원
-                  </p>
+              <div className="bg-[#f3e7c4] rounded-xl p-6 border-2 border-[#e6d3a3]">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-[#a67c3c]">미실현 손익</p>
+                    <p
+                      className={`text-2xl font-bold ${
+                        (gameState?.total_profit_loss || 0) >= 0
+                          ? "text-[#3b7c2b]"
+                          : "text-[#a63c2b]"
+                      }`}
+                    >
+                      {(gameState?.total_profit_loss || 0) >= 0 ? "+" : ""}
+                      {gameState?.total_profit_loss?.toLocaleString() || "0"}원
+                    </p>
+                  </div>
+                  <span className="text-3xl">💰</span>
                 </div>
               </div>
             </div>
@@ -296,17 +348,25 @@ const GameResult = () => {
                     rankItem.username === user?.username
                       ? "bg-[#f3e7c4] border-[#bfa76a]"
                       : "bg-[#f7f3e8] border-[#e6d3a3]"
+                  } ${
+                    index === 0
+                      ? "bg-gradient-to-r from-yellow-100 via-yellow-200 to-yellow-100 border-yellow-300"
+                      : index === 1
+                      ? "bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 border-gray-300"
+                      : index === 2
+                      ? "bg-gradient-to-r from-orange-100 via-orange-200 to-orange-100 border-orange-300"
+                      : ""
                   }`}
                 >
                   <div className="flex items-center space-x-4">
                     <div
                       className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
                         index === 0
-                          ? "bg-[#bfa76a] text-white"
+                          ? "bg-gradient-to-br from-yellow-400 to-yellow-600 text-white shadow-lg border-2 border-yellow-300"
                           : index === 1
-                          ? "bg-[#e6d3a3] text-white"
+                          ? "bg-gradient-to-br from-gray-300 to-gray-500 text-white shadow-lg border-2 border-gray-200"
                           : index === 2
-                          ? "bg-[#a67c3c] text-white"
+                          ? "bg-gradient-to-br from-orange-400 to-orange-600 text-white shadow-lg border-2 border-orange-300"
                           : "bg-[#f3e7c4] text-[#7c5c2b]"
                       }`}
                     >
