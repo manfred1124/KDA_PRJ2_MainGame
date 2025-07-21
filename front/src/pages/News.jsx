@@ -427,7 +427,7 @@ const News = () => {
         {news.slice(0, 4).map((item) => (
           <div
             key={item.id}
-            className={`flip-card card news-card transition-all duration-200 h-56 flex flex-col ${getImpactColor(
+            className={`flip-card card news-card transition-all duration-200 h-72 flex flex-col ${getImpactColor(
               item.impact_type
             )} ${flippedCards[item.id] ? "flipped" : ""}`}
             onClick={() => handleCardFlip(item.id)}
