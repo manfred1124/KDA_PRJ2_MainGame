@@ -552,7 +552,12 @@ const Review = () => {
         <div className="mb-6">
           {loading ? (
             <div className="flex justify-center items-center h-96 bg-gradient-to-br from-[#f7e6b6] to-[#f3e7c4] rounded-xl border-2 border-[#e6d3a3]">
-              <div className="animate-spin rounded-full h-32 w-32 border-b-4 border-[#bfa76a]"></div>
+              <img
+                src="/result.gif"
+                alt="로딩 애니메이션"
+                className="max-w-full max-h-screen object-contain"
+                style={{ width: 160, height: 160 }}
+              />
             </div>
           ) : (
             <div className="bg-gradient-to-br from-[#f7e6b6] to-[#f3e7c4] p-6 rounded-xl shadow-lg border-2 border-[#e6d3a3]">
@@ -700,7 +705,12 @@ const Review = () => {
 
               {analyzing ? (
                 <div className="flex items-center justify-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#bfa76a] mr-3"></div>
+                  <img
+                    src="/result.gif"
+                    alt="로딩 애니메이션"
+                    className="max-w-full max-h-screen object-contain mr-3"
+                    style={{ width: 32, height: 32 }}
+                  />
                   <span
                     className="text-[#7c5c2b]"
                     style={{ fontFamily: "Jua, sans-serif" }}
@@ -1272,7 +1282,12 @@ const StockDetailModal = ({ stock, period, onClose }) => {
         <div className="flex-1 overflow-y-auto p-3 md:p-4">
           {loading ? (
             <div className="flex justify-center items-center h-64">
-              <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-[#bfa76a]"></div>
+              <img
+                src="/result.gif"
+                alt="로딩 애니메이션"
+                className="max-w-full max-h-screen object-contain"
+                style={{ width: 120, height: 120 }}
+              />
             </div>
           ) : (
             <div className="space-y-3 md:space-y-4 min-h-0">
@@ -1449,7 +1464,12 @@ const StockDetailModal = ({ stock, period, onClose }) => {
                 </h3>
                 {analyzingStock ? (
                   <div className="flex items-center justify-center py-8 bg-gradient-to-br from-[#f9f6ef] to-[#f3e7c4] rounded-xl border-2 border-[#e6d3a3]">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#bfa76a] mr-3"></div>
+                    <img
+                      src="/result.gif"
+                      alt="로딩 애니메이션"
+                      className="max-w-full max-h-screen object-contain mr-3"
+                      style={{ width: 32, height: 32 }}
+                    />
                     <span
                       className="text-[#7c5c2b]"
                       style={{ fontFamily: "Jua, sans-serif" }}

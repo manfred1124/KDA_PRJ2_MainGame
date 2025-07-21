@@ -122,6 +122,10 @@ const GameResult = () => {
   const rank = userRank ? userRank.rank : "N/A";
   const isFirstPlace = rank === 1;
 
+  const INITIAL_ASSET = 10000000;
+  const finalAsset = userRank?.total_portfolio_value || 0;
+  const totalReturnPercent = ((finalAsset - INITIAL_ASSET) / INITIAL_ASSET) * 100;
+
   // GIF 오버레이
   const gifOverlay = showGif && (
     <>
@@ -176,8 +180,13 @@ const GameResult = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[#bfa76a]"></div>
+      <div className="flex items-center justify-center min-h-screen bg-black bg-opacity-30">
+        <img
+          src="/result.gif"
+          alt="로딩 애니메이션"
+          className="max-w-full max-h-screen object-contain"
+          style={{ width: 320, height: 320 }}
+        />
       </div>
     );
   }
@@ -295,17 +304,14 @@ const GameResult = () => {
                     <p className="text-sm text-[#a67c3c]">총 수익률</p>
                     <p
                       className={`text-3xl font-bold ${
-                        gameState.total_profit_percentage >= 0
-                          ? "text-[#3b7c2b]"
-                          : "text-[#a63c2b]"
+                        totalReturnPercent >= 0 ? "text-[#e53a40]" : "text-[#2563eb]"
                       }`}
                     >
-                      {gameState?.total_profit_percentage >= 0 ? "+" : ""}
-                      {gameState?.total_profit_percentage?.toFixed(2) || "0.00"}
-                      %
+                      {totalReturnPercent >= 0 ? "+" : ""}
+                      {isNaN(totalReturnPercent) ? "0.00" : totalReturnPercent.toFixed(2)}%
                     </p>
                   </div>
-                  {gameState.total_profit_percentage >= 0 ? (
+                  {totalReturnPercent >= 0 ? (
                     <TrendingUp className="text-[#3b7c2b] text-4xl" />
                   ) : (
                     <TrendingDown className="text-[#a63c2b] text-4xl" />
@@ -320,9 +326,7 @@ const GameResult = () => {
                     <p className="text-sm text-[#a67c3c]">총 수익</p>
                     <p
                       className={`text-2xl font-bold ${
-                        gameState.total_profit >= 0
-                          ? "text-[#3b7c2b]"
-                          : "text-[#a63c2b]"
+                        gameState.total_profit >= 0 ? "text-[#e53a40]" : "text-[#2563eb]"
                       }`}
                     >
                       {gameState?.total_profit >= 0 ? "+" : ""}
@@ -340,9 +344,7 @@ const GameResult = () => {
                     <p className="text-sm text-[#a67c3c]">미실현 손익</p>
                     <p
                       className={`text-2xl font-bold ${
-                        (gameState?.total_profit_loss || 0) >= 0
-                          ? "text-[#3b7c2b]"
-                          : "text-[#a63c2b]"
+                        (gameState?.total_profit_loss || 0) >= 0 ? "text-[#e53a40]" : "text-[#2563eb]"
                       }`}
                     >
                       {(gameState?.total_profit_loss || 0) >= 0 ? "+" : ""}
@@ -379,61 +381,64 @@ const GameResult = () => {
             </h2>
 
             <div className="space-y-4">
-              {ranking.slice(0, 5).map((rankItem, index) => (
-                <div
-                  key={index}
-                  className={`flex items-center justify-between p-4 rounded-lg border-2 ${
-                    rankItem.username === user?.username
-                      ? "bg-[#f3e7c4] border-[#bfa76a]"
-                      : "bg-[#f7f3e8] border-[#e6d3a3]"
-                  } ${
-                    index === 0
-                      ? "bg-gradient-to-r from-yellow-100 via-yellow-200 to-yellow-100 border-yellow-300"
-                      : index === 1
-                      ? "bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 border-gray-300"
-                      : index === 2
-                      ? "bg-gradient-to-r from-orange-100 via-orange-200 to-orange-100 border-orange-300"
-                      : ""
-                  }`}
-                >
-                  <div className="flex items-center space-x-4">
-                    <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                        index === 0
-                          ? "bg-gradient-to-br from-yellow-400 to-yellow-600 text-white shadow-lg border-2 border-yellow-300"
-                          : index === 1
-                          ? "bg-gradient-to-br from-gray-300 to-gray-500 text-white shadow-lg border-2 border-gray-200"
-                          : index === 2
-                          ? "bg-gradient-to-br from-orange-400 to-orange-600 text-white shadow-lg border-2 border-orange-300"
-                          : "bg-[#f3e7c4] text-[#7c5c2b]"
-                      }`}
-                    >
-                      {index + 1}
-                    </div>
-                    <div>
-                      <p
-                        className={`font-semibold ${
-                          rankItem.username === user?.username
-                            ? "text-[#7c5c2b]"
-                            : "text-[#a67c3c]"
+              {ranking.slice(0, 5).map((rankItem, index) => {
+                const INITIAL_ASSET = 10000000;
+                const percent = ((rankItem.total_portfolio_value - INITIAL_ASSET) / INITIAL_ASSET) * 100;
+                return (
+                  <div
+                    key={index}
+                    className={`flex items-center justify-between p-4 rounded-lg border-2 ${
+                      rankItem.username === user?.username
+                        ? "bg-[#f3e7c4] border-[#bfa76a]"
+                        : "bg-[#f7f3e8] border-[#e6d3a3]"
+                    } ${
+                      index === 0
+                        ? "bg-gradient-to-r from-yellow-100 via-yellow-200 to-yellow-100 border-yellow-300"
+                        : index === 1
+                        ? "bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 border-gray-300"
+                        : index === 2
+                        ? "bg-gradient-to-r from-orange-100 via-orange-200 to-orange-100 border-orange-300"
+                        : ""
+                    }`}
+                  >
+                    <div className="flex items-center space-x-4">
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                          index === 0
+                            ? "bg-gradient-to-br from-yellow-400 to-yellow-600 text-white shadow-lg border-2 border-yellow-300"
+                            : index === 1
+                            ? "bg-gradient-to-br from-gray-300 to-gray-500 text-white shadow-lg border-2 border-gray-200"
+                            : index === 2
+                            ? "bg-gradient-to-br from-orange-400 to-orange-600 text-white shadow-lg border-2 border-orange-300"
+                            : "bg-[#f3e7c4] text-[#7c5c2b]"
                         }`}
                       >
-                        {rankItem.username}
-                        {rankItem.username === user?.username && " (나)"}
-                      </p>
-                      <p className="text-sm text-[#a67c3c]">
-                        수익률:{" "}
-                        {rankItem.total_profit_loss_percentage.toFixed(2)}%
+                        {index + 1}
+                      </div>
+                      <div>
+                        <p
+                          className={`font-semibold ${
+                            rankItem.username === user?.username
+                              ? "text-[#7c5c2b]"
+                              : "text-[#a67c3c]"
+                          }`}
+                        >
+                          {rankItem.username}
+                          {rankItem.username === user?.username && " (나)"}
+                        </p>
+                        <p className="text-sm text-[#a67c3c]">
+                         수익률: {percent >= 0 ? "+" : ""}{isNaN(percent) ? "0.00" : percent.toFixed(2)}%
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-[#7c5c2b]">
+                        {rankItem.total_portfolio_value.toLocaleString()}원
                       </p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-bold text-[#7c5c2b]">
-                      {rankItem.total_portfolio_value.toLocaleString()}원
-                    </p>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
               {userRank && rank > 5 && (
                 <div className="mt-6 p-4 bg-[#f3e7c4] rounded-lg border-2 border-[#bfa76a]">
                   <div className="flex items-center justify-between">
@@ -446,8 +451,10 @@ const GameResult = () => {
                           {userRank.username} (나)
                         </p>
                         <p className="text-sm text-[#a67c3c]">
-                          수익률:{" "}
-                          {userRank.total_profit_loss_percentage.toFixed(2)}%
+                         수익률: {(() => {
+                           const percent = ((userRank.total_portfolio_value - 10000000) / 10000000) * 100;
+                           return `${percent >= 0 ? "+" : ""}${isNaN(percent) ? "0.00" : percent.toFixed(2)}%`;
+                         })()}
                         </p>
                       </div>
                     </div>
