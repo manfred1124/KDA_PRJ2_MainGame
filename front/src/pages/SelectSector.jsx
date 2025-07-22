@@ -77,6 +77,8 @@ const SelectSector = () => {
   const [financialData, setFinancialData] = useState(null);
   const [financialLoading, setFinancialLoading] = useState(false);
   const [resultModalOpen, setResultModalOpen] = useState(false);
+  // SelectSector의 임시 거래 목록
+  const [selectSectorPendingTransactions, setSelectSectorPendingTransactions] = useState([]);
 
   useEffect(() => {
     addGuideMessage(GUIDE_MSG);
@@ -348,6 +350,45 @@ const SelectSector = () => {
 
   const handleOrder = async () => {
     if (!orderModal) return;
+
+    // 라운드가 넘어가기 전(결과 확인 전)에는 임시 거래로 저장
+    if (user && user.can_advance_round === false) {
+      // 임시 거래 추가
+      const newTransaction = {
+        id: Date.now() + Math.random(),
+        stock_id: orderModal.stock.id,
+        stock_name: orderModal.stock.name,
+        stock_symbol: orderModal.stock.symbol,
+        transaction_type: orderType,
+        quantity: orderQty,
+        price: orderModal.stock.current_price,
+        total_amount: orderModal.stock.current_price * orderQty
+      };
+      
+      // SelectSector의 임시 거래 목록에 추가
+      setSelectSectorPendingTransactions(prev => [...prev, newTransaction]);
+      
+      toast.success(
+        orderType === "buy"
+          ? `${
+              orderModal.stock.name
+            } ${orderQty}주 구매하기 주문이 추가되었습니다. (결과 확인 후 처리)`
+          : `${
+              orderModal.stock.name
+            } ${orderQty}주 판매하기 주문이 추가되었습니다. (결과 확인 후 처리)`
+      );
+
+      // Navbar에 임시 거래 추가 이벤트 발생
+      window.dispatchEvent(new CustomEvent('pendingTransactionAdded', {
+        detail: newTransaction
+      }));
+
+      setOrderModal(null);
+      setOrderQty(1);
+      return;
+    }
+
+    // 라운드가 넘어간 후에는 즉시 API 호출
     try {
       const response = await axios.post(`/api/portfolio/${orderType}`, {
         stock_id: orderModal.stock.id,
@@ -362,8 +403,16 @@ const SelectSector = () => {
       try {
         const userResponse = await axios.get("/api/auth/me");
         updateUser(userResponse.data);
-        window.dispatchEvent(new Event("transactionComplete"));
-      } catch (error) {}
+
+        // 포트폴리오 데이터 업데이트 (약간의 지연 후)
+        setTimeout(() => {
+          fetchPortfolio();
+        }, 100);
+      } catch (error) {
+        console.error("사용자 정보 업데이트 실패:", error);
+      }
+
+      window.dispatchEvent(new Event("transactionComplete"));
       setOrderModal(null);
       setOrderQty(1);
     } catch (error) {
@@ -391,6 +440,74 @@ const SelectSector = () => {
     ? orderQty * orderModal.stock.current_price
     : 0;
 
+  // Process pending transactions from Stocks.jsx and SelectSector.jsx
+  const processStocksPendingTransactions = async () => {
+    console.log('SelectSector.jsx: processStocksPendingTransactions called');
+    return new Promise((resolve, reject) => {
+      const handlePendingTransactionsResponse = (event) => {
+        const stocksPendingTransactions = event.detail;
+        console.log('SelectSector.jsx: Received pendingTransactionsResponse', stocksPendingTransactions);
+        window.removeEventListener('pendingTransactionsResponse', handlePendingTransactionsResponse);
+        
+        const processTransactions = async () => {
+          try {
+            // Process Stocks.jsx pending transactions
+            if (stocksPendingTransactions && stocksPendingTransactions.length > 0) {
+              for (const transaction of stocksPendingTransactions) {
+                try {
+                  await axios.post(`/api/portfolio/${transaction.transaction_type}`, {
+                    stock_id: transaction.stock_id,
+                    quantity: transaction.quantity,
+                    price: transaction.price
+                  });
+                } catch (error) {
+                  console.error(`Transaction failed: ${transaction.stock_name}`, error);
+                  toast.error(`${transaction.stock_name} 거래에 실패했습니다.`);
+                }
+              }
+              
+              window.dispatchEvent(new CustomEvent('clearPendingTransactions'));
+            }
+            
+            // Process SelectSector.jsx pending transactions
+            if (selectSectorPendingTransactions && selectSectorPendingTransactions.length > 0) {
+              for (const transaction of selectSectorPendingTransactions) {
+                try {
+                  await axios.post(`/api/portfolio/${transaction.transaction_type}`, {
+                    stock_id: transaction.stock_id,
+                    quantity: transaction.quantity,
+                    price: transaction.price
+                  });
+                } catch (error) {
+                  console.error(`Transaction failed: ${transaction.stock_name}`, error);
+                  toast.error(`${transaction.stock_name} 거래에 실패했습니다.`);
+                }
+              }
+              
+              setSelectSectorPendingTransactions([]);
+            }
+            
+            resolve();
+          } catch (error) {
+            reject(error);
+          }
+        };
+        
+        processTransactions();
+      };
+      
+      window.addEventListener('pendingTransactionsResponse', handlePendingTransactionsResponse);
+      console.log('SelectSector.jsx: Dispatching getPendingTransactions event');
+      window.dispatchEvent(new CustomEvent('getPendingTransactions'));
+      
+      setTimeout(() => {
+        window.removeEventListener('pendingTransactionsResponse', handlePendingTransactionsResponse);
+        resolve();
+      }, 5000);
+    });
+  };
+
+  // 다음 라운드 진행 및 포트폴리오 이동
   const handleNextRound = async () => {
     setAdvancing(true);
     try {
@@ -449,6 +566,59 @@ const SelectSector = () => {
               : "결과 확인"}
           </button>
         </div>
+        
+        {/* SelectSector 임시 거래 목록 */}
+        {selectSectorPendingTransactions.length > 0 && (
+          <div className="bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-200 rounded-xl p-4 mb-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-bold text-green-900">📋 SelectSector 대기 중인 거래</h3>
+              <span className="text-sm text-green-700">
+                총 {selectSectorPendingTransactions.length}건
+              </span>
+            </div>
+            
+            <div className="space-y-2 max-h-32 overflow-y-auto">
+              {selectSectorPendingTransactions.map((transaction) => (
+                <div key={transaction.id} className="flex items-center justify-between bg-white rounded-lg p-3 border border-green-200">
+                  <div className="flex items-center space-x-3">
+                    <div className={`w-3 h-3 rounded-full ${transaction.transaction_type === 'buy' ? 'bg-red-500' : 'bg-blue-500'}`}></div>
+                    <div>
+                      <span className="font-semibold text-gray-900">{transaction.stock_name}</span>
+                      <span className="text-sm text-gray-600 ml-2">({transaction.stock_symbol})</span>
+                    </div>
+                    <span className={`text-sm font-medium ${transaction.transaction_type === 'buy' ? 'text-red-600' : 'text-blue-600'}`}>
+                      {transaction.transaction_type === 'buy' ? '매수' : '매도'}
+                    </span>
+                    <span className="text-sm text-gray-600">
+                      {transaction.quantity.toLocaleString()}주 × {transaction.price.toLocaleString()}원
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="font-bold text-gray-900">
+                      {transaction.total_amount.toLocaleString()}원
+                    </span>
+                    <button
+                      onClick={() => {
+                        const removedTransaction = selectSectorPendingTransactions.find(tx => tx.id === transaction.id);
+                        setSelectSectorPendingTransactions(prev => prev.filter(tx => tx.id !== transaction.id));
+                        toast.success('주문이 취소되었습니다.');
+                        
+                        if (removedTransaction) {
+                          window.dispatchEvent(new CustomEvent('pendingTransactionRemoved', {
+                            detail: removedTransaction
+                          }));
+                        }
+                      }}
+                      className="text-red-500 hover:text-red-700 transition-colors"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         <div className="w-full relative">
           <div className="flex gap-4 p-4">
             {/* 왼쪽 섹터 버튼 영역 */}
@@ -1433,12 +1603,34 @@ const SelectSector = () => {
             <div className="flex justify-center gap-8">
               <button
                 className="px-8 py-3 bg-[#7c5c2b] hover:bg-[#a67c3c] text-white rounded-full font-bold text-lg"
-                onClick={() => {
+                onClick={async () => {
                   setResultModalOpen(false);
-                  navigate("/my-page");
+                  setAdvancing(true);
+                  
+                  try {
+                    // Process pending transactions from Stocks.jsx
+                    await processStocksPendingTransactions();
+                    
+                    // Update user info and trigger transaction complete event
+                    try {
+                      const userResponse = await axios.get("/api/auth/me");
+                      updateUser(userResponse.data);
+                      window.dispatchEvent(new Event("transactionComplete"));
+                    } catch (error) {
+                      console.error("Failed to update user info:", error);
+                    }
+                    
+                    navigate("/my-page");
+                  } catch (error) {
+                    console.error("Failed to process transactions:", error);
+                    toast.error("거래 처리 중 오류가 발생했습니다.");
+                  } finally {
+                    setAdvancing(false);
+                  }
                 }}
+                disabled={advancing}
               >
-                예
+                {advancing ? "처리 중..." : "예"}
               </button>
               <button
                 className="px-8 py-3 bg-gray-300 hover:bg-gray-400 text-[#7c5c2b] rounded-full font-bold text-lg"
