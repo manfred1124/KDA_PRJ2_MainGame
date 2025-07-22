@@ -1,20 +1,22 @@
-import React, {
-  useState,
-  useEffect,
-  useCallback,
-  useContext,
-  useRef,
-} from "react";
+import React, { useState, useEffect, useContext, useRef } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import ChatbotWidget from "../components/ChatbotWidget";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
-
 import { GuideMessageContext } from "../App";
-
-// TradingView Lightweight Charts import
 import { createChart, ColorType } from "lightweight-charts";
+
+// 👇 숫자를 조/억 단위로 변환하는 함수 (가장 위에 선언!)
+function formatToKoreanUnit(valueIn100ManWon) {
+  if (valueIn100ManWon == null || isNaN(valueIn100ManWon)) return "N/A";
+  const totalEok = valueIn100ManWon * 0.1; // 100만원 단위 -> 억
+  const jo = Math.floor(totalEok / 100000);
+  const eok = Math.floor(totalEok % 10000);
+  if (jo > 0 && eok > 0) return `${jo}조 ${eok}억`;
+  if (jo > 0) return `${jo}조`;
+  return `${eok}억`;
+}
 
 const GUIDE_MSG =
   "여기는 다양한 산업의 주식이 모여있는 투자판이네.\n\n신중히 섹터를 골라 투자해보게!";
@@ -42,7 +44,6 @@ const SECTOR_GUIDE = {
     "커뮤니케이션 섹터는 정보와 소통을 책임지는 기업들이 모여 있구나.\n\n통신, 미디어, 인터넷 기업이 중심이니,\n과인의 조언을 참고하시게.",
   "공공·유틸리티":
     "공공·유틸리티 섹터는 전기, 수도, 가스 등 생활에 꼭 필요한 서비스를 제공하는 곳이구나.\n\n안정적인 수익이 특징이니,\n그대가 신중하게 판단하시게.",
-  // 필요에 따라 섹터명을 추가하세요
 };
 
 function getSectorGuide(sector) {
@@ -53,70 +54,42 @@ function getSectorGuide(sector) {
   return `허허, ${sector} 섹터에 온걸 환영하구나!\n\n그대가 신중하게 판단하시게.`;
 }
 
-const ROUND_TREND_GUIDE = {
-  "2020Q1":
-    "2020년 1분기에는 코로나19의 영향으로 세계 증시가 큰 충격을 받았으니,\n\n그대가 신중하게 판단하시게.",
-  "2020Q2":
-    "2020년 2분기에는 여러 나라의 경기 부양책 덕분에 시장이 다시 살아나기 시작했으니,\n\n과인의 조언을 참고하시게.",
-  "2021Q1":
-    "2021년 1분기에는 백신이 퍼지면서 경기가 좋아질 거라는 기대감이 커졌으니,\n\n이런 시기를 잘 활용하시게.",
-  "2023H1":
-    "2023년 상반기에는 중국 경제가 다시 문을 열면서 세계가 성장할 거라는 기대감이 부풀었으니,\n\n그대가 신중하게 판단하시게.",
-  // 필요에 따라 실제 period 값에 맞게 추가
-};
-
-function getRoundTrendGuide(period) {
-  if (ROUND_TREND_GUIDE[period]) return ROUND_TREND_GUIDE[period];
-  if (period && period.length >= 4) {
-    const year = period.slice(0, 4);
-    if (year === "2020")
-      return "2020년대 초반에는 시장이 큰 변동성을 겪고 있으니,\n\n그대가 조심하시게.";
-    if (year === "2021")
-      return "2021년에는 경기 회복과 성장주에 대한 기대가 높아졌으니,\n\n이런 시기를 잘 활용하시게.";
-    if (year === "2022")
-      return "2022년에는 인플레이션과 금리 인상 이슈로 시장이 조정받고 있으니,\n\n과인의 조언을 참고하시게.";
-    if (year === "2023")
-      return "2023년에는 글로벌 경제가 점차 안정을 찾아가고 있으니,\n\n그대가 신중하게 판단하시게.";
-  }
-  return "허허, 현재 시점의 시장 동향을 잘 살펴 투자 전략을 세워보시게!";
-}
-
-const SelectSector = ({ chatbotRef }) => {
+const SelectSector = ({ chatbotRef = null }) => {
   const { user, updateUser } = useAuth();
   const [sectors, setSectors] = useState([]);
   const [selected, setSelected] = useState(null);
   const [stocks, setStocks] = useState([]);
-  const [orderModal, setOrderModal] = useState(null); // {stock, type}
+  const [orderModal, setOrderModal] = useState(null);
   const [orderType, setOrderType] = useState("buy");
   const [orderQty, setOrderQty] = useState(1);
   const [stockNews, setStockNews] = useState([]);
-  const [orderTab, setOrderTab] = useState("chart"); // 주문창 탭 상태 추가 (1라운드: chart, 2라운드: chart, 3라운드: chart)
+  const [orderTab, setOrderTab] = useState("chart");
   const [loading, setLoading] = useState(true);
   const [priceUpdateTime, setPriceUpdateTime] = useState(null);
-  const [newsModal, setNewsModal] = useState(false); // 뉴스 모달 상태 추가
-  const [allNews, setAllNews] = useState([]); // 전체 뉴스 데이터 추가
+  const [newsModal, setNewsModal] = useState(false);
+  const [allNews, setAllNews] = useState([]);
   const [sectorNews, setSectorNews] = useState([]);
-  const [allSectorNews, setAllSectorNews] = useState({}); // {섹터명: [뉴스, ...]}
+  const [allSectorNews, setAllSectorNews] = useState({});
   const userBalance = user?.total_balance || user?.balance || 0;
   const navigate = useNavigate();
   const [advancing, setAdvancing] = useState(false);
-  const [sectorViewTab, setSectorViewTab] = useState({}); // {섹터명: 'news' | 'stocks'}
+  const [sectorViewTab, setSectorViewTab] = useState({});
   const [portfolio, setPortfolio] = useState(null);
   const [portfolioOpen, setPortfolioOpen] = useState(false);
   const { addGuideMessage } = useContext(GuideMessageContext);
   const [showAllNews, setShowAllNews] = useState(false);
   const [financialData, setFinancialData] = useState(null);
   const [financialLoading, setFinancialLoading] = useState(false);
-  // 1. 상태 추가
   const [resultModalOpen, setResultModalOpen] = useState(false);
+  // SelectSector의 임시 거래 목록
+  const [selectSectorPendingTransactions, setSelectSectorPendingTransactions] =
+    useState([]);
 
   useEffect(() => {
     addGuideMessage(GUIDE_MSG);
-    // 라운드/시점 동향 메시지 출력 제거 (메인에서만 출력)
     fetchSectors();
     fetchPortfolio();
 
-    // 보유 종목 클릭 시 판매하기 모달 열기 이벤트 리스너
     const handleOpenSellModal = async (event) => {
       const {
         stock_id,
@@ -127,7 +100,6 @@ const SelectSector = ({ chatbotRef }) => {
         average_price,
       } = event.detail;
 
-      // 해당 주식의 전체 정보를 가져오기
       try {
         const token = localStorage.getItem("token");
         const response = await axios.get(`/api/stocks/${stock_id}`, {
@@ -137,7 +109,6 @@ const SelectSector = ({ chatbotRef }) => {
         });
         const stockData = response.data;
 
-        // 판매하기 모달 열기
         setOrderModal({
           stock: {
             ...stockData,
@@ -145,10 +116,8 @@ const SelectSector = ({ chatbotRef }) => {
           },
           type: "sell",
         });
-        setOrderType("sell"); // 판매하기로 설정
-        setOrderQty(1); // 수량 초기화
-
-        // 매매하기 탭으로 이동
+        setOrderType("sell");
+        setOrderQty(1);
         setOrderTab("trade");
       } catch (error) {
         console.error("주식 정보를 가져오는데 실패했습니다:", error);
@@ -157,25 +126,19 @@ const SelectSector = ({ chatbotRef }) => {
     };
 
     window.addEventListener("openSellModal", handleOpenSellModal);
-
     return () => {
       window.removeEventListener("openSellModal", handleOpenSellModal);
     };
   }, []);
 
   useEffect(() => {
-    if (user?.current_period) {
-      fetchAllNews(); // 전체 뉴스 데이터 가져오기
-    }
+    if (user?.current_period) fetchAllNews();
   }, [user?.current_period]);
 
   useEffect(() => {
-    if (selected) {
-      fetchSectorNews(selected);
-    }
+    if (selected) fetchSectorNews(selected);
   }, [selected]);
 
-  // 재무지표 탭 클릭 시 데이터 가져오기
   useEffect(() => {
     if (orderTab === "financial" && orderModal?.stock?.symbol) {
       fetchFinancialData(orderModal.stock.symbol);
@@ -187,17 +150,6 @@ const SelectSector = ({ chatbotRef }) => {
       fetchAllSectorsNews();
     }
   }, [selected, sectors, user?.current_period]);
-
-  // 선택된 섹터가 있으면 주기적으로 주식 정보 업데이트 (실제 데이터 연결 전까지 비활성화)
-  // useEffect(() => {
-  //   if (!selected) return
-
-  //   const interval = setInterval(() => {
-  //     fetchStocksBySector(selected)
-  //   }, 300000) // 5분마다 업데이트 (30초 → 5분)
-
-  //   return () => clearInterval(interval)
-  // }, [selected])
 
   const fetchSectors = async () => {
     try {
@@ -213,35 +165,7 @@ const SelectSector = ({ chatbotRef }) => {
   const fetchStocksBySector = async (sector) => {
     try {
       const response = await axios.get(`/api/stocks/sector/${sector}`);
-      const newStocks = response.data;
-
-      // 가격 변동 확인 (실제 데이터 연결 전까지 비활성화)
-      // if (stocks.length > 0) {
-      //   const priceChanges = newStocks.map(newStock => {
-      //     const oldStock = stocks.find(s => s.id === newStock.id)
-      //     if (oldStock && oldStock.current_price !== newStock.current_price) {
-      //       const change = newStock.current_price - oldStock.current_price
-      //       const changePercent = (change / oldStock.current_price) * 100
-      //       return {
-      //         name: newStock.name,
-      //         change,
-      //         changePercent,
-      //         newPrice: newStock.current_price
-      //       }
-      //     }
-      //     return null
-      //   }).filter(Boolean)
-
-      //   // 가격 변동이 있으면 알림
-      //   if (priceChanges.length > 0) {
-      //     const changesText = priceChanges.map(p =>
-      //       `${p.name}: ${p.change > 0 ? '+' : ''}${p.change.toLocaleString()}원 (${p.changePercent > 0 ? '+' : ''}${p.changePercent.toFixed(1)}%)`
-      //     ).join(', ')
-      //     toast.info(`가격 변동: ${changesText}`)
-      //   }
-      // }
-
-      setStocks(newStocks);
+      setStocks(response.data);
       setPriceUpdateTime(new Date());
     } catch (error) {
       toast.error("주식 정보를 불러오는데 실패했습니다.");
@@ -266,7 +190,6 @@ const SelectSector = ({ chatbotRef }) => {
     try {
       const period = user?.current_period;
       if (!period) {
-        console.log("현재 기간 정보가 없어서 뉴스를 불러올 수 없습니다.");
         setAllNews([]);
         return;
       }
@@ -275,7 +198,6 @@ const SelectSector = ({ chatbotRef }) => {
       );
       setAllNews(response.data);
     } catch (error) {
-      console.error("뉴스 데이터를 불러오는데 실패했습니다:", error);
       setAllNews([]);
     }
   };
@@ -320,37 +242,26 @@ const SelectSector = ({ chatbotRef }) => {
     try {
       const response = await axios.get("/api/portfolio");
       setPortfolio(response.data);
-    } catch (error) {
-      // 에러 무시(없어도 동작)
-    }
+    } catch (error) {}
   };
 
   const fetchFinancialData = async (symbol) => {
-    if (!symbol || (user?.current_round_idx ?? 0) < 2) {
-      return;
-    }
-
+    if (!symbol || (user?.current_round_idx ?? 0) < 2) return;
     setFinancialLoading(true);
     try {
       const token = localStorage.getItem("token");
       const response = await axios.get(`/api/financial/stock/${symbol}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
-
-      if (response.data.data) {
-        setFinancialData(response.data.data);
-      } else {
-        setFinancialData(null);
-      }
+      if (response.data.data) setFinancialData(response.data.data);
+      else setFinancialData(null);
     } catch (error) {
-      console.error("재무지표 데이터 조회 실패:", error);
       setFinancialData(null);
     } finally {
       setFinancialLoading(false);
     }
   };
 
-  // ESC 키로 모달 닫기
   useEffect(() => {
     const handleEscKey = (event) => {
       if (event.key === "Escape") {
@@ -358,35 +269,27 @@ const SelectSector = ({ chatbotRef }) => {
         setOrderModal(null);
       }
     };
-
     document.addEventListener("keydown", handleEscKey);
     return () => {
       document.removeEventListener("keydown", handleEscKey);
     };
   }, []);
 
-  // 모달 밖 클릭으로 닫기
   const handleModalBackdropClick = (e) => {
-    if (e.target === e.currentTarget) {
-      setNewsModal(false);
-    }
+    if (e.target === e.currentTarget) setNewsModal(false);
   };
 
   const handleOrderModalBackdropClick = (e) => {
-    if (e.target === e.currentTarget) {
-      setOrderModal(null);
-    }
+    if (e.target === e.currentTarget) setOrderModal(null);
   };
 
   const handleSectorSelect = async (sector) => {
     if (selected === sector) {
       setSelected(null);
-      // 탭도 닫기
       setSectorViewTab((prev) => ({ ...prev, [sector]: undefined }));
       return;
     }
     setSelected(sector);
-    // 라운드별 기본값 설정: 1라운드는 stocks, 2라운드 이상은 news
     const defaultTab = (user?.current_round_idx ?? 0) >= 1 ? "news" : "stocks";
     setSectorViewTab((prev) => ({
       ...prev,
@@ -395,7 +298,6 @@ const SelectSector = ({ chatbotRef }) => {
     await fetchStocksBySector(sector);
     await fetchSectorNews(sector);
 
-    // 섹터별 장군 분석 호출
     try {
       const token = localStorage.getItem("token");
       const response = await axios.post(
@@ -408,22 +310,17 @@ const SelectSector = ({ chatbotRef }) => {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         }
       );
-
       if (response.data && response.data.analysis) {
         addGuideMessage(response.data.analysis);
       } else {
-        // 기본 섹터 가이드 메시지
         addGuideMessage(getSectorGuide(sector));
       }
     } catch (error) {
-      console.error("Sector analysis failed:", error);
-      // 에러가 나도 기본 메시지 추가
       addGuideMessage(getSectorGuide(sector));
     }
   };
 
   const handleStockClick = async (stock) => {
-    // 거래 시점의 가격을 고정
     const fixedStock = {
       ...stock,
       current_price: stock.current_price,
@@ -433,7 +330,6 @@ const SelectSector = ({ chatbotRef }) => {
     setOrderQty(1);
     await fetchStockNews(stock.symbol);
 
-    // 장군 분석 호출
     try {
       const token = localStorage.getItem("token");
       const response = await axios.post(
@@ -447,13 +343,10 @@ const SelectSector = ({ chatbotRef }) => {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         }
       );
-
       if (response.data && response.data.analysis) {
         addGuideMessage(response.data.analysis);
       }
     } catch (error) {
-      console.error("Stock analysis failed:", error);
-      // 에러가 나도 기본 메시지 추가
       addGuideMessage(
         `${stock.name} 종목을 선택했구나. 차트와 뉴스를 잘 살펴보시게!`
       );
@@ -463,13 +356,48 @@ const SelectSector = ({ chatbotRef }) => {
   const handleOrder = async () => {
     if (!orderModal) return;
 
+    // 라운드가 넘어가기 전(결과 확인 전)에는 임시 거래로 저장
+    if (user && user.can_advance_round === false) {
+      // 임시 거래 추가
+      const newTransaction = {
+        id: Date.now() + Math.random(),
+        stock_id: orderModal.stock.id,
+        stock_name: orderModal.stock.name,
+        stock_symbol: orderModal.stock.symbol,
+        transaction_type: orderType,
+        quantity: orderQty,
+        price: orderModal.stock.current_price,
+        total_amount: orderModal.stock.current_price * orderQty,
+      };
+
+      // SelectSector의 임시 거래 목록에 추가
+      setSelectSectorPendingTransactions((prev) => [...prev, newTransaction]);
+
+      toast.success(
+        orderType === "buy"
+          ? `${orderModal.stock.name} ${orderQty}주 구매하기 주문이 추가되었습니다. (결과 확인 후 처리)`
+          : `${orderModal.stock.name} ${orderQty}주 판매하기 주문이 추가되었습니다. (결과 확인 후 처리)`
+      );
+
+      // Navbar에 임시 거래 추가 이벤트 발생
+      window.dispatchEvent(
+        new CustomEvent("pendingTransactionAdded", {
+          detail: newTransaction,
+        })
+      );
+
+      setOrderModal(null);
+      setOrderQty(1);
+      return;
+    }
+
+    // 라운드가 넘어간 후에는 즉시 API 호출
     try {
       const response = await axios.post(`/api/portfolio/${orderType}`, {
         stock_id: orderModal.stock.id,
         quantity: orderQty,
         price: orderModal.stock.current_price,
       });
-
       toast.success(
         orderType === "buy"
           ? `${
@@ -480,29 +408,32 @@ const SelectSector = ({ chatbotRef }) => {
             } ${orderQty}주 판매하기 완료! (${orderModal.stock.current_price.toLocaleString()}원)`
       );
 
-      // 디버깅: 공격 애니메이션 트리거 시도 로그
-      console.log("주문 성공! 공격 애니메이션 시도");
-      if (chatbotRef.current && chatbotRef.current.triggerAttackAnimation) {
-        console.log("triggerAttackAnimation 호출!", chatbotRef.current);
-        chatbotRef.current.triggerAttackAnimation();
-      } else {
-        console.log(
-          "chatbotRef.current 또는 triggerAttackAnimation 없음",
-          chatbotRef.current
-        );
+      // Trigger attack animation if chatbotRef is available
+      if (
+        chatbotRef &&
+        chatbotRef.current &&
+        chatbotRef.current.triggerAttackAnimation
+      ) {
+        try {
+          chatbotRef.current.triggerAttackAnimation();
+        } catch (e) {
+          console.warn("Failed to trigger attack animation", e);
+        }
       }
 
       // 사용자 정보 업데이트 (잔고 동기화)
       try {
         const userResponse = await axios.get("/api/auth/me");
         updateUser(userResponse.data);
-
-        // 네비게이션 바 잔고 업데이트를 위한 이벤트 발생
-        window.dispatchEvent(new Event("transactionComplete"));
+        // 포트폴리오 데이터 업데이트 (약간의 지연 후)
+        setTimeout(() => {
+          fetchPortfolio();
+        }, 100);
       } catch (error) {
         console.error("사용자 정보 업데이트 실패:", error);
       }
 
+      window.dispatchEvent(new Event("transactionComplete"));
       setOrderModal(null);
       setOrderQty(1);
     } catch (error) {
@@ -515,7 +446,6 @@ const SelectSector = ({ chatbotRef }) => {
       const maxQty = Math.floor(userBalance / orderModal.stock.current_price);
       setOrderQty(maxQty);
     } else {
-      // 판매하기는 실제 보유 수량 확인
       try {
         const response = await axios.get(
           `/api/portfolio/stock/${orderModal.stock.id}`
@@ -530,6 +460,103 @@ const SelectSector = ({ chatbotRef }) => {
   const totalAmount = orderModal
     ? orderQty * orderModal.stock.current_price
     : 0;
+
+  // Process pending transactions from Stocks.jsx and SelectSector.jsx
+  const processStocksPendingTransactions = async () => {
+    console.log("SelectSector.jsx: processStocksPendingTransactions called");
+    return new Promise((resolve, reject) => {
+      const handlePendingTransactionsResponse = (event) => {
+        const stocksPendingTransactions = event.detail;
+        console.log(
+          "SelectSector.jsx: Received pendingTransactionsResponse",
+          stocksPendingTransactions
+        );
+        window.removeEventListener(
+          "pendingTransactionsResponse",
+          handlePendingTransactionsResponse
+        );
+
+        const processTransactions = async () => {
+          try {
+            // Process Stocks.jsx pending transactions
+            if (
+              stocksPendingTransactions &&
+              stocksPendingTransactions.length > 0
+            ) {
+              for (const transaction of stocksPendingTransactions) {
+                try {
+                  await axios.post(
+                    `/api/portfolio/${transaction.transaction_type}`,
+                    {
+                      stock_id: transaction.stock_id,
+                      quantity: transaction.quantity,
+                      price: transaction.price,
+                    }
+                  );
+                } catch (error) {
+                  console.error(
+                    `Transaction failed: ${transaction.stock_name}`,
+                    error
+                  );
+                  toast.error(`${transaction.stock_name} 거래에 실패했습니다.`);
+                }
+              }
+
+              window.dispatchEvent(new CustomEvent("clearPendingTransactions"));
+            }
+
+            // Process SelectSector.jsx pending transactions
+            if (
+              selectSectorPendingTransactions &&
+              selectSectorPendingTransactions.length > 0
+            ) {
+              for (const transaction of selectSectorPendingTransactions) {
+                try {
+                  await axios.post(
+                    `/api/portfolio/${transaction.transaction_type}`,
+                    {
+                      stock_id: transaction.stock_id,
+                      quantity: transaction.quantity,
+                      price: transaction.price,
+                    }
+                  );
+                } catch (error) {
+                  console.error(
+                    `Transaction failed: ${transaction.stock_name}`,
+                    error
+                  );
+                  toast.error(`${transaction.stock_name} 거래에 실패했습니다.`);
+                }
+              }
+
+              setSelectSectorPendingTransactions([]);
+            }
+
+            resolve();
+          } catch (error) {
+            reject(error);
+          }
+        };
+
+        processTransactions();
+      };
+
+      window.addEventListener(
+        "pendingTransactionsResponse",
+        handlePendingTransactionsResponse
+      );
+      console.log("SelectSector.jsx: Dispatching getPendingTransactions event");
+      window.dispatchEvent(new CustomEvent("getPendingTransactions"));
+
+      setTimeout(() => {
+        window.removeEventListener(
+          "pendingTransactionsResponse",
+          handlePendingTransactionsResponse
+        );
+        resolve();
+      }, 5000);
+    });
+  };
 
   // 다음 라운드 진행 및 포트폴리오 이동
   const handleNextRound = async () => {
@@ -590,6 +617,88 @@ const SelectSector = ({ chatbotRef }) => {
               : "결과 확인"}
           </button>
         </div>
+
+        {/* SelectSector 임시 거래 목록 */}
+        {selectSectorPendingTransactions.length > 0 && (
+          <div className="bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-200 rounded-xl p-4 mb-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-bold text-green-900">
+                📋 SelectSector 대기 중인 거래
+              </h3>
+              <span className="text-sm text-green-700">
+                총 {selectSectorPendingTransactions.length}건
+              </span>
+            </div>
+
+            <div className="space-y-2 max-h-32 overflow-y-auto">
+              {selectSectorPendingTransactions.map((transaction) => (
+                <div
+                  key={transaction.id}
+                  className="flex items-center justify-between bg-white rounded-lg p-3 border border-green-200"
+                >
+                  <div className="flex items-center space-x-3">
+                    <div
+                      className={`w-3 h-3 rounded-full ${
+                        transaction.transaction_type === "buy"
+                          ? "bg-red-500"
+                          : "bg-blue-500"
+                      }`}
+                    ></div>
+                    <div>
+                      <span className="font-semibold text-gray-900">
+                        {transaction.stock_name}
+                      </span>
+                      <span className="text-sm text-gray-600 ml-2">
+                        ({transaction.stock_symbol})
+                      </span>
+                    </div>
+                    <span
+                      className={`text-sm font-medium ${
+                        transaction.transaction_type === "buy"
+                          ? "text-red-600"
+                          : "text-blue-600"
+                      }`}
+                    >
+                      {transaction.transaction_type === "buy" ? "매수" : "매도"}
+                    </span>
+                    <span className="text-sm text-gray-600">
+                      {transaction.quantity.toLocaleString()}주 ×{" "}
+                      {transaction.price.toLocaleString()}원
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="font-bold text-gray-900">
+                      {transaction.total_amount.toLocaleString()}원
+                    </span>
+                    <button
+                      onClick={() => {
+                        const removedTransaction =
+                          selectSectorPendingTransactions.find(
+                            (tx) => tx.id === transaction.id
+                          );
+                        setSelectSectorPendingTransactions((prev) =>
+                          prev.filter((tx) => tx.id !== transaction.id)
+                        );
+                        toast.success("주문이 취소되었습니다.");
+
+                        if (removedTransaction) {
+                          window.dispatchEvent(
+                            new CustomEvent("pendingTransactionRemoved", {
+                              detail: removedTransaction,
+                            })
+                          );
+                        }
+                      }}
+                      className="text-red-500 hover:text-red-700 transition-colors"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         <div className="w-full relative">
           <div className="flex gap-4 p-4">
             {/* 왼쪽 섹터 버튼 영역 */}
@@ -1232,12 +1341,9 @@ const SelectSector = ({ chatbotRef }) => {
                                             매출액
                                           </span>
                                           <span className="font-semibold">
-                                            {financialData.revenue
-                                              ? (
-                                                  financialData.revenue /
-                                                  1000000
-                                                ).toFixed(0) + "억원"
-                                              : "N/A"}
+                                            {formatToKoreanUnit(
+                                              financialData.revenue
+                                            )}
                                           </span>
                                         </div>
                                         <div className="flex justify-between">
@@ -1245,12 +1351,9 @@ const SelectSector = ({ chatbotRef }) => {
                                             영업이익
                                           </span>
                                           <span className="font-semibold">
-                                            {financialData.operating_income
-                                              ? (
-                                                  financialData.operating_income /
-                                                  1000000
-                                                ).toFixed(0) + "억원"
-                                              : "N/A"}
+                                            {formatToKoreanUnit(
+                                              financialData.operating_income
+                                            )}
                                           </span>
                                         </div>
                                         <div className="flex justify-between">
@@ -1258,12 +1361,9 @@ const SelectSector = ({ chatbotRef }) => {
                                             당기순이익
                                           </span>
                                           <span className="font-semibold">
-                                            {financialData.net_income
-                                              ? (
-                                                  financialData.net_income /
-                                                  1000000
-                                                ).toFixed(0) + "억원"
-                                              : "N/A"}
+                                            {formatToKoreanUnit(
+                                              financialData.net_income
+                                            )}
                                           </span>
                                         </div>
                                       </div>
@@ -1515,41 +1615,132 @@ const SelectSector = ({ chatbotRef }) => {
           </div>
         )}
 
-        {resultModalOpen && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
-            <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full text-center flex flex-col justify-center">
-              {/* <h2 className="text-2xl font-bold mb-4">전투 결과</h2> */}
-              <p
-                className="text-gray-700 mb-8"
-                style={{
-                  fontFamily: "Jua, sans-serif",
-                  fontSize: "1.3rem",
-                  fontWeight: 700,
-                }}
-              >
-                전투를 끝내고, 결과를 확인하겠는가?
-              </p>
-              <div className="flex justify-center gap-8">
-                <button
-                  className="px-8 py-3 bg-[#7c5c2b] hover:bg-[#a67c3c] text-white rounded-full font-bold text-lg"
-                  onClick={() => {
-                    setResultModalOpen(false);
+        <ChatbotWidget currentRound={(user?.current_round_idx ?? 0) + 1} />
+      </div>
+      {/* 오른쪽 보유종목 사이드바 */}
+      {/* 아래 코드(보유종목 사이드바) 전체를 삭제 */}
+      {/* <div
+        className="w-80 min-w-[320px] max-w-xs ml-8 bg-[#f3e7c4] rounded-xl shadow-lg border-2 border-[#e6d3a3] p-6 h-fit sticky top-8 self-start hidden lg:block"
+        style={{ fontFamily: "serif" }}
+      >
+        <button
+          className="w-full flex items-center justify-between text-xl font-bold text-[#7c5c2b] mb-2 focus:outline-none border-b-2 border-[#e6d3a3] pb-2"
+          onClick={() => setPortfolioOpen((open) => !open)}
+          style={{ fontFamily: "serif" }}
+        >
+          내 보유종목
+          <span
+            className={`ml-2 transition-transform duration-200 ${
+              portfolioOpen ? "rotate-180" : ""
+            }`}
+          >
+            ▼
+          </span>
+        </button>
+        <div
+          className={`overflow-hidden transition-all duration-300 ${
+            portfolioOpen ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"
+          }`}
+        >
+          {portfolio && portfolio.items.length > 0 ? (
+            <ul className="space-y-3 mt-2">
+              {portfolio.items.map((item) => (
+                <li
+                  key={item.stock_id}
+                  className="flex flex-col gap-1 border-b border-[#e6d3a3] pb-2 last:border-b-0 last:pb-0"
+                >
+                  <div className="font-semibold text-[#7c5c2b]">
+                    {item.stock_name}{" "}
+                    <span className="text-xs text-[#a67c3c]">
+                      ({item.stock_symbol})
+                    </span>
+                  </div>
+                  <div className="text-sm text-[#a67c3c]">
+                    보유수량:{" "}
+                    <span className="font-bold">
+                      {item.quantity.toLocaleString()}주
+                    </span>
+                  </div>
+                  <div className="text-sm text-[#a67c3c]">
+                    평균단가:{" "}
+                    <span className="font-bold">
+                      {item.average_price.toLocaleString()}원
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="text-[#a67c3c] text-center py-8">
+              보유한 종목이 없습니다.
+            </div>
+          )}
+        </div>
+      </div> */}
+      {resultModalOpen && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+          <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full text-center flex flex-col justify-center">
+            <p
+              className="text-gray-700 mb-8"
+              style={{
+                fontFamily: "Jua, sans-serif",
+                fontSize: "1.3rem",
+                fontWeight: 700,
+              }}
+            >
+              전투를 끝내고, 결과를 확인하겠는가?
+            </p>
+            <div className="flex justify-center gap-8">
+              <button
+                className="px-8 py-3 bg-[#7c5c2b] hover:bg-[#a67c3c] text-white rounded-full font-bold text-lg"
+                onClick={async () => {
+                  setResultModalOpen(false);
+                  setAdvancing(true);
+                  try {
+                    // Process pending transactions from Stocks.jsx
+                    await processStocksPendingTransactions();
+                    // Update user info and trigger transaction complete event
+                    try {
+                      const userResponse = await axios.get("/api/auth/me");
+                      updateUser(userResponse.data);
+                      window.dispatchEvent(new Event("transactionComplete"));
+                    } catch (error) {
+                      console.error("Failed to update user info:", error);
+                    }
+                    // Trigger attack animation if chatbotRef is available
+                    if (
+                      chatbotRef &&
+                      chatbotRef.current &&
+                      chatbotRef.current.triggerAttackAnimation
+                    ) {
+                      try {
+                        chatbotRef.current.triggerAttackAnimation();
+                      } catch (e) {
+                        console.warn("Failed to trigger attack animation", e);
+                      }
+                    }
                     navigate("/my-page");
-                  }}
-                >
-                  예
-                </button>
-                <button
-                  className="px-8 py-3 bg-gray-300 hover:bg-gray-400 text-[#7c5c2b] rounded-full font-bold text-lg"
-                  onClick={() => setResultModalOpen(false)}
-                >
-                  아니오
-                </button>
-              </div>
+                  } catch (error) {
+                    console.error("Failed to process transactions:", error);
+                    toast.error("거래 처리 중 오류가 발생했습니다.");
+                  } finally {
+                    setAdvancing(false);
+                  }
+                }}
+                disabled={advancing}
+              >
+                {advancing ? "처리 중..." : "예"}
+              </button>
+              <button
+                className="px-8 py-3 bg-gray-300 hover:bg-gray-400 text-[#7c5c2b] rounded-full font-bold text-lg"
+                onClick={() => setResultModalOpen(false)}
+              >
+                아니오
+              </button>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };
