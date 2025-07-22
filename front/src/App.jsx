@@ -22,6 +22,7 @@ import RoundIntro from "./pages/RoundIntro";
 import PrivateRoute from "./components/PrivateRoute";
 import ChatbotWidget from "./components/ChatbotWidget";
 import LoadingScreen from "./components/LoadingScreen";
+import CustomCursor from "./components/CustomCursor";
 import heroImage1 from "./assets/mainlogo.png";
 import heroImage2 from "./assets/mainlogo2.png";
 import boardImage1 from "./assets/board1.png";
@@ -120,6 +121,7 @@ function App() {
 
   return (
     <>
+      <CustomCursor />
       <IntroContext.Provider value={{ showIntro, setShowIntro }}>
         {/* 기존 인트로 모달 */}
         {showIntro && (
