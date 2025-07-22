@@ -272,13 +272,6 @@ const Navbar = () => {
   const fetchPortfolioData = async () => {
     setPortfolioLoading(true);
     try {
-      // 결과 확인 전에는 포트폴리오 데이터를 가져오지 않음
-      if (user && user.can_advance_round === false) {
-        console.log("결과 확인 전 - 포트폴리오 데이터 가져오지 않음");
-        setPortfolioData(null);
-        return;
-      }
-      
       const token = localStorage.getItem("token");
       const response = await axios.get("/api/portfolio", {
         headers: {
@@ -290,8 +283,56 @@ const Navbar = () => {
       console.log("현재 user 상태:", user);
       console.log("can_advance_round:", user?.can_advance_round);
       
-      // 결과 확인 후에는 모든 데이터를 설정
-      setPortfolioData(response.data);
+      // 결과 확인 전에는 현재 라운드에서 구매한 주식만 평단가 기반으로 데이터 수정
+      if (user && user.can_advance_round === true) {
+        console.log("결과 확인 전 - 현재 라운드 구매 주식만 평단가 기반으로 데이터 수정");
+        console.log("서버에서 받은 원본 데이터:", response.data);
+        
+        const modifiedData = {
+          ...response.data,
+          items: response.data.items?.map(item => {
+            const currentRound = user.current_round_idx + 1;
+            const isCurrentRoundPurchase = item.round_purchased === currentRound;
+            console.log(`주식 ${item.stock_name}: round_purchased=${item.round_purchased}, current_round=${currentRound}, isCurrentRoundPurchase=${isCurrentRoundPurchase}`);
+            console.log(`원본 데이터 - current_price: ${item.current_price}, profit_loss: ${item.profit_loss}`);
+            
+            if (isCurrentRoundPurchase) {
+              // 현재 라운드에서 구매한 주식만 평단가/0 손익으로 표시
+              const modifiedItem = {
+                ...item,
+                current_price: item.average_price, // 현재가를 평단가로 설정
+                profit_loss: 0, // 손익을 0으로 설정
+                profit_loss_percentage: 0 // 수익률을 0으로 설정
+              };
+              console.log(`수정된 데이터 - current_price: ${modifiedItem.current_price}, profit_loss: ${modifiedItem.profit_loss}`);
+              return modifiedItem;
+            } else {
+              // 이전 라운드에서 구매한 주식은 실제 손익 유지 (서버에서 받은 값 그대로 사용)
+              console.log(`이전 라운드 주식 - 실제 손익 유지: ${item.profit_loss}`);
+              return item; // 서버에서 받은 값 그대로 사용
+            }
+          }) || [],
+          total_profit_loss: response.data.items?.reduce((sum, item) => {
+            const currentRound = user.current_round_idx + 1;
+            const isCurrentRoundPurchase = item.round_purchased === currentRound;
+            return sum + (isCurrentRoundPurchase ? 0 : item.profit_loss);
+          }, 0) || 0,
+          total_profit_loss_percentage: response.data.items?.reduce((sum, item) => {
+            const currentRound = user.current_round_idx + 1;
+            const isCurrentRoundPurchase = item.round_purchased === currentRound;
+            return sum + (isCurrentRoundPurchase ? 0 : item.profit_loss_percentage);
+          }, 0) || 0,
+          total_portfolio_value: response.data.items?.reduce((sum, item) => {
+            const currentRound = user.current_round_idx + 1;
+            const isCurrentRoundPurchase = item.round_purchased === currentRound;
+            return sum + (isCurrentRoundPurchase ? (item.average_price * item.quantity) : (item.current_price * item.quantity));
+          }, 0) || 0
+        };
+        setPortfolioData(modifiedData);
+      } else {
+        // 결과 확인 후에는 모든 데이터를 그대로 설정
+        setPortfolioData(response.data);
+      }
       
       // 결과 확인 후에는 캐시 업데이트
       if (user && user.can_advance_round === true) {
@@ -307,9 +348,9 @@ const Navbar = () => {
 
   // Update portfolio with pending transactions
   const updatePortfolioWithPendingTransaction = (transaction, action) => {
-    if (!portfolioData) return;
-
-    const updatedItems = [...portfolioData.items];
+    // portfolioData가 null이면 빈 배열로 시작
+    const currentItems = portfolioData ? [...portfolioData.items] : [];
+    const updatedItems = [...currentItems];
     
     if (action === 'add') {
       const existingIndex = updatedItems.findIndex(item => item.stock_id === transaction.stock_id);
@@ -354,8 +395,11 @@ const Navbar = () => {
     }
 
     setPortfolioData({
-      ...portfolioData,
-      items: updatedItems
+      ...(portfolioData || {}),
+      items: updatedItems,
+      total_portfolio_value: updatedItems.reduce((sum, item) => sum + (item.average_price * item.quantity), 0),
+      total_profit_loss: 0,
+      total_profit_loss_percentage: 0
     });
   };
 
@@ -647,9 +691,16 @@ const Navbar = () => {
                                   {item.stock_name}
                                 </span>
                                 <span className="text-xs text-[#a67c3c]">
-                                  {!user || user.can_advance_round !== true ? 
-                                   (item.average_price * item.quantity)?.toLocaleString() :
-                                   (item.current_price * item.quantity)?.toLocaleString()}원
+                                  {(() => {
+                                    const currentRound = user?.current_round_idx + 1;
+                                    const isCurrentRoundPurchase = item.round_purchased === currentRound;
+                                    const shouldShowAverage = user && user.can_advance_round === true && isCurrentRoundPurchase;
+                                    const displayValue = shouldShowAverage ? 
+                                     (item.average_price * item.quantity) : 
+                                     (item.current_price * item.quantity);
+                                    console.log(`종목 ${item.stock_name}: user=${!!user}, can_advance_round=${user?.can_advance_round}, round_purchased=${item.round_purchased}, current_round=${currentRound}, isCurrentRoundPurchase=${isCurrentRoundPurchase}, shouldShowAverage=${shouldShowAverage}, displayValue=${displayValue?.toLocaleString()}`);
+                                    return displayValue?.toLocaleString();
+                                  })()}원
                                 </span>
                               </div>
                               <div className="flex items-center justify-between mt-1">
@@ -663,23 +714,23 @@ const Navbar = () => {
                             </div>
                                                           <div className="text-right ml-3">
                                 <div className={`text-sm font-bold ${
-                                  !user || user.can_advance_round !== true ? 
+                                  user && user.can_advance_round === true ? 
                                    (item.round_purchased === (user?.current_round_idx + 1) ? 'text-gray-500' : 
                                     item.profit_loss >= 0 ? 'text-[#e53a40]' : 'text-[#2563eb]') :
                                    item.profit_loss >= 0 ? 'text-[#e53a40]' : 'text-[#2563eb]'
                                 }`}>
-                                  {!user || user.can_advance_round !== true ? 
+                                  {user && user.can_advance_round === true ? 
                                    (item.round_purchased === (user?.current_round_idx + 1) ? '0원' : 
                                     `${item.profit_loss >= 0 ? '+' : ''}${item.profit_loss.toLocaleString()}원`) :
                                    `${item.profit_loss >= 0 ? '+' : ''}${item.profit_loss.toLocaleString()}원`}
                                 </div>
                                 <div className={`text-xs ${
-                                  !user || user.can_advance_round !== true ? 
+                                  user && user.can_advance_round === true ? 
                                    (item.round_purchased === (user?.current_round_idx + 1) ? 'text-gray-500' : 
                                     item.profit_loss_percentage >= 0 ? 'text-[#e53a40]' : 'text-[#2563eb]') :
                                    item.profit_loss_percentage >= 0 ? 'text-[#e53a40]' : 'text-[#2563eb]'
                                 }`}>
-                                  {!user || user.can_advance_round !== true ? 
+                                  {user && user.can_advance_round === true ? 
                                    (item.round_purchased === (user?.current_round_idx + 1) ? '0%' : 
                                     `${item.profit_loss_percentage >= 0 ? '+' : ''}${item.profit_loss_percentage.toFixed(1)}%`) :
                                    `${item.profit_loss_percentage >= 0 ? '+' : ''}${item.profit_loss_percentage.toFixed(1)}%`}

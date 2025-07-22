@@ -356,42 +356,7 @@ const SelectSector = ({ chatbotRef = null }) => {
   const handleOrder = async () => {
     if (!orderModal) return;
 
-    // 라운드가 넘어가기 전(결과 확인 전)에는 임시 거래로 저장
-    if (user && user.can_advance_round === false) {
-      // 임시 거래 추가
-      const newTransaction = {
-        id: Date.now() + Math.random(),
-        stock_id: orderModal.stock.id,
-        stock_name: orderModal.stock.name,
-        stock_symbol: orderModal.stock.symbol,
-        transaction_type: orderType,
-        quantity: orderQty,
-        price: orderModal.stock.current_price,
-        total_amount: orderModal.stock.current_price * orderQty,
-      };
-
-      // SelectSector의 임시 거래 목록에 추가
-      setSelectSectorPendingTransactions((prev) => [...prev, newTransaction]);
-
-      toast.success(
-        orderType === "buy"
-          ? `${orderModal.stock.name} ${orderQty}주 구매하기 주문이 추가되었습니다. (결과 확인 후 처리)`
-          : `${orderModal.stock.name} ${orderQty}주 판매하기 주문이 추가되었습니다. (결과 확인 후 처리)`
-      );
-
-      // Navbar에 임시 거래 추가 이벤트 발생
-      window.dispatchEvent(
-        new CustomEvent("pendingTransactionAdded", {
-          detail: newTransaction,
-        })
-      );
-
-      setOrderModal(null);
-      setOrderQty(1);
-      return;
-    }
-
-    // 라운드가 넘어간 후에는 즉시 API 호출
+    // 즉시 구매 시스템으로 변경 - 항상 즉시 API 호출
     try {
       const response = await axios.post(`/api/portfolio/${orderType}`, {
         stock_id: orderModal.stock.id,
@@ -437,7 +402,7 @@ const SelectSector = ({ chatbotRef = null }) => {
       setOrderModal(null);
       setOrderQty(1);
     } catch (error) {
-      toast.error(error.response?.data?.detail || "주문에 실패했습니다.");
+            toast.error(error.response?.data?.detail || "주문에 실패했습니다.");
     }
   };
 
@@ -562,6 +527,57 @@ const SelectSector = ({ chatbotRef = null }) => {
   const handleNextRound = async () => {
     setAdvancing(true);
     try {
+      console.log("다음 라운드 진행 시도...");
+
+      // 3라운드 완료 후 체크 (current_round_idx가 3 이상이면 게임 완료)
+      if ((user?.current_round_idx || 0) >= 3) {
+        // 게임 종료 - 결과 페이지로 이동
+        navigate("/game-result");
+        return;
+      }
+
+      const response = await axios.post("/api/game/next-round");
+      console.log("다음 라운드 응답:", response.data);
+      toast.success("다음 라운드로 진행되었습니다!");
+
+      // 사용자 정보 즉시 업데이트
+      try {
+        const userResponse = await axios.get("/api/auth/me");
+        console.log("사용자 정보 업데이트:", userResponse.data);
+
+        // AuthContext의 사용자 정보 업데이트
+        window.dispatchEvent(
+          new CustomEvent("userUpdated", {
+            detail: userResponse.data,
+          })
+        );
+
+        // 네비게이션 바 업데이트를 위한 이벤트 발생
+        window.dispatchEvent(new Event("transactionComplete"));
+
+        // 3라운드 완료 후 게임 결과 페이지로 이동
+        if (userResponse.data.current_round_idx >= 3) {
+          navigate("/game-result");
+        } else {
+          navigate("/my-page");
+        }
+      } catch (userError) {
+        console.error("사용자 정보 업데이트 실패:", userError);
+        navigate("/my-page");
+      }
+    } catch (error) {
+      console.error("다음 라운드 진행 실패:", error);
+
+      // 마지막 라운드인 경우 게임 결과 페이지로 이동
+      if (
+        error.response?.status === 400 &&
+        error.response?.data?.detail?.includes("마지막 라운드")
+      ) {
+        navigate("/game-result");
+        return;
+      }
+
+      toast.error("다음 라운드 진행에 실패했습니다.");
       navigate("/my-page");
     } finally {
       setAdvancing(false);
@@ -1698,14 +1714,23 @@ const SelectSector = ({ chatbotRef = null }) => {
                   setResultModalOpen(false);
                   setAdvancing(true);
                   try {
-                    console.log("pending transactions 처리 시작");
-                    // Process pending transactions from Stocks.jsx
-                    await processStocksPendingTransactions();
-                    console.log("pending transactions 처리 완료");
+                    console.log("결과 확인 처리 시작");
                     
                     // Update user info and trigger transaction complete event
                     try {
                       console.log("사용자 정보 업데이트 시작");
+                      
+                      // 먼저 confirm-result API를 호출해서 can_advance_round를 false로 설정
+                      console.log("confirm-result API 호출 시작");
+                      const token = localStorage.getItem("token");
+                      await axios.post("/api/game/confirm-result", {}, {
+                        headers: {
+                          Authorization: `Bearer ${token}`,
+                        },
+                      });
+                      console.log("confirm-result API 호출 완료");
+                      
+                      // 그 다음 사용자 정보를 다시 가져옴
                       const userResponse = await axios.get("/api/auth/me");
                       console.log("서버에서 받은 사용자 정보:", userResponse.data);
                       

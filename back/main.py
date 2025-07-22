@@ -183,16 +183,11 @@ async def get_portfolio(credentials: HTTPAuthorizationCredentials = Depends(secu
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     periods = json.loads(user.round_periods)
-    # 라운드가 넘어가기 전이면 이전 라운드 기준 period 사용 (단, 1라운드면 0)
-    if hasattr(user, 'can_advance_round') and user.can_advance_round:
-        period_idx = max(0, user.current_round_idx - 1)
-        current_period = periods[period_idx]
+    # 포트폴리오 조회 시에는 현재 라운드의 기간 사용 (포트폴리오는 라운드가 진행되어도 유지되어야 함)
+    if user.current_round_idx >= len(periods):
+        current_period = periods[-1]  # 마지막 기간 사용
     else:
-        # 3라운드 완료 후에는 마지막 기간 사용
-        if user.current_round_idx >= len(periods):
-            current_period = periods[-1]  # 마지막 기간 사용
-        else:
-            current_period = periods[user.current_round_idx]
+        current_period = periods[user.current_round_idx]
     date = period_to_date(current_period)
     # 포트폴리오 조회 (수량이 0보다 큰 아이템만)
     portfolio_items = await db.execute(select(Portfolio).where(Portfolio.user_id == user.id, Portfolio.quantity > 0))
@@ -400,6 +395,14 @@ async def get_game_state(
     
     return await game_service.get_game_state(db, user_id)
 
+@app.post("/api/game/confirm-result")
+async def confirm_result(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: AsyncSession = Depends(get_db)
+):
+    user_id = auth_service.verify_token(credentials.credentials)
+    return await game_service.confirm_round_result(db, user_id)
+
 @app.post("/api/game/next-round")
 async def next_round(
     credentials: HTTPAuthorizationCredentials = Depends(security),
@@ -416,6 +419,14 @@ async def next_round(
     current_period = periods[user.current_round_idx] if periods and user.current_round_idx < len(periods) else "2020 H1"
     
     return await game_service.advance_round(db, user_id, current_period)
+
+@app.post("/api/game/start-new-round")
+async def start_new_round(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: AsyncSession = Depends(get_db)
+):
+    user_id = auth_service.verify_token(credentials.credentials)
+    return await game_service.start_new_round(db, user_id)
 
 @app.post("/api/game/restart")
 async def restart_game(

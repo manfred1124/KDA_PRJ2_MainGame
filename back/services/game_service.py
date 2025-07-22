@@ -84,8 +84,24 @@ class GameService:
             is_game_completed=(user.current_round_idx + 1) > 3
         )
     
+    async def confirm_round_result(self, db: AsyncSession, user_id: int):
+        """라운드 결과 확인 (can_advance_round를 False로 설정)"""
+        user_result = await db.execute(select(User).where(User.id == user_id))
+        user = user_result.scalar_one_or_none()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # 결과 확인 시 can_advance_round를 False로 설정
+        user.can_advance_round = False
+        
+        await db.commit()
+        return {
+            "message": f"라운드 {user.current_round_idx + 1} 결과가 확인되었습니다.",
+            "current_round_idx": user.current_round_idx
+        }
+    
     async def advance_round(self, db: AsyncSession, user_id: int, current_period: str):
-        """라운드를 진행"""
+        """다음 라운드로 진행"""
         user_result = await db.execute(select(User).where(User.id == user_id))
         user = user_result.scalar_one_or_none()
         if not user:
@@ -104,7 +120,7 @@ class GameService:
             user.round_periods = json.dumps(periods)
         
         user.current_round_idx += 1
-        user.can_advance_round = False  # 결과 확인 후 라운드 진행 불가능으로 설정
+        user.can_advance_round = True  # 새로운 라운드 시작 시 True로 설정
         new_period = periods[user.current_round_idx] if user.current_round_idx < len(periods) else periods[0]
         
         await db.commit()
@@ -112,6 +128,22 @@ class GameService:
             "message": f"라운드 {user.current_round_idx + 1}로 진행되었습니다.",
             "new_round_idx": user.current_round_idx,
             "current_period": new_period
+        }
+    
+    async def start_new_round(self, db: AsyncSession, user_id: int):
+        """새로운 라운드 시작 (can_advance_round를 True로 설정)"""
+        user_result = await db.execute(select(User).where(User.id == user_id))
+        user = user_result.scalar_one_or_none()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # 새로운 라운드 시작 시 can_advance_round를 True로 설정
+        user.can_advance_round = True
+        
+        await db.commit()
+        return {
+            "message": f"라운드 {user.current_round_idx + 1}이 시작되었습니다.",
+            "current_round_idx": user.current_round_idx
         }
     
     def get_all_periods(self):
