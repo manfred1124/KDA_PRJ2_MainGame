@@ -266,14 +266,19 @@ const Navbar = () => {
     }
   };
 
-  // 최초 마운트 시 한 번만 포트폴리오 데이터 fetch
-  useEffect(() => {
-    fetchPortfolioData();
-  }, []);
+  // 최초 마운트 시에는 포트폴리오 데이터를 가져오지 않음
+  // 결과 확인 후에만 가져오도록 수정
 
   const fetchPortfolioData = async () => {
     setPortfolioLoading(true);
     try {
+      // 결과 확인 전에는 포트폴리오 데이터를 가져오지 않음
+      if (user && user.can_advance_round === false) {
+        console.log("결과 확인 전 - 포트폴리오 데이터 가져오지 않음");
+        setPortfolioData(null);
+        return;
+      }
+      
       const token = localStorage.getItem("token");
       const response = await axios.get("/api/portfolio", {
         headers: {
