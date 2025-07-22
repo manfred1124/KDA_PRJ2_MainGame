@@ -267,8 +267,7 @@ const MyPage = () => {
           <div className="flex items-center space-x-2">
             <Trophy size={24} />
             <span style={{ fontFamily: "Jua, sans-serif", fontSize: "1.1rem" }} className="text-[#7c5c2b]">
-              총 자산: {portfolio.total_profit_percentage > 0 ? "+" : portfolio.total_profit_percentage < 0 ? "-" : ""}
-              {Math.abs(portfolio.total_profit_percentage).toFixed(2)}%
+              총 자산: {((portfolio.total_portfolio_value || 0) + (user.total_balance || 0)).toLocaleString()}원
             </span>
           </div>
           <div className="flex items-center space-x-2 text-[#7c5c2b]">
