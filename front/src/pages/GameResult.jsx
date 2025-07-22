@@ -58,9 +58,9 @@ const GameResult = ({ bgmRef, setBearFall, setBearGone }) => {
 
   const fetchGameResult = async () => {
     try {
-      // 게임 상태 조회
-      const gameResponse = await axios.get("/api/game/state");
-      setGameState(gameResponse.data);
+      // 포트폴리오 데이터 조회 (마이페이지와 동일한 데이터 사용)
+      const portfolioResponse = await axios.get("/api/portfolio");
+      setGameState(portfolioResponse.data);
 
       // 랭킹 조회
       const rankingResponse = await axios.get("/api/ranking");
@@ -130,7 +130,8 @@ const GameResult = ({ bgmRef, setBearFall, setBearGone }) => {
   const isFirstPlace = rank === 1;
 
   const INITIAL_ASSET = 10000000;
-  const finalAsset = userRank?.total_portfolio_value || 0;
+  const finalAsset =
+    (gameState?.total_balance || 0) + (gameState?.total_portfolio_value || 0);
   const totalReturnPercent =
     ((finalAsset - INITIAL_ASSET) / INITIAL_ASSET) * 100;
 
@@ -371,8 +372,7 @@ const GameResult = ({ bgmRef, setBearFall, setBearGone }) => {
                   <div>
                     <p className="text-sm text-[#a67c3c]">최종 자산</p>
                     <p className="text-2xl font-bold text-[#7c5c2b]">
-                      {(userRank?.total_portfolio_value || 0).toLocaleString()}
-                      원
+                      {finalAsset.toLocaleString()}원
                     </p>
                   </div>
                   <span className="text-3xl">🏦</span>

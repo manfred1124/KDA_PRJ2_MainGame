@@ -263,15 +263,14 @@ const MyPage = () => {
             라운드 리뷰
           </button>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-[#7c5c2b]">
           <div className="flex items-center space-x-2">
             <Trophy size={24} />
             <span style={{ fontFamily: "Jua, sans-serif", fontSize: "1.1rem" }} className="text-[#7c5c2b]">
-              총 수익률: {portfolio.total_profit_percentage > 0 ? "+" : portfolio.total_profit_percentage < 0 ? "-" : ""}
-              {Math.abs(portfolio.total_profit_percentage).toFixed(2)}%
+              총 자산: {((portfolio.total_portfolio_value || 0) + (user.total_balance || 0)).toLocaleString()}원
             </span>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 text-[#7c5c2b]">
             <DollarSign size={24} />
             <span style={{ fontFamily: "Jua, sans-serif", fontSize: "1.1rem" }} className="text-[#7c5c2b]">
               총 수익: {portfolio.total_profit > 0 ? "+" : portfolio.total_profit < 0 ? "-" : ""}
