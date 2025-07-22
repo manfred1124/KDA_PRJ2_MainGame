@@ -13,19 +13,18 @@ import {
 } from "lucide-react";
 import { GuideMessageContext } from "../App";
 import ChatbotWidget from "../components/ChatbotWidget";
+import BearTopLeftAnimation from "../components/BearTopLeftAnimation";
 
 const GUIDE_MSG = "모험의 끝에 도달했네! 그대의 투자 여정을 돌아보게.";
 
-const GameResult = () => {
+const GameResult = ({ bgmRef, setBearFall, setBearGone }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [gameState, setGameState] = useState(null);
   const [ranking, setRanking] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showGif, setShowGif] = useState(true);
-  const [gifLoaded, setGifLoaded] = useState(false);
   const { addGuideMessage } = useContext(GuideMessageContext);
-  const [overlayHeight, setOverlayHeight] = useState('100vh');
+  const [showVideo, setShowVideo] = useState(true);
 
   useEffect(() => {
     addGuideMessage(GUIDE_MSG);
@@ -33,21 +32,29 @@ const GameResult = () => {
   }, []);
 
   useEffect(() => {
-    if (gifLoaded) {
-      // GIF 로드 완료 후 5초 뒤에 GIF 오버레이 숨김
-      const timer = setTimeout(() => {
-        setShowGif(false);
-      }, 5000);
-
-      return () => clearTimeout(timer);
+    if (showVideo) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "auto";
     }
-  }, [gifLoaded]);
+    // Cleanup function to restore scroll on component unmount
+    return () => {
+      document.body.style.overflow = "auto";
+    };
+  }, [showVideo]);
 
   useEffect(() => {
-    if (showGif) {
-      setOverlayHeight(`${Math.max(document.body.scrollHeight, window.innerHeight)}px`);
+    if (!bgmRef || !bgmRef.current) return;
+    if (showVideo) {
+      if (typeof bgmRef.current.pauseMusic === "function") {
+        bgmRef.current.pauseMusic();
+      }
+    } else {
+      if (typeof bgmRef.current.playMusic === "function") {
+        bgmRef.current.playMusic();
+      }
     }
-  }, [showGif]);
+  }, [showVideo, bgmRef]);
 
   const fetchGameResult = async () => {
     try {
@@ -123,60 +130,38 @@ const GameResult = () => {
   const isFirstPlace = rank === 1;
 
   const INITIAL_ASSET = 10000000;
-  const finalAsset = (gameState?.total_balance || 0) + (gameState?.total_portfolio_value || 0);
-  const totalReturnPercent = ((finalAsset - INITIAL_ASSET) / INITIAL_ASSET) * 100;
+  const finalAsset =
+    (gameState?.total_balance || 0) + (gameState?.total_portfolio_value || 0);
+  const totalReturnPercent =
+    ((finalAsset - INITIAL_ASSET) / INITIAL_ASSET) * 100;
 
-  // GIF 오버레이
-  const gifOverlay = showGif && (
-    <>
-      {/* 블러 배경만 전체 덮기 */}
+  if (showVideo) {
+    return (
       <div
-        className="fixed top-0 left-0 w-full z-50 backdrop-blur-xl bg-black bg-opacity-30 pointer-events-none"
         style={{
-          minHeight: '1300px',
-          height: '100%',
-          width: '100%',
-          minWidth: '100vw',
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          backgroundColor: "black",
+          zIndex: 9999,
+          overflow: "hidden",
         }}
-      />
-      {/* 캐릭터/애니메이션은 중앙에 */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center">
-        <div className="text-center relative transform -translate-x-16">
-          <img
-            src="/result.gif"
-            alt="결과 애니메이션"
-            className="max-w-full max-h-screen object-contain"
-            onLoad={() => setGifLoaded(true)}
-          />
-          {/* 장군의 말풍선 - 1등과 나머지 구분 */}
-          <div className="absolute top-1/3 right-0 transform translate-x-full -translate-y-1/2">
-            <div className="bg-white rounded-2xl p-4 shadow-2xl border-4 border-[#bfa76a] max-w-xs">
-              <div className="text-center">
-                <p className="text-lg font-bold text-[#7c5c2b] text-center" style={{ fontFamily: "Jua, sans-serif" }}>
-                  {isFirstPlace ? (
-                    <>
-                      "공포의 곰조차 그대의 앞길을<br/>
-                      막지 못했도다<br/>
-                      전장을 지배한 이는 단 한 사람<br/>
-                      영광의 1등, 바로 그대다!"
-                    </>
-                  ) : (
-                    <>
-                      "전장을 완주한 모두가 승자이니라.<br/>
-                      검을 거두지 말라, 전사여.<br/>
-                      다음 싸움이 곧 시작될 것이다."
-                    </>
-                  )}
-                </p>
-              </div>
-              {/* 말풍선 꼬리 - 왼쪽으로 향하도록 수정 */}
-              <div className="absolute top-1/2 -left-2 transform -translate-y-1/2 w-0 h-0 border-t-8 border-b-8 border-r-8 border-transparent border-r-[#bfa76a]"></div>
-            </div>
-          </div>
-        </div>
+      >
+        <video
+          src="/result.mp4"
+          autoPlay
+          muted={false}
+          onEnded={() => {
+            setShowVideo(false);
+            if (setBearFall) setBearFall(true);
+          }}
+          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+        />
       </div>
-    </>
-  );
+    );
+  }
 
   if (loading) {
     return (
@@ -187,7 +172,10 @@ const GameResult = () => {
           style={{ width: 220, height: 320 }}
           className="mb-6"
         />
-        <span className="text-2xl text-white font-bold animate-blink-slow" style={{ fontFamily: 'Jua, sans-serif' }}>
+        <span
+          className="text-2xl text-white font-bold animate-blink-slow"
+          style={{ fontFamily: "Jua, sans-serif" }}
+        >
           전투 준비중...
         </span>
       </div>
@@ -218,7 +206,6 @@ const GameResult = () => {
 
   return (
     <div className="min-h-screen p-6" style={{ fontFamily: "Jua, sans-serif" }}>
-      {gifOverlay}
       <div className="max-w-6xl mx-auto">
         {/* 헤더 */}
         <div className="text-center mb-8">
@@ -230,20 +217,27 @@ const GameResult = () => {
               >
                 🎉 게임 완료! 🎉
               </h1>
-              <p className="text-xl text-[#a67c3c]" style={{ fontFamily: "Jua, sans-serif" }}>
+              <p
+                className="text-xl text-[#a67c3c]"
+                style={{ fontFamily: "Jua, sans-serif" }}
+              >
                 {user?.username}님의 투자 여정이 끝났습니다!
               </p>
               {/* 1위 달성 시 장군의 특별 메시지 */}
               {isFirstPlace && (
                 <div className="mt-4 p-4 bg-gradient-to-r from-yellow-100 to-orange-100 rounded-lg border-2 border-yellow-300">
-                  <p className="text-lg font-bold text-[#7c5c2b]" style={{ fontFamily: "Jua, sans-serif" }}>
-                    "공포의 곰조차 그대의 앞길을 막지 못했도다.<br/>
+                  <p
+                    className="text-lg font-bold text-[#7c5c2b]"
+                    style={{ fontFamily: "Jua, sans-serif" }}
+                  >
+                    "공포의 곰조차 그대의 앞길을 막지 못했도다.
+                    <br />
                     전장을 지배한 이는 단 한 사람—영광의 1등, 바로 그대다!"
                   </p>
                   <div className="mt-4 text-center">
-                    <a 
-                      href="https://www3.kiwoom.com/h/main" 
-                      target="_blank" 
+                    <a
+                      href="https://www3.kiwoom.com/h/main"
+                      target="_blank"
                       rel="noopener noreferrer"
                       className="inline-block px-6 py-3 bg-[#3b7c2b] hover:bg-[#2d5a1f] text-white rounded-full font-bold border-2 border-[#2d5a1f] transition-colors"
                       style={{ fontFamily: "Jua, sans-serif" }}
@@ -256,15 +250,20 @@ const GameResult = () => {
               {/* 1위가 아닐 때의 메시지 */}
               {!isFirstPlace && (
                 <div className="mt-4 p-4 bg-gradient-to-r from-yellow-100 to-orange-100 rounded-lg border-2 border-yellow-300">
-                  <p className="text-lg font-bold text-[#7c5c2b]" style={{ fontFamily: "Jua, sans-serif" }}>
-                    "전장을 완주한 모두가 승자이니라.<br/>
-                    검을 거두지 말라, 전사여.<br/>
+                  <p
+                    className="text-lg font-bold text-[#7c5c2b]"
+                    style={{ fontFamily: "Jua, sans-serif" }}
+                  >
+                    "전장을 완주한 모두가 승자이니라.
+                    <br />
+                    검을 거두지 말라, 전사여.
+                    <br />
                     다음 싸움이 곧 시작될 것이다."
                   </p>
                   <div className="mt-4 text-center">
-                    <a 
-                      href="https://www3.kiwoom.com/h/main" 
-                      target="_blank" 
+                    <a
+                      href="https://www3.kiwoom.com/h/main"
+                      target="_blank"
                       rel="noopener noreferrer"
                       className="inline-block px-6 py-3 bg-[#3b7c2b] hover:bg-[#2d5a1f] text-white rounded-full font-bold border-2 border-[#2d5a1f] transition-colors"
                       style={{ fontFamily: "Jua, sans-serif" }}
@@ -307,11 +306,16 @@ const GameResult = () => {
                     <p className="text-sm text-[#a67c3c]">총 수익률</p>
                     <p
                       className={`text-3xl font-bold ${
-                        totalReturnPercent >= 0 ? "text-[#e53a40]" : "text-[#2563eb]"
+                        totalReturnPercent >= 0
+                          ? "text-[#e53a40]"
+                          : "text-[#2563eb]"
                       }`}
                     >
                       {totalReturnPercent >= 0 ? "+" : ""}
-                      {isNaN(totalReturnPercent) ? "0.00" : totalReturnPercent.toFixed(2)}%
+                      {isNaN(totalReturnPercent)
+                        ? "0.00"
+                        : totalReturnPercent.toFixed(2)}
+                      %
                     </p>
                   </div>
                   {totalReturnPercent >= 0 ? (
@@ -329,7 +333,9 @@ const GameResult = () => {
                     <p className="text-sm text-[#a67c3c]">총 수익</p>
                     <p
                       className={`text-2xl font-bold ${
-                        gameState.total_profit >= 0 ? "text-[#e53a40]" : "text-[#2563eb]"
+                        gameState.total_profit >= 0
+                          ? "text-[#e53a40]"
+                          : "text-[#2563eb]"
                       }`}
                     >
                       {gameState?.total_profit >= 0 ? "+" : ""}
@@ -347,7 +353,9 @@ const GameResult = () => {
                     <p className="text-sm text-[#a67c3c]">미실현 손익</p>
                     <p
                       className={`text-2xl font-bold ${
-                        (gameState?.total_profit_loss || 0) >= 0 ? "text-[#e53a40]" : "text-[#2563eb]"
+                        (gameState?.total_profit_loss || 0) >= 0
+                          ? "text-[#e53a40]"
+                          : "text-[#2563eb]"
                       }`}
                     >
                       {(gameState?.total_profit_loss || 0) >= 0 ? "+" : ""}
@@ -386,7 +394,10 @@ const GameResult = () => {
             <div className="space-y-4">
               {ranking.slice(0, 5).map((rankItem, index) => {
                 const INITIAL_ASSET = 10000000;
-                const percent = ((rankItem.total_portfolio_value - INITIAL_ASSET) / INITIAL_ASSET) * 100;
+                const percent =
+                  ((rankItem.total_portfolio_value - INITIAL_ASSET) /
+                    INITIAL_ASSET) *
+                  100;
                 return (
                   <div
                     key={index}
@@ -430,7 +441,8 @@ const GameResult = () => {
                           {rankItem.username === user?.username && " (나)"}
                         </p>
                         <p className="text-sm text-[#a67c3c]">
-                         수익률: {percent >= 0 ? "+" : ""}{isNaN(percent) ? "0.00" : percent.toFixed(2)}%
+                          수익률: {percent >= 0 ? "+" : ""}
+                          {isNaN(percent) ? "0.00" : percent.toFixed(2)}%
                         </p>
                       </div>
                     </div>
@@ -454,10 +466,16 @@ const GameResult = () => {
                           {userRank.username} (나)
                         </p>
                         <p className="text-sm text-[#a67c3c]">
-                         수익률: {(() => {
-                           const percent = ((userRank.total_portfolio_value - 10000000) / 10000000) * 100;
-                           return `${percent >= 0 ? "+" : ""}${isNaN(percent) ? "0.00" : percent.toFixed(2)}%`;
-                         })()}
+                          수익률:{" "}
+                          {(() => {
+                            const percent =
+                              ((userRank.total_portfolio_value - 10000000) /
+                                10000000) *
+                              100;
+                            return `${percent >= 0 ? "+" : ""}${
+                              isNaN(percent) ? "0.00" : percent.toFixed(2)
+                            }%`;
+                          })()}
                         </p>
                       </div>
                     </div>
