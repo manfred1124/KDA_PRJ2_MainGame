@@ -15,6 +15,7 @@ class User(Base):
     current_round_idx = Column(Integer, default=0)
     total_balance = Column(Float, default=10000000)  # 1천만원 시작
     realized_profit = Column(Float, default=0)  # 실현 수익
+    can_advance_round = Column(Boolean, default=True)  # 라운드 진행 가능 여부
     is_active = Column(Boolean, default=True)
     
     # 관계

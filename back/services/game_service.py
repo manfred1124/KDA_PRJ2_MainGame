@@ -104,6 +104,7 @@ class GameService:
             user.round_periods = json.dumps(periods)
         
         user.current_round_idx += 1
+        user.can_advance_round = False  # 결과 확인 후 라운드 진행 불가능으로 설정
         new_period = periods[user.current_round_idx] if user.current_round_idx < len(periods) else periods[0]
         
         await db.commit()
@@ -198,6 +199,7 @@ class GameService:
             user.round_periods = json.dumps(selected_periods)  # 연속된 3개 기간으로 설정
             user.total_balance = 10000000  # 1천만원으로 초기화
             user.realized_profit = 0  # 실현 수익 초기화
+            user.can_advance_round = True  # 라운드 진행 가능으로 초기화
             
             print("데이터베이스 커밋 중...")
             await db.commit()

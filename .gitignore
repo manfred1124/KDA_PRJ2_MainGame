@@ -10,3 +10,6 @@ node_modules/
 .env.production
 __pycache__/
 back/KDA1/
+get-pip.py/
+KDA_PRJ2_MainGame\get-pip.py/
+KDA2/

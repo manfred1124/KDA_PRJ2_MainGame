@@ -611,7 +611,7 @@ const SelectSector = ({ chatbotRef = null }) => {
             disabled={advancing}
           >
             {advancing
-              ? "진행 중..."
+              ? "전투 중..."
               : (user?.current_round_idx ?? 0) >= 3
               ? "결과 보기"
               : "결과 확인"}
@@ -1694,15 +1694,33 @@ const SelectSector = ({ chatbotRef = null }) => {
               <button
                 className="px-8 py-3 bg-[#7c5c2b] hover:bg-[#a67c3c] text-white rounded-full font-bold text-lg"
                 onClick={async () => {
+                  console.log("결과 확인 버튼 클릭됨");
                   setResultModalOpen(false);
                   setAdvancing(true);
                   try {
+                    console.log("pending transactions 처리 시작");
                     // Process pending transactions from Stocks.jsx
                     await processStocksPendingTransactions();
+                    console.log("pending transactions 처리 완료");
+                    
                     // Update user info and trigger transaction complete event
                     try {
+                      console.log("사용자 정보 업데이트 시작");
                       const userResponse = await axios.get("/api/auth/me");
+                      console.log("서버에서 받은 사용자 정보:", userResponse.data);
+                      
                       updateUser(userResponse.data);
+                      console.log("AuthContext updateUser 호출 완료");
+                      
+                      // userUpdated 이벤트도 발생시켜서 Navbar가 업데이트되도록 함
+                      console.log("userUpdated 이벤트 발생시킴");
+                      window.dispatchEvent(
+                        new CustomEvent("userUpdated", {
+                          detail: userResponse.data,
+                        })
+                      );
+                      
+                      console.log("transactionComplete 이벤트 발생시킴");
                       window.dispatchEvent(new Event("transactionComplete"));
                     } catch (error) {
                       console.error("Failed to update user info:", error);

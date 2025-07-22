@@ -105,7 +105,8 @@ async def get_me(credentials: HTTPAuthorizationCredentials = Depends(security), 
         "current_period": current_period,
         "round_periods": periods,
         "total_balance": user.total_balance,
-        "realized_profit": user.realized_profit
+        "realized_profit": user.realized_profit,
+        "can_advance_round": user.can_advance_round
     }
 
 # 주식 관련 엔드포인트

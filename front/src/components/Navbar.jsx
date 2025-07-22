@@ -113,6 +113,10 @@ const Navbar = () => {
 
     // 거래 완료 이벤트 리스너 추가
     const handleTransactionComplete = () => {
+      console.log("=== 거래 완료 이벤트 발생 ===");
+      console.log("현재 user 상태:", user);
+      console.log("can_advance_round:", user?.can_advance_round);
+      
       // 결과 확인 버튼을 눌렀을 때는 즉시 포트폴리오 새로고침
       // user 객체가 아직 업데이트되지 않았을 수 있으므로 항상 새로고침
       fetchUserBalance();
@@ -125,10 +129,17 @@ const Navbar = () => {
     // 사용자 정보 업데이트 이벤트 리스너 추가
     const handleUserUpdated = (event) => {
       const updatedUser = event.detail;
+      console.log("=== 사용자 정보 업데이트 이벤트 발생 ===");
+      console.log("업데이트된 사용자 정보:", updatedUser);
+      console.log("can_advance_round:", updatedUser.can_advance_round);
+      
       // 결과 확인 후 상태로 변경되었을 때 포트폴리오 새로고침
       if (updatedUser.can_advance_round === true) {
+        console.log("라운드 완료 상태 - 포트폴리오 새로고침 시작");
         fetchUserBalance();
         fetchPortfolioData();
+      } else {
+        console.log("아직 라운드 진행 중 상태");
       }
     };
 
@@ -213,6 +224,9 @@ const Navbar = () => {
   // 사용자 정보가 변경될 때마다 잔고 업데이트
   useEffect(() => {
     if (user) {
+      console.log("사용자 정보 변경됨:", user);
+      console.log("can_advance_round:", user.can_advance_round);
+      
       // 라운드 진행 중에는 잔고 업데이트하지 않음
       if (user.can_advance_round === false) {
         // 초기 잔고만 설정하고 이후 업데이트하지 않음
@@ -221,6 +235,7 @@ const Navbar = () => {
         }
       } else {
         fetchUserBalance();
+        fetchPortfolioData(); // 결과 확인 후에는 포트폴리오도 새로고침
       }
     }
   }, [user]);
@@ -266,6 +281,10 @@ const Navbar = () => {
         },
       });
       
+      console.log("포트폴리오 데이터 업데이트:", response.data);
+      console.log("현재 user 상태:", user);
+      console.log("can_advance_round:", user?.can_advance_round);
+      
       // 결과 확인 후에는 모든 데이터를 설정
       setPortfolioData(response.data);
       
@@ -274,6 +293,7 @@ const Navbar = () => {
         setCachedPortfolioData(response.data);
       }
     } catch (error) {
+      console.error("포트폴리오 데이터 가져오기 실패:", error);
       setPortfolioData(null);
     } finally {
       setPortfolioLoading(false);
@@ -560,13 +580,11 @@ const Navbar = () => {
               onClick={handlePortfolioClick}
               className="bg-white rounded-2xl shadow-md px-6 py-4 hover:shadow-lg transition-all duration-300 cursor-pointer"
             >
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-[#a67c3c] font-medium">총자산</span>
-                <span className="text-2xl font-bold text-[#7c5c2b]">
-                  {!user || (user.can_advance_round !== true && user.current_round_idx === 0) ? 
-                   (userBalance + (portfolioData?.items?.reduce((sum, item) => sum + (item.average_price * item.quantity), 0) || 0)).toLocaleString() :
-                   (userBalance + (portfolioData?.total_portfolio_value || 0)).toLocaleString()}원
-                </span>
+                              <div className="flex items-center space-x-2">
+                  <span className="text-sm text-[#a67c3c] font-medium">예수금</span>
+                  <span className="text-2xl font-bold text-[#7c5c2b]">
+                    {userBalance.toLocaleString()}원
+                  </span>
                 <ChevronDown
                   className={`w-4 h-4 text-[#a67c3c] transition-transform duration-200 ${
                     isPortfolioOpen ? "rotate-180" : ""
@@ -578,6 +596,9 @@ const Navbar = () => {
             {/* 포트폴리오 드롭다운 */}
             {isPortfolioOpen && (
               <div className="absolute top-full left-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-100 z-50">
+                {console.log("드롭다운 렌더링 - user:", user)}
+                {console.log("드롭다운 렌더링 - can_advance_round:", user?.can_advance_round)}
+                {console.log("드롭다운 렌더링 - portfolioData:", portfolioData)}
                 <div className="p-4">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="text-lg font-bold text-[#7c5c2b]" style={{ fontFamily: "Jua, sans-serif" }}>
@@ -620,8 +641,10 @@ const Navbar = () => {
                                 <span className="text-sm font-bold text-[#7c5c2b] truncate">
                                   {item.stock_name}
                                 </span>
-                                <span className="text-xs text-[#a67c3c] bg-gray-200 px-2 py-1 rounded">
-                                  {item.stock_symbol}
+                                <span className="text-xs text-[#a67c3c]">
+                                  {!user || user.can_advance_round !== true ? 
+                                   (item.average_price * item.quantity)?.toLocaleString() :
+                                   (item.current_price * item.quantity)?.toLocaleString()}원
                                 </span>
                               </div>
                               <div className="flex items-center justify-between mt-1">
@@ -629,7 +652,7 @@ const Navbar = () => {
                                   {item.quantity.toLocaleString()}주
                                 </span>
                                 <span className="text-xs text-[#a67c3c]">
-                                  평균 {item.average_price.toLocaleString()}원
+                                  평단가 {item.average_price.toLocaleString()}원
                                 </span>
                               </div>
                             </div>
@@ -678,22 +701,36 @@ const Navbar = () => {
                           </span>
                         </div>
                       <div className="flex justify-between items-center text-sm mt-1">
-                        <span className="text-[#a67c3c]">총 손익:</span>
-                        <span className={`font-bold ${
-                          !user || user.can_advance_round !== true ? 
-                           (portfolioData.items?.some(item => item.round_purchased !== (user?.current_round_idx + 1)) ? 
-                            (portfolioData.items?.filter(item => item.round_purchased !== (user?.current_round_idx + 1))
-                             .reduce((sum, item) => sum + (item.profit_loss || 0), 0) >= 0 ? 'text-[#e53a40]' : 'text-[#2563eb]') : 'text-gray-500') :
-                           portfolioData.total_profit_loss >= 0 ? 'text-[#e53a40]' : 'text-[#2563eb]'
-                        }`}>
-                          {!user || user.can_advance_round !== true ? 
-                           (portfolioData.items?.some(item => item.round_purchased !== (user?.current_round_idx + 1)) ? 
-                            `${portfolioData.items?.filter(item => item.round_purchased !== (user?.current_round_idx + 1))
-                             .reduce((sum, item) => sum + (item.profit_loss || 0), 0) >= 0 ? '+' : ''}${portfolioData.items?.filter(item => item.round_purchased !== (user?.current_round_idx + 1))
-                             .reduce((sum, item) => sum + (item.profit_loss || 0), 0).toLocaleString()}원` : '0원') :
-                           `${portfolioData.total_profit_loss >= 0 ? '+' : ''}${portfolioData.total_profit_loss?.toLocaleString() || 0}원`}
+                        <span className="text-[#a67c3c]">예수금:</span>
+                        <span className="font-bold text-[#7c5c2b]">
+                          {userBalance.toLocaleString()}원
                         </span>
                       </div>
+                      <div className="border-t border-gray-200 my-2"></div>
+                                              <div className="flex justify-between items-center text-sm mt-1">
+                          <span className="text-[#a67c3c]">총자산:</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-[#7c5c2b]">
+                              {!user || user.can_advance_round !== true ? 
+                               (userBalance + (portfolioData.items?.reduce((sum, item) => sum + (item.average_price * item.quantity), 0) || 0)).toLocaleString() :
+                               (userBalance + (portfolioData.total_portfolio_value || 0)).toLocaleString()}원
+                            </span>
+                            <span className={`font-bold ${
+                              !user || user.can_advance_round !== true ? 
+                               (portfolioData.items?.some(item => item.round_purchased !== (user?.current_round_idx + 1)) ? 
+                                (portfolioData.items?.filter(item => item.round_purchased !== (user?.current_round_idx + 1))
+                                 .reduce((sum, item) => sum + (item.profit_loss || 0), 0) >= 0 ? 'text-[#e53a40]' : 'text-[#2563eb]') : 'text-gray-500') :
+                               portfolioData.total_profit_loss >= 0 ? 'text-[#e53a40]' : 'text-[#2563eb]'
+                            }`}>
+                              {!user || user.can_advance_round !== true ? 
+                               (portfolioData.items?.some(item => item.round_purchased !== (user?.current_round_idx + 1)) ? 
+                                `(${portfolioData.items?.filter(item => item.round_purchased !== (user?.current_round_idx + 1))
+                                 .reduce((sum, item) => sum + (item.profit_loss || 0), 0) >= 0 ? '+' : ''}${portfolioData.items?.filter(item => item.round_purchased !== (user?.current_round_idx + 1))
+                                 .reduce((sum, item) => sum + (item.profit_loss || 0), 0).toLocaleString()}원)` : '(0원)') :
+                               `(${portfolioData.total_profit_loss >= 0 ? '+' : ''}${portfolioData.total_profit_loss?.toLocaleString() || 0}원)`}
+                            </span>
+                          </div>
+                        </div>
                     </div>
                   )}
                 </div>
@@ -859,12 +896,10 @@ const Navbar = () => {
               >
                 <div className="flex items-center justify-center space-x-1">
                   <span className="text-xs text-[#a67c3c] font-medium">
-                    총자산
+                    예수금
                   </span>
                   <span className="text-sm font-bold text-[#7c5c2b] truncate">
-                    {!user || (user.can_advance_round !== true && user.current_round_idx === 0) ? 
-                     (userBalance + (portfolioData?.items?.reduce((sum, item) => sum + (item.average_price * item.quantity), 0) || 0)).toLocaleString() :
-                     (userBalance + (portfolioData?.total_portfolio_value || 0)).toLocaleString()}원
+                    {userBalance.toLocaleString()}원
                   </span>
                   <ChevronDown
                     className={`w-3 h-3 text-[#a67c3c] transition-transform duration-200 ${
@@ -921,8 +956,10 @@ const Navbar = () => {
                                   <span className="text-xs font-bold text-[#7c5c2b] truncate">
                                     {item.stock_name}
                                   </span>
-                                  <span className="text-xs text-[#a67c3c] bg-gray-200 px-1 py-0.5 rounded">
-                                    {item.stock_symbol}
+                                  <span className="text-xs text-[#a67c3c]">
+                                    {!user || user.can_advance_round !== true ? 
+                                     (item.average_price * item.quantity)?.toLocaleString() :
+                                     (item.current_price * item.quantity)?.toLocaleString()}원
                                   </span>
                                 </div>
                                 <div className="flex items-center justify-between mt-1">
@@ -930,7 +967,7 @@ const Navbar = () => {
                                     {item.quantity.toLocaleString()}주
                                   </span>
                                   <span className="text-xs text-[#a67c3c]">
-                                    평균 {item.average_price.toLocaleString()}원
+                                    평단가 {item.average_price.toLocaleString()}원
                                   </span>
                                 </div>
                               </div>
@@ -980,8 +1017,21 @@ const Navbar = () => {
                           </span>
                         </div>
                         <div className="flex justify-between items-center text-xs mt-1">
-                          <span className="text-[#a67c3c]">총 손익:</span>
-                                                      <span className={`font-bold ${
+                          <span className="text-[#a67c3c]">예수금:</span>
+                          <span className="font-bold text-[#7c5c2b]">
+                            {userBalance.toLocaleString()}원
+                          </span>
+                        </div>
+                        <div className="border-t border-gray-200 my-1"></div>
+                        <div className="flex justify-between items-center text-xs mt-1">
+                          <span className="text-[#a67c3c]">총자산:</span>
+                          <div className="flex items-center gap-1">
+                            <span className="font-bold text-[#7c5c2b]">
+                              {!user || user.can_advance_round !== true ? 
+                               (userBalance + (portfolioData.items?.reduce((sum, item) => sum + (item.average_price * item.quantity), 0) || 0)).toLocaleString() :
+                               (userBalance + (portfolioData.total_portfolio_value || 0)).toLocaleString()}원
+                            </span>
+                            <span className={`font-bold ${
                               !user || user.can_advance_round !== true ? 
                                (portfolioData.items?.some(item => item.round_purchased !== (user?.current_round_idx + 1)) ? 
                                 (portfolioData.items?.filter(item => item.round_purchased !== (user?.current_round_idx + 1))
@@ -990,11 +1040,12 @@ const Navbar = () => {
                             }`}>
                               {!user || user.can_advance_round !== true ? 
                                (portfolioData.items?.some(item => item.round_purchased !== (user?.current_round_idx + 1)) ? 
-                                `${portfolioData.items?.filter(item => item.round_purchased !== (user?.current_round_idx + 1))
+                                `(${portfolioData.items?.filter(item => item.round_purchased !== (user?.current_round_idx + 1))
                                  .reduce((sum, item) => sum + (item.profit_loss || 0), 0) >= 0 ? '+' : ''}${portfolioData.items?.filter(item => item.round_purchased !== (user?.current_round_idx + 1))
-                                 .reduce((sum, item) => sum + (item.profit_loss || 0), 0).toLocaleString()}원` : '0원') :
-                               `${portfolioData.total_profit_loss >= 0 ? '+' : ''}${portfolioData.total_profit_loss?.toLocaleString() || 0}원`}
+                                 .reduce((sum, item) => sum + (item.profit_loss || 0), 0).toLocaleString()}원)` : '(0원)') :
+                               `(${portfolioData.total_profit_loss >= 0 ? '+' : ''}${portfolioData.total_profit_loss?.toLocaleString() || 0}원)`}
                             </span>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -1098,3 +1149,4 @@ const Navbar = () => {
 };
 
 export default Navbar;
+
