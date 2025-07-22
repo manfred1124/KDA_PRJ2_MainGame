@@ -24,6 +24,9 @@ const ChatbotWidget = forwardRef(
     const [showSpeechBubble, setShowSpeechBubble] = useState(false); // 말풍선 표시 여부
     const [heroAnimating, setHeroAnimating] = useState(false); // 캐릭터 애니메이션 여부
     const [loadingAnimating, setLoadingAnimating] = useState(false); // 로딩 애니메이션 여부
+    const [isAttacking, setIsAttacking] = useState(false);
+    const [attackFrame, setAttackFrame] = useState(0);
+    const attackIntervalRef = useRef(null);
     const [isThinking, setIsThinking] = useState(false);
 
     const typingIntervalRef = useRef(null);
@@ -225,6 +228,26 @@ const ChatbotWidget = forwardRef(
         // 새 메시지 타이핑 시작
         typeMessage(safeText);
       },
+      triggerAttackAnimation: () => {
+        console.log("공격 애니메이션 트리거됨!", isAttacking, attackFrame);
+        if (isAttacking) return;
+        // 공격 애니메이션 중에는 다른 상태를 false로 강제
+        setLoading(false);
+        setIsSpeaking(false);
+        setHeroAnimating(false);
+        setIsAttacking(true);
+        setAttackFrame(0);
+        let frame = 0;
+        attackIntervalRef.current = setInterval(() => {
+          frame = (frame + 1) % 2;
+          setAttackFrame(frame);
+          console.log("attackFrame 변경:", frame);
+        }, 500); // 500ms로 변경 (한 프레임당 0.5초)
+        setTimeout(() => {
+          setIsAttacking(false);
+          clearInterval(attackIntervalRef.current);
+        }, 1000);
+      },
       startThinking: () => setIsThinking(true),
       stopThinking: () => setIsThinking(false),
     }));
@@ -244,8 +267,20 @@ const ChatbotWidget = forwardRef(
         if (loadingAnimationRef.current) {
           clearInterval(loadingAnimationRef.current);
         }
+        if (attackIntervalRef.current) {
+          clearInterval(attackIntervalRef.current);
+        }
       };
     }, []);
+
+    useEffect(() => {
+      console.log(
+        "isAttacking 상태:",
+        isAttacking,
+        "attackFrame:",
+        attackFrame
+      );
+    }, [isAttacking, attackFrame]);
 
     const handleSend = async (e) => {
       e.preventDefault();
@@ -589,8 +624,13 @@ const ChatbotWidget = forwardRef(
                 {/* 용사 캐릭터 이미지 */}
                 <div className="relative transform translate-x-16">
                   <img
+                    key={isAttacking ? `attack-${attackFrame}` : "normal"}
                     src={
-                      isThinking
+                      isAttacking
+                        ? `/attack${
+                            attackFrame === 0 ? "" : "(2)"
+                          }.png?v=${attackFrame}&t=${isAttacking ? "a" : "n"}`
+                        : isThinking
                         ? heroThinking2
                         : loading
                         ? loadingAnimating
@@ -603,10 +643,16 @@ const ChatbotWidget = forwardRef(
                     alt="용사"
                     className="object-contain transition-all duration-200"
                     style={{
-                      width: "25vw",
-                      height: "20vw",
-                      filter: isSpeaking || isThinking ? "brightness(1.1)" : "brightness(1)",
-                      transform: isSpeaking || isThinking ? "scale(1.05)" : "scale(1)",
+                      width: isAttacking ? "27.5vw" : "25vw", // 1.1배
+                      height: isAttacking ? "22vw" : "20vw", // 1.1배
+                      filter:
+                        isAttacking || isSpeaking || isThinking
+                          ? "brightness(1.1)"
+                          : "brightness(1)",
+                      transform:
+                        isAttacking || isSpeaking || isThinking
+                          ? "scale(1.1)"
+                          : "scale(1)",
                     }}
                   />
                 </div>

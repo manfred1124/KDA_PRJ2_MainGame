@@ -1,9 +1,4 @@
-import React, {
-  useState,
-  useEffect,
-  useContext,
-  useRef,
-} from "react";
+import React, { useState, useEffect, useContext, useRef } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import ChatbotWidget from "../components/ChatbotWidget";
 import axios from "axios";
@@ -28,18 +23,27 @@ const GUIDE_MSG =
 
 const SECTOR_GUIDE = {
   IT: "허허, IT·반도체 섹터는 첨단 기술과 혁신의 중심지구나.\n\n빠르게 변화하는 트렌드를 이끄는 기업들이 모여 있으니,\n그대가 신중하게 판단하시게.",
-  반도체: "반도체 섹터는 전자제품의 두뇌를 만드는 핵심 산업이구나.\n\n첨단 기술과 글로벌 경쟁이 치열하니,\n과인의 조언을 참고하시게.",
+  반도체:
+    "반도체 섹터는 전자제품의 두뇌를 만드는 핵심 산업이구나.\n\n첨단 기술과 글로벌 경쟁이 치열하니,\n과인의 조언을 참고하시게.",
   금융: "금융 섹터는 은행, 보험, 증권 등 자본의 흐름을 책임지는 곳이구나.\n\n그대가 신중하게 판단하시게.",
-  소비재: "소비재·유통 섹터는 일상생활과 밀접한 기업들이 모여있구나.\n\n경기 변동에 민감하니,\n과인의 조언을 참고하시게.",
+  소비재:
+    "소비재·유통 섹터는 일상생활과 밀접한 기업들이 모여있구나.\n\n경기 변동에 민감하니,\n과인의 조언을 참고하시게.",
   유통: "소비재·유통 섹터는 일상생활과 밀접한 기업들이 모여있구나.\n\n경기 변동에 민감하니,\n그대가 신중하게 판단하시게.",
-  에너지: "에너지 섹터는 산업의 동력을 공급하는 곳이구나.\n\n원유, 가스, 발전 기업들이 이끌고 있으니,\n이런 시기를 잘 활용하시게.",
-  헬스케어: "헬스케어·바이오 섹터는 건강과 생명을 지키는 기업들이 모여 있구나.\n\n제약, 바이오, 의료기기 분야가 중심이니,\n과인의 조언을 참고하시게.",
-  바이오: "헬스케어 섹터는 건강과 생명을 지키는 기업들이 모여 있구나.\n\n제약, 바이오, 의료기기 분야가 중심이니,\n그대가 신중하게 판단하시게.",
-  산업재: "산업재 섹터는 사회의 기반을 다지는 기업들이 모여 있구나.\n\n건설, 기계, 운송 등 다양한 산업이 속해 있으니,\n과인의 조언을 참고하시게.",
+  에너지:
+    "에너지 섹터는 산업의 동력을 공급하는 곳이구나.\n\n원유, 가스, 발전 기업들이 이끌고 있으니,\n이런 시기를 잘 활용하시게.",
+  헬스케어:
+    "헬스케어·바이오 섹터는 건강과 생명을 지키는 기업들이 모여 있구나.\n\n제약, 바이오, 의료기기 분야가 중심이니,\n과인의 조언을 참고하시게.",
+  바이오:
+    "헬스케어 섹터는 건강과 생명을 지키는 기업들이 모여 있구나.\n\n제약, 바이오, 의료기기 분야가 중심이니,\n그대가 신중하게 판단하시게.",
+  산업재:
+    "산업재 섹터는 사회의 기반을 다지는 기업들이 모여 있구나.\n\n건설, 기계, 운송 등 다양한 산업이 속해 있으니,\n과인의 조언을 참고하시게.",
   소재: "소재·2차전지 섹터는 다양한 산업의 기초가 되는 원자재와 부품을 공급하는 곳이구나.\n\n그대가 신중하게 판단하시게.",
-  "2차전지": "2차전지 섹터는 미래 에너지 저장의 핵심이구나.\n\n전기차와 친환경 산업의 성장동력이 되니,\n이런 시기를 잘 활용하시게.",
-  커뮤니케이션: "커뮤니케이션 섹터는 정보와 소통을 책임지는 기업들이 모여 있구나.\n\n통신, 미디어, 인터넷 기업이 중심이니,\n과인의 조언을 참고하시게.",
-  "공공·유틸리티": "공공·유틸리티 섹터는 전기, 수도, 가스 등 생활에 꼭 필요한 서비스를 제공하는 곳이구나.\n\n안정적인 수익이 특징이니,\n그대가 신중하게 판단하시게.",
+  "2차전지":
+    "2차전지 섹터는 미래 에너지 저장의 핵심이구나.\n\n전기차와 친환경 산업의 성장동력이 되니,\n이런 시기를 잘 활용하시게.",
+  커뮤니케이션:
+    "커뮤니케이션 섹터는 정보와 소통을 책임지는 기업들이 모여 있구나.\n\n통신, 미디어, 인터넷 기업이 중심이니,\n과인의 조언을 참고하시게.",
+  "공공·유틸리티":
+    "공공·유틸리티 섹터는 전기, 수도, 가스 등 생활에 꼭 필요한 서비스를 제공하는 곳이구나.\n\n안정적인 수익이 특징이니,\n그대가 신중하게 판단하시게.",
 };
 
 function getSectorGuide(sector) {
@@ -50,7 +54,7 @@ function getSectorGuide(sector) {
   return `허허, ${sector} 섹터에 온걸 환영하구나!\n\n그대가 신중하게 판단하시게.`;
 }
 
-const SelectSector = () => {
+const SelectSector = ({ chatbotRef = null }) => {
   const { user, updateUser } = useAuth();
   const [sectors, setSectors] = useState([]);
   const [selected, setSelected] = useState(null);
@@ -78,7 +82,8 @@ const SelectSector = () => {
   const [financialLoading, setFinancialLoading] = useState(false);
   const [resultModalOpen, setResultModalOpen] = useState(false);
   // SelectSector의 임시 거래 목록
-  const [selectSectorPendingTransactions, setSelectSectorPendingTransactions] = useState([]);
+  const [selectSectorPendingTransactions, setSelectSectorPendingTransactions] =
+    useState([]);
 
   useEffect(() => {
     addGuideMessage(GUIDE_MSG);
@@ -362,26 +367,24 @@ const SelectSector = () => {
         transaction_type: orderType,
         quantity: orderQty,
         price: orderModal.stock.current_price,
-        total_amount: orderModal.stock.current_price * orderQty
+        total_amount: orderModal.stock.current_price * orderQty,
       };
-      
+
       // SelectSector의 임시 거래 목록에 추가
-      setSelectSectorPendingTransactions(prev => [...prev, newTransaction]);
-      
+      setSelectSectorPendingTransactions((prev) => [...prev, newTransaction]);
+
       toast.success(
         orderType === "buy"
-          ? `${
-              orderModal.stock.name
-            } ${orderQty}주 구매하기 주문이 추가되었습니다. (결과 확인 후 처리)`
-          : `${
-              orderModal.stock.name
-            } ${orderQty}주 판매하기 주문이 추가되었습니다. (결과 확인 후 처리)`
+          ? `${orderModal.stock.name} ${orderQty}주 구매하기 주문이 추가되었습니다. (결과 확인 후 처리)`
+          : `${orderModal.stock.name} ${orderQty}주 판매하기 주문이 추가되었습니다. (결과 확인 후 처리)`
       );
 
       // Navbar에 임시 거래 추가 이벤트 발생
-      window.dispatchEvent(new CustomEvent('pendingTransactionAdded', {
-        detail: newTransaction
-      }));
+      window.dispatchEvent(
+        new CustomEvent("pendingTransactionAdded", {
+          detail: newTransaction,
+        })
+      );
 
       setOrderModal(null);
       setOrderQty(1);
@@ -397,13 +400,31 @@ const SelectSector = () => {
       });
       toast.success(
         orderType === "buy"
-          ? `${orderModal.stock.name} ${orderQty}주 구매하기 완료! (${orderModal.stock.current_price.toLocaleString()}원)`
-          : `${orderModal.stock.name} ${orderQty}주 판매하기 완료! (${orderModal.stock.current_price.toLocaleString()}원)`
+          ? `${
+              orderModal.stock.name
+            } ${orderQty}주 구매하기 완료! (${orderModal.stock.current_price.toLocaleString()}원)`
+          : `${
+              orderModal.stock.name
+            } ${orderQty}주 판매하기 완료! (${orderModal.stock.current_price.toLocaleString()}원)`
       );
+
+      // Trigger attack animation if chatbotRef is available
+      if (
+        chatbotRef &&
+        chatbotRef.current &&
+        chatbotRef.current.triggerAttackAnimation
+      ) {
+        try {
+          chatbotRef.current.triggerAttackAnimation();
+        } catch (e) {
+          console.warn("Failed to trigger attack animation", e);
+        }
+      }
+
+      // 사용자 정보 업데이트 (잔고 동기화)
       try {
         const userResponse = await axios.get("/api/auth/me");
         updateUser(userResponse.data);
-
         // 포트폴리오 데이터 업데이트 (약간의 지연 후)
         setTimeout(() => {
           fetchPortfolio();
@@ -442,66 +463,96 @@ const SelectSector = () => {
 
   // Process pending transactions from Stocks.jsx and SelectSector.jsx
   const processStocksPendingTransactions = async () => {
-    console.log('SelectSector.jsx: processStocksPendingTransactions called');
+    console.log("SelectSector.jsx: processStocksPendingTransactions called");
     return new Promise((resolve, reject) => {
       const handlePendingTransactionsResponse = (event) => {
         const stocksPendingTransactions = event.detail;
-        console.log('SelectSector.jsx: Received pendingTransactionsResponse', stocksPendingTransactions);
-        window.removeEventListener('pendingTransactionsResponse', handlePendingTransactionsResponse);
-        
+        console.log(
+          "SelectSector.jsx: Received pendingTransactionsResponse",
+          stocksPendingTransactions
+        );
+        window.removeEventListener(
+          "pendingTransactionsResponse",
+          handlePendingTransactionsResponse
+        );
+
         const processTransactions = async () => {
           try {
             // Process Stocks.jsx pending transactions
-            if (stocksPendingTransactions && stocksPendingTransactions.length > 0) {
+            if (
+              stocksPendingTransactions &&
+              stocksPendingTransactions.length > 0
+            ) {
               for (const transaction of stocksPendingTransactions) {
                 try {
-                  await axios.post(`/api/portfolio/${transaction.transaction_type}`, {
-                    stock_id: transaction.stock_id,
-                    quantity: transaction.quantity,
-                    price: transaction.price
-                  });
+                  await axios.post(
+                    `/api/portfolio/${transaction.transaction_type}`,
+                    {
+                      stock_id: transaction.stock_id,
+                      quantity: transaction.quantity,
+                      price: transaction.price,
+                    }
+                  );
                 } catch (error) {
-                  console.error(`Transaction failed: ${transaction.stock_name}`, error);
+                  console.error(
+                    `Transaction failed: ${transaction.stock_name}`,
+                    error
+                  );
                   toast.error(`${transaction.stock_name} 거래에 실패했습니다.`);
                 }
               }
-              
-              window.dispatchEvent(new CustomEvent('clearPendingTransactions'));
+
+              window.dispatchEvent(new CustomEvent("clearPendingTransactions"));
             }
-            
+
             // Process SelectSector.jsx pending transactions
-            if (selectSectorPendingTransactions && selectSectorPendingTransactions.length > 0) {
+            if (
+              selectSectorPendingTransactions &&
+              selectSectorPendingTransactions.length > 0
+            ) {
               for (const transaction of selectSectorPendingTransactions) {
                 try {
-                  await axios.post(`/api/portfolio/${transaction.transaction_type}`, {
-                    stock_id: transaction.stock_id,
-                    quantity: transaction.quantity,
-                    price: transaction.price
-                  });
+                  await axios.post(
+                    `/api/portfolio/${transaction.transaction_type}`,
+                    {
+                      stock_id: transaction.stock_id,
+                      quantity: transaction.quantity,
+                      price: transaction.price,
+                    }
+                  );
                 } catch (error) {
-                  console.error(`Transaction failed: ${transaction.stock_name}`, error);
+                  console.error(
+                    `Transaction failed: ${transaction.stock_name}`,
+                    error
+                  );
                   toast.error(`${transaction.stock_name} 거래에 실패했습니다.`);
                 }
               }
-              
+
               setSelectSectorPendingTransactions([]);
             }
-            
+
             resolve();
           } catch (error) {
             reject(error);
           }
         };
-        
+
         processTransactions();
       };
-      
-      window.addEventListener('pendingTransactionsResponse', handlePendingTransactionsResponse);
-      console.log('SelectSector.jsx: Dispatching getPendingTransactions event');
-      window.dispatchEvent(new CustomEvent('getPendingTransactions'));
-      
+
+      window.addEventListener(
+        "pendingTransactionsResponse",
+        handlePendingTransactionsResponse
+      );
+      console.log("SelectSector.jsx: Dispatching getPendingTransactions event");
+      window.dispatchEvent(new CustomEvent("getPendingTransactions"));
+
       setTimeout(() => {
-        window.removeEventListener('pendingTransactionsResponse', handlePendingTransactionsResponse);
+        window.removeEventListener(
+          "pendingTransactionsResponse",
+          handlePendingTransactionsResponse
+        );
         resolve();
       }, 5000);
     });
@@ -566,31 +617,53 @@ const SelectSector = () => {
               : "결과 확인"}
           </button>
         </div>
-        
+
         {/* SelectSector 임시 거래 목록 */}
         {selectSectorPendingTransactions.length > 0 && (
           <div className="bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-200 rounded-xl p-4 mb-4">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-lg font-bold text-green-900">📋 SelectSector 대기 중인 거래</h3>
+              <h3 className="text-lg font-bold text-green-900">
+                📋 SelectSector 대기 중인 거래
+              </h3>
               <span className="text-sm text-green-700">
                 총 {selectSectorPendingTransactions.length}건
               </span>
             </div>
-            
+
             <div className="space-y-2 max-h-32 overflow-y-auto">
               {selectSectorPendingTransactions.map((transaction) => (
-                <div key={transaction.id} className="flex items-center justify-between bg-white rounded-lg p-3 border border-green-200">
+                <div
+                  key={transaction.id}
+                  className="flex items-center justify-between bg-white rounded-lg p-3 border border-green-200"
+                >
                   <div className="flex items-center space-x-3">
-                    <div className={`w-3 h-3 rounded-full ${transaction.transaction_type === 'buy' ? 'bg-red-500' : 'bg-blue-500'}`}></div>
+                    <div
+                      className={`w-3 h-3 rounded-full ${
+                        transaction.transaction_type === "buy"
+                          ? "bg-red-500"
+                          : "bg-blue-500"
+                      }`}
+                    ></div>
                     <div>
-                      <span className="font-semibold text-gray-900">{transaction.stock_name}</span>
-                      <span className="text-sm text-gray-600 ml-2">({transaction.stock_symbol})</span>
+                      <span className="font-semibold text-gray-900">
+                        {transaction.stock_name}
+                      </span>
+                      <span className="text-sm text-gray-600 ml-2">
+                        ({transaction.stock_symbol})
+                      </span>
                     </div>
-                    <span className={`text-sm font-medium ${transaction.transaction_type === 'buy' ? 'text-red-600' : 'text-blue-600'}`}>
-                      {transaction.transaction_type === 'buy' ? '매수' : '매도'}
+                    <span
+                      className={`text-sm font-medium ${
+                        transaction.transaction_type === "buy"
+                          ? "text-red-600"
+                          : "text-blue-600"
+                      }`}
+                    >
+                      {transaction.transaction_type === "buy" ? "매수" : "매도"}
                     </span>
                     <span className="text-sm text-gray-600">
-                      {transaction.quantity.toLocaleString()}주 × {transaction.price.toLocaleString()}원
+                      {transaction.quantity.toLocaleString()}주 ×{" "}
+                      {transaction.price.toLocaleString()}원
                     </span>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -599,14 +672,21 @@ const SelectSector = () => {
                     </span>
                     <button
                       onClick={() => {
-                        const removedTransaction = selectSectorPendingTransactions.find(tx => tx.id === transaction.id);
-                        setSelectSectorPendingTransactions(prev => prev.filter(tx => tx.id !== transaction.id));
-                        toast.success('주문이 취소되었습니다.');
-                        
+                        const removedTransaction =
+                          selectSectorPendingTransactions.find(
+                            (tx) => tx.id === transaction.id
+                          );
+                        setSelectSectorPendingTransactions((prev) =>
+                          prev.filter((tx) => tx.id !== transaction.id)
+                        );
+                        toast.success("주문이 취소되었습니다.");
+
                         if (removedTransaction) {
-                          window.dispatchEvent(new CustomEvent('pendingTransactionRemoved', {
-                            detail: removedTransaction
-                          }));
+                          window.dispatchEvent(
+                            new CustomEvent("pendingTransactionRemoved", {
+                              detail: removedTransaction,
+                            })
+                          );
                         }
                       }}
                       className="text-red-500 hover:text-red-700 transition-colors"
@@ -1251,32 +1331,43 @@ const SelectSector = () => {
                                 <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
                                   <div className="grid grid-cols-2 gap-6">
                                     {/* 매출 및 수익 */}
-<div className="space-y-4">
-  <h4 className="text-lg font-semibold text-gray-800 border-b pb-2">
-    매출 및 수익
-  </h4>
-  <div className="space-y-3">
-    <div className="flex justify-between">
-      <span className="text-gray-600">매출액</span>
-      <span className="font-semibold">
-        {formatToKoreanUnit(financialData.revenue)}
-      </span>
-    </div>
-    <div className="flex justify-between">
-      <span className="text-gray-600">영업이익</span>
-      <span className="font-semibold">
-        {formatToKoreanUnit(financialData.operating_income)}
-      </span>
-    </div>
-    <div className="flex justify-between">
-      <span className="text-gray-600">당기순이익</span>
-      <span className="font-semibold">
-        {formatToKoreanUnit(financialData.net_income)}
-      </span>
-    </div>
-  </div>
-</div>
-
+                                    <div className="space-y-4">
+                                      <h4 className="text-lg font-semibold text-gray-800 border-b pb-2">
+                                        매출 및 수익
+                                      </h4>
+                                      <div className="space-y-3">
+                                        <div className="flex justify-between">
+                                          <span className="text-gray-600">
+                                            매출액
+                                          </span>
+                                          <span className="font-semibold">
+                                            {formatToKoreanUnit(
+                                              financialData.revenue
+                                            )}
+                                          </span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                          <span className="text-gray-600">
+                                            영업이익
+                                          </span>
+                                          <span className="font-semibold">
+                                            {formatToKoreanUnit(
+                                              financialData.operating_income
+                                            )}
+                                          </span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                          <span className="text-gray-600">
+                                            당기순이익
+                                          </span>
+                                          <span className="font-semibold">
+                                            {formatToKoreanUnit(
+                                              financialData.net_income
+                                            )}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
 
                                     {/* 투자 지표 */}
                                     <div className="space-y-4">
@@ -1589,7 +1680,6 @@ const SelectSector = () => {
       {resultModalOpen && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
           <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full text-center flex flex-col justify-center">
-            {/* <h2 className="text-2xl font-bold mb-4">전투 결과</h2> */}
             <p
               className="text-gray-700 mb-8"
               style={{
@@ -1606,11 +1696,9 @@ const SelectSector = () => {
                 onClick={async () => {
                   setResultModalOpen(false);
                   setAdvancing(true);
-                  
                   try {
                     // Process pending transactions from Stocks.jsx
                     await processStocksPendingTransactions();
-                    
                     // Update user info and trigger transaction complete event
                     try {
                       const userResponse = await axios.get("/api/auth/me");
@@ -1619,7 +1707,18 @@ const SelectSector = () => {
                     } catch (error) {
                       console.error("Failed to update user info:", error);
                     }
-                    
+                    // Trigger attack animation if chatbotRef is available
+                    if (
+                      chatbotRef &&
+                      chatbotRef.current &&
+                      chatbotRef.current.triggerAttackAnimation
+                    ) {
+                      try {
+                        chatbotRef.current.triggerAttackAnimation();
+                      } catch (e) {
+                        console.warn("Failed to trigger attack animation", e);
+                      }
+                    }
                     navigate("/my-page");
                   } catch (error) {
                     console.error("Failed to process transactions:", error);
