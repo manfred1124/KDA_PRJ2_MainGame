@@ -95,7 +95,7 @@ const MyPage = () => {
           }
         }
       };
-      
+
       getFeedback();
     }
   }, [loading, portfolio, user]); // 의존성 배열은 유지
@@ -202,7 +202,10 @@ const MyPage = () => {
           style={{ width: 220, height: 320 }}
           className="mb-6"
         />
-        <span className="text-2xl text-white font-bold animate-blink-slow" style={{ fontFamily: 'Jua, sans-serif' }}>
+        <span
+          className="text-2xl text-white font-bold animate-blink-slow"
+          style={{ fontFamily: "Jua, sans-serif" }}
+        >
           전투 진행중...
         </span>
       </div>
@@ -266,14 +269,30 @@ const MyPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-[#7c5c2b]">
           <div className="flex items-center space-x-2">
             <Trophy size={24} />
-            <span style={{ fontFamily: "Jua, sans-serif", fontSize: "1.1rem" }} className="text-[#7c5c2b]">
-              총 자산: {((portfolio.total_portfolio_value || 0) + (user.total_balance || 0)).toLocaleString()}원
+            <span
+              style={{ fontFamily: "Jua, sans-serif", fontSize: "1.1rem" }}
+              className="text-[#7c5c2b]"
+            >
+              총 자산:{" "}
+              {(
+                (portfolio.total_portfolio_value || 0) +
+                (user.total_balance || 0)
+              ).toLocaleString()}
+              원
             </span>
           </div>
           <div className="flex items-center space-x-2 text-[#7c5c2b]">
             <DollarSign size={24} />
-            <span style={{ fontFamily: "Jua, sans-serif", fontSize: "1.1rem" }} className="text-[#7c5c2b]">
-              총 수익: {portfolio.total_profit > 0 ? "+" : portfolio.total_profit < 0 ? "-" : ""}
+            <span
+              style={{ fontFamily: "Jua, sans-serif", fontSize: "1.1rem" }}
+              className="text-[#7c5c2b]"
+            >
+              총 수익:{" "}
+              {portfolio.total_profit > 0
+                ? "+"
+                : portfolio.total_profit < 0
+                ? "-"
+                : ""}
               {Math.abs(portfolio.total_profit).toLocaleString()}원
             </span>
           </div>
@@ -307,56 +326,80 @@ const MyPage = () => {
         {/* 미실현 손익 */}
         <div className="rounded-xl bg-[#f7e6b6] px-6 py-4 shadow border border-[#e6d3a3] flex flex-col items-center justify-center">
           <p className="text-[#a67c3c] font-medium">미실현 손익</p>
-          <p className={`text-base font-bold whitespace-nowrap overflow-hidden text-ellipsis ${
-            portfolio.total_profit_loss > 0
-              ? "text-[#e53a40]"
+          <p
+            className={`text-base font-bold whitespace-nowrap overflow-hidden text-ellipsis ${
+              portfolio.total_profit_loss > 0
+                ? "text-[#e53a40]"
+                : portfolio.total_profit_loss < 0
+                ? "text-[#2563eb]"
+                : ""
+            }`}
+          >
+            {portfolio.total_profit_loss > 0
+              ? "+"
               : portfolio.total_profit_loss < 0
-              ? "text-[#2563eb]"
-              : ""
-          }`}>
-            {portfolio.total_profit_loss > 0 ? "+" : portfolio.total_profit_loss < 0 ? "-" : ""}
+              ? "-"
+              : ""}
             {Math.abs(portfolio.total_profit_loss).toLocaleString()}원
           </p>
         </div>
         {/* 실현 수익 */}
         <div className="rounded-xl bg-[#f7e6b6] px-6 py-4 shadow border border-[#e6d3a3] flex flex-col items-center justify-center">
           <p className="text-[#a67c3c] font-medium">실현 수익</p>
-          <p className={`text-base font-bold whitespace-nowrap overflow-hidden text-ellipsis ${
-            portfolio.realized_profit > 0
-              ? "text-[#e53a40]"
+          <p
+            className={`text-base font-bold whitespace-nowrap overflow-hidden text-ellipsis ${
+              portfolio.realized_profit > 0
+                ? "text-[#e53a40]"
+                : portfolio.realized_profit < 0
+                ? "text-[#2563eb]"
+                : ""
+            }`}
+          >
+            {portfolio.realized_profit > 0
+              ? "+"
               : portfolio.realized_profit < 0
-              ? "text-[#2563eb]"
-              : ""
-          }`}>
-            {portfolio.realized_profit > 0 ? "+" : portfolio.realized_profit < 0 ? "-" : ""}
+              ? "-"
+              : ""}
             {Math.abs(portfolio.realized_profit).toLocaleString()}원
           </p>
         </div>
         {/* 총 수익 */}
         <div className="rounded-xl bg-[#f7e6b6] px-6 py-4 shadow border border-[#e6d3a3] flex flex-col items-center justify-center">
           <p className="text-[#a67c3c] font-medium">총 수익</p>
-          <p className={`text-base font-bold whitespace-nowrap overflow-hidden text-ellipsis ${
-            portfolio.total_profit > 0
-              ? "text-[#e53a40]"
+          <p
+            className={`text-base font-bold whitespace-nowrap overflow-hidden text-ellipsis ${
+              portfolio.total_profit > 0
+                ? "text-[#e53a40]"
+                : portfolio.total_profit < 0
+                ? "text-[#2563eb]"
+                : ""
+            }`}
+          >
+            {portfolio.total_profit > 0
+              ? "+"
               : portfolio.total_profit < 0
-              ? "text-[#2563eb]"
-              : ""
-          }`}>
-            {portfolio.total_profit > 0 ? "+" : portfolio.total_profit < 0 ? "-" : ""}
+              ? "-"
+              : ""}
             {Math.abs(portfolio.total_profit).toLocaleString()}원
           </p>
         </div>
         {/* 총 수익률 */}
         <div className="rounded-xl bg-[#f7e6b6] px-6 py-4 shadow border border-[#e6d3a3] flex flex-col items-center justify-center">
           <p className="text-[#a67c3c] font-medium">총 수익률</p>
-          <p className={`text-base font-bold whitespace-nowrap overflow-hidden text-ellipsis ${
-            portfolio.total_profit_percentage > 0
-              ? "text-[#e53a40]"
+          <p
+            className={`text-base font-bold whitespace-nowrap overflow-hidden text-ellipsis ${
+              portfolio.total_profit_percentage > 0
+                ? "text-[#e53a40]"
+                : portfolio.total_profit_percentage < 0
+                ? "text-[#2563eb]"
+                : ""
+            }`}
+          >
+            {portfolio.total_profit_percentage > 0
+              ? "+"
               : portfolio.total_profit_percentage < 0
-              ? "text-[#2563eb]"
-              : ""
-          }`}>
-            {portfolio.total_profit_percentage > 0 ? "+" : portfolio.total_profit_percentage < 0 ? "-" : ""}
+              ? "-"
+              : ""}
             {Math.abs(portfolio.total_profit_percentage).toFixed(2)}%
           </p>
         </div>
@@ -453,7 +496,11 @@ const MyPage = () => {
                           : ""
                       }`}
                     >
-                      {(item.profit_loss ?? 0) > 0 ? "+" : (item.profit_loss ?? 0) < 0 ? "-" : ""}
+                      {(item.profit_loss ?? 0) > 0
+                        ? "+"
+                        : (item.profit_loss ?? 0) < 0
+                        ? "-"
+                        : ""}
                       {Math.abs(item.profit_loss ?? 0).toLocaleString()}원
                     </td>
                     <td
@@ -465,7 +512,11 @@ const MyPage = () => {
                           : ""
                       }`}
                     >
-                      {(item.profit_loss_percentage ?? 0) > 0 ? "+" : (item.profit_loss_percentage ?? 0) < 0 ? "-" : ""}
+                      {(item.profit_loss_percentage ?? 0) > 0
+                        ? "+"
+                        : (item.profit_loss_percentage ?? 0) < 0
+                        ? "-"
+                        : ""}
                       {Math.abs(item.profit_loss_percentage ?? 0).toFixed(2)}%
                     </td>
                   </tr>
@@ -518,7 +569,7 @@ const MyPage = () => {
                   수익률
                 </th>
                 <th className="py-3 px-4 font-semibold text-[#a67c3c] w-32 whitespace-nowrap text-xs">
-                  매도 후 현재가 대비(%)
+                  매도 후 현재가(%)
                 </th>
               </tr>
             </thead>
@@ -625,12 +676,14 @@ const MyPage = () => {
                       >
                         {tx.transaction_type === "sell" && profitRate !== null
                           ? (profitRate > 0 ? "+" : profitRate < 0 ? "-" : "") +
-                            Math.abs(profitRate).toFixed(2) + "%"
+                            Math.abs(profitRate).toFixed(2) +
+                            "%"
                           : "-"}
                       </td>
                       <td
                         className={`py-3 px-4 whitespace-nowrap text-xs ${
-                          tx.transaction_type === "sell" && opportunityCost !== null
+                          tx.transaction_type === "sell" &&
+                          opportunityCost !== null
                             ? opportunityCost > 0
                               ? "text-[#e53a40]"
                               : opportunityCost < 0
@@ -639,8 +692,13 @@ const MyPage = () => {
                             : ""
                         }`}
                       >
-                        {tx.transaction_type === "sell" && opportunityCost !== null
-                          ? (opportunityCost > 0 ? "+" : opportunityCost < 0 ? "-" : "") +
+                        {tx.transaction_type === "sell" &&
+                        opportunityCost !== null
+                          ? (opportunityCost > 0
+                              ? "+"
+                              : opportunityCost < 0
+                              ? "-"
+                              : "") +
                             Math.abs(opportunityCost).toFixed(2) +
                             "%"
                           : "-"}
@@ -790,7 +848,7 @@ const MyPage = () => {
                   {opportunityCost !== null && (
                     <div className="mt-3 pt-3 border-t border-[#e6d3a3]">
                       <span className="text-[#a67c3c] font-medium">
-                        매도 후 현재가 대비:
+                        매도 후 현재가:
                       </span>
                       <span
                         className={`ml-2 font-semibold ${

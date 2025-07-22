@@ -17,6 +17,8 @@ from langchain_community.chat_models import ChatOpenAI
 from langchain.schema import SystemMessage, HumanMessage
 from sqlalchemy.orm import joinedload
 import random
+from langchain_community.vectorstores import FAISS
+from langchain_community.embeddings import OpenAIEmbeddings
 
 from database import get_db, init_db
 from models import User, Stock, Portfolio, Transaction, News, RoundReview, StockPrice
@@ -46,6 +48,21 @@ app.add_middleware(
 )
 
 security = HTTPBearer()
+
+# RAG: Load or build FAISS vector DB from knowledge base
+FAISS_INDEX_PATH = os.path.join(os.path.dirname(__file__), "data", "faiss_index")
+KNOWLEDGE_FILE = os.path.join(os.path.dirname(__file__), "data", "knowledge_base.txt")
+
+embeddings = OpenAIEmbeddings()
+
+# Build or load FAISS index (singleton)
+if os.path.exists(FAISS_INDEX_PATH):
+    vectorstore = FAISS.load_local(FAISS_INDEX_PATH, embeddings, allow_dangerous_deserialization=True)
+else:
+    with open(KNOWLEDGE_FILE, encoding="utf-8") as f:
+        documents = [line.strip() for line in f if line.strip()]
+    vectorstore = FAISS.from_texts(documents, embeddings)
+    vectorstore.save_local(FAISS_INDEX_PATH)
 
 @app.on_event("startup")
 async def startup_event():
@@ -471,6 +488,12 @@ async def chatbot(
         price_summaries.append(f"{p.stock_id} {p.date}: {p.close_price}")
     context = f"현재 라운드: {current_period}\n최근 뉴스: {', '.join(news_titles)}\n최근 주가: {', '.join(price_summaries)}\n"
 
+    # RAG: Retrieve top-3 relevant docs for the message
+    rag_docs = vectorstore.similarity_search(message, k=3)
+    rag_context = "\n".join([doc.page_content for doc in rag_docs])
+    if rag_context:
+        context += f"\n[외부지식]\n{rag_context}\n"
+
     # LangChain LLM 호출
     llm = ChatOpenAI(temperature=0.2, model_name="gpt-3.5-turbo")
     system_prompt = (
@@ -478,7 +501,7 @@ async def chatbot(
         "너는 주식 투자 게임을 통해 모험을 떠나는 용사를 위해 조언을 해주는 조언 용사야.\n"
         "너의 말투는 세종대왕의 어투를 정확히 모방해라.\n"
         "답변 시작할 때는 반드시 '허허,', '과인이 생각하기에는,', '그대의 질문이 심오하구나,', '좋은 접근이군,' 같은 표현으로 시작해라.\n"
-        "문장 끝에는 '~하시게', '~하시는 것이 좋겠네', '~하는 것이 현명하리라' 같은 표현을 사용해라.\n"
+        "문장의 어미로는 '하시게', '하시는 것이 좋겠네', '하는 것이 현명하리라' 같은 표현을 사용해라.\n"
         "투자 조언을 줄 때는 '그대가 신중하게 판단하시게', '과인의 조언을 참고하시게', '이런 관점도 있으니 생각해보시게' 같은 표현을 사용해라.\n"
         "예시: '허허, 그대의 질문이 심오하구나. 글로벌 부채 급증은 경제에 큰 부담을 주는 것이니, 그대가 신중하게 판단하시게. 과인의 조언을 참고하시면, 이런 시기에는 안전자산에 눈을 돌리는 것이 현명하리라.'\n"
         "아래 context(주가/뉴스) 정보까지만 참고해서 답변해.\n"
@@ -702,7 +725,7 @@ async def mypage_feedback(
         - 보유 현금: {user.total_balance:,}원
         - 평가금액: {total_portfolio_value:,}원
         - 총 자산: {total_assets:,}원
-        - 총 수익률 (초기 투자금 대비): {total_profit_percentage:.2f}% (수익률 평가: {'훌륭함' if total_profit_percentage >= 20 else '좋음' if total_profit_percentage >= 10 else '양호함' if total_profit_percentage >= 0 else '손실'}) - 이는 매우 좋은 성과입니다!
+        - 총 수익률 (초기 투자금 대비): {total_profit_percentage:.2f}% (수익률 평가: {'훌륭함' if total_profit_percentage >= 20 else '좋음' if total_profit_percentage >= 10 else '양호함' if total_profit_percentage >= 0 else '손실'})
         - 미실현 손익: {total_profit_loss:,}원
         - 실현 손익: {user.realized_profit:,}원
         
@@ -726,19 +749,19 @@ async def mypage_feedback(
         말투 규칙:
         1. 문장 시작은 다음과 같은 고풍스러운 어투 중 하나로 시작하시오:
         - "허허, 용사여", "과인이 분석해보니", "그대의 투자 성과를 살펴보니"
-        2. 문장 끝맺음은 항상 존엄하고 권위 있는 어투로 마무리하시오. 예: "~하시게", "~하시는 것이 좋겠나이다", "~하는 것이 현명하리라"
+        2. 문장 끝맺음은 항상 존엄하고 권위 있는 어투로 마무리하시오. 예: "~하시게", "~하시는 것이 좋겠네네", "~하는 것이 현명하리라"
         3. 조언할 때는 조심스럽고 품격 있는 어투를 사용하시오. 예: "과인의 조언을 참고하시게", "그대가 신중하게 판단하시게"
         4. 격려 시에는 용사의 길을 응원하는 말투를 사용하시오. 예: "용사여, 투자의 길에서 늘 현명하시길 바라나이다"
 
         
         간단한 피드백을 제공하라:
         
-        - "허허, 용사 ~이여!"로 시작
+        - "허허, 용사 {user.username}(이)여!"로 시작
         - 수익률에 따른 간단한 격려 또는 조언 (1-2문장):
-          * 수익률 20% 이상: "훌륭한 성과로다! 진정한 투자 고수라 할 수 있겠나이다."
-          * 수익률 10% 이상: "좋은 성과로다! 현명한 투자자라 할 수 있겠나이다."
-          * 수익률 0% 이상: "양호한 성과로다. 신중한 투자라 할 수 있겠나이다."
-          * 수익률 0% 미만: "손실이 있으나 이는 투자의 길에서 반드시 겪어야 할 시련이라 할 수 있겠나이다."
+          * 수익률 20% 이상: "훌륭한 성과로다! 진정한 투자 고수라 할 수 있겠네."
+          * 수익률 10% 이상: "좋은 성과로다! 현명한 투자자라 할 수 있겠네."
+          * 수익률 0% 이상: "양호한 성과로다. 신중한 투자라 할 수 있겠네."
+          * 수익률 0% 미만: "손실이 있으나 이는 투자의 길에서 반드시 겪어야 할 시련이라 할 수 있겠네."
         
         중요: 수익률이 양수이면 반드시 긍정적인 평가를 해야 한다. "아쉽다", "부족하다", "손실" 등의 부정적 표현을 절대 사용하지 말라. 수익률이 +31.25%라면 이는 매우 훌륭한 성과이므로 반드시 긍정적으로 평가해야 한다.
         - 가장 중요한 한 가지 조언만 제시 (다음 우선순위로):
@@ -747,9 +770,9 @@ async def mypage_feedback(
           3. 현금 25% 이하: 현금 유동성 확보 권장
           4. 거래 빈도가 매우 높거나 낮을 때: 거래 패턴 조언
           5. 기타: 현재 전략 유지하되 신중하게 접근 권장
-        - 세종대왕의 어투 유지 ("~하시게", "~하시는 것이 좋겠나이다")
+        - 세종대왕의 어투 유지 ("~하시게", "~하시는 것이 좋겠네")
         
-        중요: 마크다운 형식(###)을 사용하지 말고, 이모지와 텍스트만 사용하라.
+        중요: 마크다운 형식(###)을 사용하지 말고, 텍스트만 사용하라.
         
         답변은 100-150자 내외로 매우 간결하게 작성하라.
         
@@ -860,7 +883,7 @@ async def sector_analysis(
         system_prompt = (
             """너는 주식 투자 시뮬레이션 게임의 장군이야.\n"
             "너는 세종대왕의 어투를 정확히 모방해라.\n"
-            "답변 시작할 때는 반드시 '허허,', '과인이 살펴보니,', '그대가 관심을 보이는 섹터가구나,' 같은 표현으로 시작해라.\n"
+            "답변 시작할 때는 반드시 '허허,', '과인이 살펴보니,', '그대가 관심을 보이는 섹터로구나,' 같은 표현으로 시작해라.\n"
             "문장 끝에는 '~하시게', '~하시는 것이 좋겠네', '~하는 것이 현명하리라' 같은 표현을 사용해라.\n"
             "투자 조언을 줄 때는 '그대가 신중하게 판단하시게', '과인의 조언을 참고하시게' 같은 표현을 사용해라.\n"
             "답변은 3-4문장으로 간결하게 해라. 너무 길지 않게 핵심만 전달해라.\n"
