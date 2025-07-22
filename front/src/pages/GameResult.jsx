@@ -13,22 +13,18 @@ import {
 } from "lucide-react";
 import { GuideMessageContext } from "../App";
 import ChatbotWidget from "../components/ChatbotWidget";
-
-import { BearDefeatedContext } from "../App";
+import BearTopLeftAnimation from "../components/BearTopLeftAnimation";
 
 const GUIDE_MSG = "모험의 끝에 도달했네! 그대의 투자 여정을 돌아보게.";
 
-const GameResult = () => {
+const GameResult = ({ bgmRef, setBearFall, setBearGone }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [gameState, setGameState] = useState(null);
   const [ranking, setRanking] = useState([]);
   const [loading, setLoading] = useState(true);
   const { addGuideMessage } = useContext(GuideMessageContext);
-  const { setIsBearDefeated } = useContext(BearDefeatedContext);
   const [showVideo, setShowVideo] = useState(true);
-  
-  
 
   useEffect(() => {
     addGuideMessage(GUIDE_MSG);
@@ -46,6 +42,19 @@ const GameResult = () => {
       document.body.style.overflow = "auto";
     };
   }, [showVideo]);
+
+  useEffect(() => {
+    if (!bgmRef || !bgmRef.current) return;
+    if (showVideo) {
+      if (typeof bgmRef.current.pauseMusic === "function") {
+        bgmRef.current.pauseMusic();
+      }
+    } else {
+      if (typeof bgmRef.current.playMusic === "function") {
+        bgmRef.current.playMusic();
+      }
+    }
+  }, [showVideo, bgmRef]);
 
   const fetchGameResult = async () => {
     try {
@@ -142,9 +151,10 @@ const GameResult = () => {
         <video
           src="/result.mp4"
           autoPlay
+          muted={false}
           onEnded={() => {
             setShowVideo(false);
-            setIsBearDefeated(true);
+            if (setBearFall) setBearFall(true);
           }}
           style={{ width: "100%", height: "100%", objectFit: "cover" }}
         />
