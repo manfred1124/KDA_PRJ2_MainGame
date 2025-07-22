@@ -9,7 +9,22 @@
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-    cursor: url('/sword1.png'), auto;
+    cursor: none !important; /* 기본 커서 숨기기 */
+  }
+  
+  /* 기본 상태에서는 모든 요소에 기본 커서 숨기기 */
+  * {
+    cursor: none !important;
+  }
+  
+  /* 클릭 가능한 요소들에만 호버 커서 적용 */
+  button:hover,
+  a:hover,
+  [role="button"]:hover,
+  .cursor-pointer:hover,
+  input[type="button"]:hover,
+  input[type="submit"]:hover {
+    cursor: none !important;
   }
 
   /* 로그인/회원가입 페이지 폰트 적용 */
