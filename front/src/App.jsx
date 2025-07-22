@@ -38,6 +38,8 @@ export const IntroContext = createContext({
   setShowIntro: () => {},
 });
 
+export const BearDefeatedContext = createContext({ isBearDefeated: false, setIsBearDefeated: () => {} });
+
 function App() {
   const [showLoading, setShowLoading] = useState(true);
   const [showIntro, setShowIntro] = useState(false);
@@ -64,6 +66,8 @@ function App() {
 
   // 현재 라운드 계산
   const currentRound = (user?.current_round_idx ?? 0) + 1;
+
+  const [isBearDefeated, setIsBearDefeated] = useState(false);
 
   // 가이드 메시지 추가 함수
   const addGuideMessage = (text) => {
@@ -161,6 +165,7 @@ function App() {
           <LoadingScreen />
         ) : (
           <GuideMessageContext.Provider value={{ addGuideMessage, chatbotRef }}>
+            <BearDefeatedContext.Provider value={{ isBearDefeated, setIsBearDefeated }}>
             <AudioProvider>
               <ScrollToTop />
               <div className="h-screen bg-[url('/bg.jpg')] bg-cover bg-center bg-no-repeat bg-fixed flex flex-col overflow-hidden">
@@ -397,6 +402,7 @@ function App() {
                 </div>
               </div>
             </AudioProvider>
+          </BearDefeatedContext.Provider>
           </GuideMessageContext.Provider>
         )}
       </IntroContext.Provider>

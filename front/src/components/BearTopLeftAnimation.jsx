@@ -7,7 +7,6 @@ const BearTopLeftAnimation = () => {
     const interval = setInterval(() => {
       setCurrentBear((prev) => (prev + 1) % 2);
     }, 500);
-
     return () => clearInterval(interval);
   }, []);
 
