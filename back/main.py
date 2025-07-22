@@ -17,6 +17,8 @@ from langchain_community.chat_models import ChatOpenAI
 from langchain.schema import SystemMessage, HumanMessage
 from sqlalchemy.orm import joinedload
 import random
+from langchain_community.vectorstores import FAISS
+from langchain_community.embeddings import OpenAIEmbeddings
 
 from database import get_db, init_db
 from models import User, Stock, Portfolio, Transaction, News, RoundReview, StockPrice
@@ -46,6 +48,21 @@ app.add_middleware(
 )
 
 security = HTTPBearer()
+
+# RAG: Load or build FAISS vector DB from knowledge base
+FAISS_INDEX_PATH = os.path.join(os.path.dirname(__file__), "data", "faiss_index")
+KNOWLEDGE_FILE = os.path.join(os.path.dirname(__file__), "data", "knowledge_base.txt")
+
+embeddings = OpenAIEmbeddings()
+
+# Build or load FAISS index (singleton)
+if os.path.exists(FAISS_INDEX_PATH):
+    vectorstore = FAISS.load_local(FAISS_INDEX_PATH, embeddings, allow_dangerous_deserialization=True)
+else:
+    with open(KNOWLEDGE_FILE, encoding="utf-8") as f:
+        documents = [line.strip() for line in f if line.strip()]
+    vectorstore = FAISS.from_texts(documents, embeddings)
+    vectorstore.save_local(FAISS_INDEX_PATH)
 
 @app.on_event("startup")
 async def startup_event():
@@ -470,6 +487,12 @@ async def chatbot(
         price_summaries.append(f"{p.stock_id} {p.date}: {p.close_price}")
     context = f"현재 라운드: {current_period}\n최근 뉴스: {', '.join(news_titles)}\n최근 주가: {', '.join(price_summaries)}\n"
 
+    # RAG: Retrieve top-3 relevant docs for the message
+    rag_docs = vectorstore.similarity_search(message, k=3)
+    rag_context = "\n".join([doc.page_content for doc in rag_docs])
+    if rag_context:
+        context += f"\n[외부지식]\n{rag_context}\n"
+
     # LangChain LLM 호출
     llm = ChatOpenAI(temperature=0.2, model_name="gpt-3.5-turbo")
     system_prompt = (
@@ -477,7 +500,7 @@ async def chatbot(
         "너는 주식 투자 게임을 통해 모험을 떠나는 용사를 위해 조언을 해주는 조언 용사야.\n"
         "너의 말투는 세종대왕의 어투를 정확히 모방해라.\n"
         "답변 시작할 때는 반드시 '허허,', '과인이 생각하기에는,', '그대의 질문이 심오하구나,', '좋은 접근이군,' 같은 표현으로 시작해라.\n"
-        "문장 끝에는 '~하시게', '~하시는 것이 좋겠네', '~하는 것이 현명하리라' 같은 표현을 사용해라.\n"
+        "문장의 어미로는 '하시게', '하시는 것이 좋겠네', '하는 것이 현명하리라' 같은 표현을 사용해라.\n"
         "투자 조언을 줄 때는 '그대가 신중하게 판단하시게', '과인의 조언을 참고하시게', '이런 관점도 있으니 생각해보시게' 같은 표현을 사용해라.\n"
         "예시: '허허, 그대의 질문이 심오하구나. 글로벌 부채 급증은 경제에 큰 부담을 주는 것이니, 그대가 신중하게 판단하시게. 과인의 조언을 참고하시면, 이런 시기에는 안전자산에 눈을 돌리는 것이 현명하리라.'\n"
         "아래 context(주가/뉴스) 정보까지만 참고해서 답변해.\n"
